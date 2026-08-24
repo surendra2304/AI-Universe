@@ -20,7 +20,7 @@ class AskRequest(BaseModel):
 
 
 class AskResponse(BaseModel):
-    """Structured response for the /ask endpoint."""
+    """Structured response for the /ask and /debate endpoints."""
     task_id: str
     run_id: str
     answer: str
@@ -31,11 +31,13 @@ class AskResponse(BaseModel):
     confidence: float
     latency_seconds: float
     total_tokens: int
+    unresolved_disagreements: List[str] = Field(default_factory=list)
+    key_evidence: List[str] = Field(default_factory=list)
 
 
 @router.post("/ask", response_model=AskResponse, status_code=status.HTTP_200_OK)
 async def ask_question(request: AskRequest) -> AskResponse:
-    """Submit a question to the AI Universe orchestrator."""
+    """Submit a question to the AI Universe orchestrator (auto-routes to Fast, Review, or Debate)."""
     if not request.question.strip():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -62,12 +64,54 @@ async def ask_question(request: AskRequest) -> AskResponse:
             agents_used=result.agents_used,
             confidence=result.confidence,
             latency_seconds=result.total_latency_seconds,
-            total_tokens=result.total_tokens
+            total_tokens=result.total_tokens,
+            unresolved_disagreements=result.unresolved_disagreements,
+            key_evidence=result.key_evidence
         )
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Task orchestration failed: {str(exc)}"
+        )
+
+
+@router.post("/debate", response_model=AskResponse, status_code=status.HTTP_200_OK)
+async def trigger_debate(request: AskRequest) -> AskResponse:
+    """Explicitly trigger the 6-Round Structured Multi-Agent Debate Engine."""
+    if not request.question.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Question cannot be empty."
+        )
+
+    orch_request = OrchestrationRequest(
+        question=request.question,
+        mode="debate",
+        max_agents=request.max_agents,
+        require_evidence=request.require_evidence,
+        context_data=request.context_data
+    )
+
+    try:
+        result = await orchestrator.process_task(orch_request)
+        return AskResponse(
+            task_id=result.task_id,
+            run_id=result.run_id,
+            answer=result.answer,
+            mode_used="debate",
+            provider="gemini",
+            models_used=result.models_used,
+            agents_used=result.agents_used,
+            confidence=result.confidence,
+            latency_seconds=result.total_latency_seconds,
+            total_tokens=result.total_tokens,
+            unresolved_disagreements=result.unresolved_disagreements,
+            key_evidence=result.key_evidence
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Debate orchestration failed: {str(exc)}"
         )
 
 

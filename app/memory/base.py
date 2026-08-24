@@ -47,6 +47,18 @@ class RunRecord(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
+class MessageRecord(BaseModel):
+    """Record for conversation or debate messages."""
+    id: str
+    run_id: str
+    task_id: str
+    role: str
+    agent_id: Optional[str] = None
+    content: str
+    stage: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 class BaseMemory(ABC):
     """Abstract base class for persistent memory operations."""
 
@@ -73,6 +85,16 @@ class BaseMemory(ABC):
     @abstractmethod
     async def save_run(self, run: RunRecord) -> None:
         """Persist an execution run audit record."""
+        pass
+
+    @abstractmethod
+    async def save_message(self, message: MessageRecord) -> None:
+        """Persist a conversation or debate message."""
+        pass
+
+    @abstractmethod
+    async def get_task_messages(self, task_id: str) -> List[MessageRecord]:
+        """Retrieve all messages associated with a task ID."""
         pass
 
     @abstractmethod

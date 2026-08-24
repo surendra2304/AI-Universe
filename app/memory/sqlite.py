@@ -8,12 +8,12 @@ from typing import Any, AsyncIterator, Dict, List, Optional
 import aiosqlite
 
 from app.core.config import settings
-from app.memory.base import BaseMemory, MemoryRecord, RunRecord, TaskRecord
+from app.memory.base import BaseMemory, MemoryRecord, MessageRecord, RunRecord, TaskRecord
 from app.utils.logger import logger
 
 
 class SQLiteMemory(BaseMemory):
-    """Asynchronous SQLite storage implementation for agents, tasks, runs, and memories."""
+    """Asynchronous SQLite storage implementation for agents, tasks, runs, messages, and memories."""
 
     def __init__(self, db_path: Optional[str] = None) -> None:
         raw_path = db_path or settings.DATABASE_URL
@@ -94,6 +94,20 @@ class SQLiteMemory(BaseMemory):
             """)
 
             await db.execute("""
+                CREATE TABLE IF NOT EXISTS messages (
+                    id TEXT PRIMARY KEY,
+                    run_id TEXT NOT NULL,
+                    task_id TEXT NOT NULL,
+                    role TEXT NOT NULL,
+                    agent_id TEXT,
+                    content TEXT NOT NULL,
+                    stage TEXT,
+                    created_at TEXT NOT NULL,
+                    FOREIGN KEY (task_id) REFERENCES tasks(id)
+                )
+            """)
+
+            await db.execute("""
                 CREATE TABLE IF NOT EXISTS memories (
                     id TEXT PRIMARY KEY,
                     agent_id TEXT NOT NULL,
@@ -108,6 +122,7 @@ class SQLiteMemory(BaseMemory):
             # Fast query indexes
             await db.execute("CREATE INDEX IF NOT EXISTS idx_memories_agent ON memories(agent_id)")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_runs_task ON runs(task_id)")
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_messages_task ON messages(task_id)")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)")
 
             await db.commit()
@@ -214,6 +229,50 @@ class SQLiteMemory(BaseMemory):
                 created_str
             ))
             await db.commit()
+
+    async def save_message(self, message: MessageRecord) -> None:
+        """Persist a conversation or debate message."""
+        created_str = message.created_at.isoformat()
+        async with self.connect() as db:
+            await db.execute("""
+                INSERT INTO messages (id, run_id, task_id, role, agent_id, content, stage, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    content=excluded.content,
+                    stage=excluded.stage
+            """, (
+                message.id,
+                message.run_id,
+                message.task_id,
+                message.role,
+                message.agent_id,
+                message.content,
+                message.stage,
+                created_str
+            ))
+            await db.commit()
+
+    async def get_task_messages(self, task_id: str) -> List[MessageRecord]:
+        """Retrieve all messages associated with a task ID."""
+        records: List[MessageRecord] = []
+        async with self.connect() as db:
+            async with db.execute(
+                "SELECT * FROM messages WHERE task_id = ? ORDER BY created_at ASC",
+                (task_id,)
+            ) as cursor:
+                rows = await cursor.fetchall()
+                for row in rows:
+                    records.append(MessageRecord(
+                        id=row["id"],
+                        run_id=row["run_id"],
+                        task_id=row["task_id"],
+                        role=row["role"],
+                        agent_id=row["agent_id"],
+                        content=row["content"],
+                        stage=row["stage"],
+                        created_at=datetime.fromisoformat(row["created_at"])
+                    ))
+        return records
 
     async def save_memory(self, memory: MemoryRecord) -> None:
         """Save a scoped persistent memory item."""
