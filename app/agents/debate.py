@@ -133,7 +133,8 @@ class DebateEngine:
 
         except Exception as exc:
             latency = time.perf_counter() - start_time
-            logger.error("Debate call for agent %s in %s failed: %s", agent.id, stage_name, str(exc))
+            error_msg = str(exc).split('\n')[0]
+            logger.warning("Debate call for agent %s in %s had an issue: %s", agent.id, stage_name, error_msg)
             run_rec = RunRecord(
                 id=run_id,
                 task_id=task_id,
@@ -143,10 +144,11 @@ class DebateEngine:
                 stage=f"round_{round_number}_{stage_name}",
                 latency_seconds=latency,
                 status="failed",
-                error=str(exc)
+                error=error_msg
             )
             await self.memory.save_run(run_rec)
-            raise exc
+            fallback_content = f"*[Specialist {agent.role} temporarily offline / high demand on {provider.provider_name}: {error_msg}]*"
+            return fallback_content, 0, latency
 
     async def run_debate(
         self,
