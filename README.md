@@ -1,0 +1,127 @@
+# AI UNIVERSE
+
+> **Independent Multi-Agent Intelligence System**  
+> Master Architecture, Multi-Model Reasoning, Debate Engine, and FRIDAY Integration.
+
+---
+
+## 🌟 Overview
+
+**AI Universe** is a local-first, provider-agnostic multi-agent intelligence platform. Its purpose is to make multiple AI systems work together so that you can ask one complex question and receive a stronger, critically evaluated, and empirically verified answer than any single model would provide alone.
+
+### Core Principles
+- **AI Universe is not FRIDAY, and FRIDAY is not a wrapper around AI Universe.** They are two independent intelligent systems. Later, AI Universe can exchange specialized reasoning, analysis, and debate outcomes with FRIDAY through a secure API boundary.
+- **Multi-Model / Provider Agnostic**: Connects to **Gemini, Groq, Cerebras, Mistral, and OpenRouter** through a unified provider gateway.
+- **Structured Debate Protocol**: Uses multi-agent adversarial critique, rebuttal, evidence checking, and uncertainty-aware synthesis.
+- **Persistent Memory & Learning**: Persistent SQLite memory with strict agent scoping, evaluation rubrics, and routing strategy optimization.
+- **Local-First, Cloud Inference**: Orchestration, storage, and UI run locally on your laptop, while model inference is dispatched to fast cloud provider APIs without GPU strain.
+
+---
+
+## 🏛️ System Architecture
+
+```
+                      USER / CLIENT
+                            |
+                            v
+                 +----------------------+
+                 |     FastAPI / UI     |
+                 +----------+-----------+
+                            |
+                            v
+                 +----------------------+
+                 |  ORCHESTRATOR CORE   |
+                 +----------+-----------+
+                            |
+         +------------------+------------------+
+         |                  |                  |
+         v                  v                  v
+    Task Router       Agent Registry        Memory
+         |                  |                  |
+         +------------------+------------------+
+                            |
+                            v
+                 +----------------------+
+                 |    Debate Engine     |
+                 | (10 Specialist Roles)|
+                 +----------+-----------+
+                            |
+                            v
+                 +----------------------+
+                 | Evaluator / FactCheck|
+                 +----------+-----------+
+                            |
+                            v
+                 +----------------------+
+                 |     Synthesizer      |
+                 | (Audit Trail + Conf) |
+                 +----------+-----------+
+                            |
+                            v
+                 +----------------------+
+                 |  Learning & Strategy |
+                 +----------------------+
+```
+
+---
+
+## 🤖 Initial 10-Specialist Agent Panel
+
+| Agent Role | Primary Responsibility | Typical Use Case |
+|---|---|---|
+| **Researcher** | Find & organize relevant information | Knowledge synthesis, comparisons |
+| **Architect** | Design systems and structure | Software design, technical planning |
+| **Coder** | Propose implementation approaches | Code generation, refactoring |
+| **Debugger** | Trace failures & inconsistencies | Root-cause analysis, error diagnosis |
+| **Security Analyst** | Identify vulnerabilities & risks | Threat modeling, safe design |
+| **Data Analyst** | Reason from structured data | Metrics, quantitative analysis |
+| **Critic** | Attack weak assumptions & fallacies | Red-team reasoning, counterexamples |
+| **Fact Checker** | Separate claims from evidence | Claim verification, contradiction detection |
+| **Strategist** | Compare alternatives & tradeoffs | Prioritization, decision support |
+| **Synthesizer** | Produce final coherent answer | Integrates claims, reports uncertainty |
+
+---
+
+## 📖 Project Diary & Memory Standard
+
+Development in this repository strictly adheres to the project memory and diary policy:
+- **Master Index**: [AI_UNIVERSE_DIARY.md](AI_UNIVERSE_DIARY.md)
+- **Specification Standard**: [AI_UNIVERSE_DIARY_SPEC.md](AI_UNIVERSE_DIARY_SPEC.md)
+- **Daily Logs**: Located in [`diary/`](diary/) (e.g. [`diary/2026-08-24.md`](diary/2026-08-24.md))
+
+---
+
+## 🚀 Getting Started
+
+### 1. Clone & Setup
+```bash
+git clone https://github.com/surendra2304/AI-Universe.git
+cd AI-Universe
+python -m venv .venv
+# On Windows:
+.venv\Scripts\activate
+# On Linux/macOS:
+source .venv/bin/activate
+pip install -e ".[dev]"
+```
+
+### 2. Configure Environment Variables
+```bash
+cp .env.example .env
+# Edit .env and supply your API keys (GEMINI_API_KEY, GROQ_API_KEY, etc.)
+```
+
+### 3. Run the Service
+```bash
+uvicorn app.main:app --reload --port 8000
+```
+
+---
+
+## 📚 Documentation
+
+- [Architecture & Design](docs/architecture.md)
+- [Specialist Agents](docs/agents.md)
+- [REST API Specifications](docs/api.md)
+- [Memory & Persistence](docs/memory.md)
+- [Experiments & Benchmarks](docs/experiments.md)
