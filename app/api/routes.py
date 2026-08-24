@@ -155,3 +155,57 @@ async def get_task(task_id: str):
             detail=f"Task '{task_id}' not found."
         )
     return status_data
+
+
+class ExperimentTriggerRequest(BaseModel):
+    """Payload to trigger an experiment run via API."""
+    experiment_type: str = Field(description="benchmark_suite, baseline_vs_debate, model_comparison")
+    question: Optional[str] = None
+    target_benchmarks: Optional[List[str]] = None
+    providers_to_test: Optional[List[str]] = None
+
+
+@router.post("/experiments", status_code=status.HTTP_200_OK)
+async def trigger_experiment(request: ExperimentTriggerRequest):
+    """Trigger an automated benchmark or comparison experiment."""
+    from app.experiments.harness import benchmark_harness
+    benchmark_harness.memory = orchestrator.memory
+    benchmark_harness.orchestrator.memory = orchestrator.memory
+
+    try:
+        if request.experiment_type == "benchmark_suite":
+            record = await benchmark_harness.run_benchmark_suite(
+                benchmark_ids=request.target_benchmarks
+            )
+        elif request.experiment_type == "baseline_vs_debate":
+            q = request.question or "What are the trade-offs of microservices vs monoliths?"
+            record = await benchmark_harness.run_baseline_vs_debate_comparison(question=q)
+        elif request.experiment_type == "model_comparison":
+            q = request.question or "Design a fault-tolerant caching layer with Redis and SQLite."
+            record = await benchmark_harness.run_model_comparison_matrix(
+                prompt=q,
+                providers_to_test=request.providers_to_test
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Unknown experiment_type: {request.experiment_type}"
+            )
+        return record.model_dump()
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Experiment execution failed: {str(exc)}"
+        )
+
+
+@router.get("/experiments/{experiment_id}")
+async def get_experiment(experiment_id: str):
+    """Retrieve details and results of an experiment by ID."""
+    record = await orchestrator.memory.get_experiment(experiment_id)
+    if not record:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Experiment '{experiment_id}' not found."
+        )
+    return record.model_dump()
