@@ -60,9 +60,9 @@ def test_agent_registry_contains_all_10_specialists():
     }
     assert provider_map == expected_providers
 
-    # Verify Gemini agent uses gemini-1.5-flash
+    # Verify Gemini agent uses gemini-3.7-flash
     researcher = agent_registry.get_agent("researcher")
-    assert researcher.model_name == "gemini-1.5-flash"
+    assert researcher.model_name == "gemini-3.7-flash"
 
 
 def test_agent_capability_lookup():

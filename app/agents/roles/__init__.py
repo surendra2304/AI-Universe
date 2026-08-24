@@ -22,7 +22,7 @@ def get_all_specialist_agents() -> List[Agent]:
                 "avoid unsubstantiated speculation, and prioritize accuracy and clarity."
             ),
             model_provider="gemini",
-            model_name="gemini-1.5-flash",
+            model_name="gemini-3.7-flash",
             strengths=["information retrieval", "knowledge synthesis", "literature review", "comparative analysis"],
             weaknesses=["speculative technical depth without source data"]
         ),
