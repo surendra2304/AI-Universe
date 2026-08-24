@@ -1,17 +1,38 @@
 """Main FastAPI application entrypoint for AI Universe."""
 
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from app.core.config import settings
+from app.utils.logger import setup_logger, logger
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifecycle events: startup and shutdown."""
+    # Initialize application logger on startup
+    setup_logger(name="ai_universe", log_level=settings.LOG_LEVEL)
+    logger.info(
+        "Starting %s in %s environment on %s:%d",
+        settings.APP_NAME,
+        settings.APP_ENV,
+        settings.HOST,
+        settings.PORT
+    )
+    yield
+    logger.info("Shutting down %s", settings.APP_NAME)
+
 
 app = FastAPI(
     title=settings.APP_NAME,
     description="Local-first, provider-agnostic multi-agent intelligence platform.",
     version="0.1.0",
+    lifespan=lifespan
 )
 
 
 @app.get("/")
 async def root():
+    """Root metadata endpoint."""
     return {
         "name": settings.APP_NAME,
         "status": "online",
@@ -21,7 +42,5 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    return {
-        "status": "healthy",
-        "app_env": settings.APP_ENV
-    }
+    """Health check endpoint."""
+    return {"status": "healthy"}

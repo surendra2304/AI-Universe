@@ -1,8 +1,8 @@
 """Application configuration settings for AI Universe."""
 
+from typing import Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
-from typing import Optional
 
 
 class Settings(BaseSettings):
@@ -19,9 +19,10 @@ class Settings(BaseSettings):
     APP_ENV: str = "development"
     HOST: str = "127.0.0.1"
     PORT: int = 8000
+    LOG_LEVEL: str = "INFO"
 
     # Database
-    DATABASE_URL: str = "sqlite+aiosqlite:///data/universe.db"
+    DATABASE_URL: str = "sqlite:///data/universe.db"
 
     # Provider API Keys
     GEMINI_API_KEY: Optional[str] = Field(default=None)
@@ -29,6 +30,10 @@ class Settings(BaseSettings):
     CEREBRAS_API_KEY: Optional[str] = Field(default=None)
     MISTRAL_API_KEY: Optional[str] = Field(default=None)
     OPENROUTER_API_KEY: Optional[str] = Field(default=None)
+
+    # Operational Budgets & Limits
+    MAX_BUDGET: float = Field(default=10.0, description="Maximum budget per request in USD or compute credits")
+    REQUEST_TIMEOUT: float = Field(default=60.0, description="Default timeout in seconds for provider calls")
 
 
 settings = Settings()
