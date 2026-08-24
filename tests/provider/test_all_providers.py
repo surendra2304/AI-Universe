@@ -14,10 +14,10 @@ from app.providers.nvidia import NvidiaProvider
 
 
 @pytest.mark.parametrize("provider_name,cls,default_model", [
-    ("groq", GroqProvider, "llama-3.3-70b-versatile"),
+    ("groq", GroqProvider, "openai/gpt-oss-120b"),
     ("mistral", MistralProvider, "mistral-large-latest"),
     ("openrouter", OpenRouterProvider, "anthropic/claude-3.7-sonnet"),
-    ("cohere", CohereProvider, "command-r-plus"),
+    ("cohere", CohereProvider, "command-r7b-12-2024"),
     ("huggingface", HuggingFaceProvider, "meta-llama/Llama-3.3-70B-Instruct"),
     ("nvidia", NvidiaProvider, "meta/llama-3.1-70b-instruct"),
 ])
@@ -31,11 +31,10 @@ def test_provider_factory_and_capabilities(provider_name, cls, default_model):
 
 
 @pytest.mark.parametrize("provider_name", [
-    "groq", "mistral", "openrouter", "cohere", "huggingface", "nvidia"
+    "groq", "mistral", "openrouter", "huggingface", "nvidia"
 ])
 @pytest.mark.asyncio
 async def test_openai_compatible_generate(provider_name):
-    # Unpatch for unit testing OpenAICompatibleProvider._generate directly
     original_generate = OpenAICompatibleProvider.__dict__.get("generate")
     provider = get_provider(provider_name, api_key="test_key_mock")
     req = ProviderRequest(
@@ -56,7 +55,6 @@ async def test_openai_compatible_generate(provider_name):
         }
     }
 
-    # Use original generate with mocked httpx.AsyncClient.post
     with patch.object(OpenAICompatibleProvider, "generate", original_generate):
         with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
             mock_resp = MagicMock()
@@ -68,3 +66,32 @@ async def test_openai_compatible_generate(provider_name):
             assert result.content == f"Direct response from {provider_name}"
             assert result.provider == provider_name
             assert result.total_tokens == 15
+
+
+@pytest.mark.asyncio
+async def test_cohere_generate():
+    provider = get_provider("cohere", api_key="test_key_mock")
+    req = ProviderRequest(
+        messages=[ProviderMessage(role="user", content="Hello world")]
+    )
+
+    mock_resp_data = {
+        "text": "Direct response from cohere",
+        "meta": {
+            "tokens": {
+                "input_tokens": 10,
+                "output_tokens": 5
+            }
+        }
+    }
+
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = mock_resp_data
+        mock_post.return_value = mock_resp
+
+        result = await provider.generate(req)
+        assert result.content == "Direct response from cohere"
+        assert result.provider == "cohere"
+        assert result.total_tokens == 15

@@ -37,7 +37,7 @@ def get_all_specialist_agents() -> List[Agent]:
                 "mechanisms, and clear component boundaries. Always state trade-offs explicitly."
             ),
             model_provider="groq",
-            model_name="llama-3.3-70b-versatile",
+            model_name="openai/gpt-oss-120b",
             strengths=["system architecture", "interface design", "scalability", "modularity", "trade-off analysis"],
             weaknesses=["low-level syntax micro-optimizations"]
         ),
@@ -112,7 +112,7 @@ def get_all_specialist_agents() -> List[Agent]:
                 "counterexamples. Be constructive but uncompromising in your scrutiny."
             ),
             model_provider="groq",
-            model_name="llama-3.3-70b-versatile",
+            model_name="openai/gpt-oss-120b",
             strengths=["red teaming", "counterexamples", "fallacy detection", "failure mode prediction"],
             weaknesses=["building final constructive consensus alone"]
         ),
@@ -157,7 +157,7 @@ def get_all_specialist_agents() -> List[Agent]:
                 "Explicitly highlight consensus, remaining uncertainties, and dissenting views."
             ),
             model_provider="cohere",
-            model_name="command-r-plus",
+            model_name="command-r7b-12-2024",
             strengths=["multi-perspective synthesis", "conflict resolution", "uncertainty calibration"],
             weaknesses=["one-sided partisan argumentation"]
         )

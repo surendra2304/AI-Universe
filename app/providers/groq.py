@@ -9,12 +9,13 @@ class GroqProvider(OpenAICompatibleProvider):
     """Adapter for Groq cloud API."""
 
     BASE_URL = "https://api.groq.com/openai/v1"
-    DEFAULT_MODEL = "llama-3.3-70b-versatile"
+    DEFAULT_MODEL = "openai/gpt-oss-120b"
     SUPPORTED_MODELS = [
-        "llama-3.3-70b-versatile",
-        "llama-3.1-8b-instant",
-        "mixtral-8x7b-32768",
-        "gemma2-9b-it"
+        "openai/gpt-oss-120b",
+        "openai/gpt-oss-20b",
+        "qwen/qwen3.6-27b",
+        "groq/compound",
+        "groq/compound-mini"
     ]
 
     def __init__(
