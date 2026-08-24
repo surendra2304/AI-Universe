@@ -16,6 +16,8 @@ class AskRequest(BaseModel):
     mode: str = Field(default="auto", description="auto, fast, review, debate")
     max_agents: int = Field(default=5, ge=1, le=10)
     require_evidence: bool = Field(default=True)
+    max_budget: Optional[float] = Field(default=None, description="Max budget in USD for this task")
+    max_latency: Optional[float] = Field(default=None, description="Max desired latency in seconds")
     context_data: Dict[str, Any] = Field(default_factory=dict)
 
 
@@ -40,6 +42,8 @@ class DebateRequest(BaseModel):
     question: str = Field(description="The question or proposal to debate")
     max_agents: int = Field(default=5, ge=2, le=10)
     require_evidence: bool = Field(default=True)
+    max_budget: Optional[float] = Field(default=None, description="Max budget in USD for this debate")
+    max_latency: Optional[float] = Field(default=None, description="Max desired latency in seconds")
     context_data: Dict[str, Any] = Field(default_factory=dict)
 
 
@@ -72,6 +76,8 @@ async def ask_question(request: AskRequest) -> AskResponse:
         mode=request.mode,
         max_agents=request.max_agents,
         require_evidence=request.require_evidence,
+        max_budget=request.max_budget,
+        max_latency=request.max_latency,
         context_data=request.context_data
     )
 
@@ -112,6 +118,8 @@ async def trigger_debate(request: DebateRequest) -> DebateResponse:
         mode="debate",
         max_agents=request.max_agents,
         require_evidence=request.require_evidence,
+        max_budget=request.max_budget,
+        max_latency=request.max_latency,
         context_data=request.context_data
     )
 

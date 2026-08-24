@@ -25,6 +25,8 @@ class OrchestrationRequest(BaseModel):
     mode: str = Field(default="auto", description="auto, fast, review, debate")
     max_agents: int = Field(default=5, ge=1, le=10)
     require_evidence: bool = True
+    max_budget: Optional[float] = Field(default=None, description="Max budget in USD for this task")
+    max_latency: Optional[float] = Field(default=None, description="Max desired latency in seconds")
     context_data: Dict[str, Any] = Field(default_factory=dict)
 
 
@@ -84,11 +86,13 @@ class Orchestrator(BaseOrchestrator):
         run_id = generate_run_id()
         start_time = time.perf_counter()
 
-        # 1. Route task and select specialist agents
+        # 1. Route task and select specialist agents with telemetry guardrails
         decision = self.router.route_task(
             question=request.question,
             requested_mode=request.mode,
-            max_agents=request.max_agents
+            max_agents=request.max_agents,
+            max_budget=request.max_budget,
+            max_latency=request.max_latency
         )
 
         mode_used = decision.mode
@@ -99,7 +103,7 @@ class Orchestrator(BaseOrchestrator):
             if self.registry.get_agent(aid)
         ]
 
-        # 2. Create initial task record in SQLite
+        # 2. Create initial task record in SQLite with telemetry metadata
         task_record = TaskRecord(
             id=task_id,
             question=request.question,
@@ -108,6 +112,7 @@ class Orchestrator(BaseOrchestrator):
             metadata={
                 "route_reason": route_reason,
                 "selected_agents": selected_agent_ids,
+                "routing_telemetry": decision.telemetry,
                 "request_context": request.context_data
             }
         )
