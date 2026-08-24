@@ -48,14 +48,14 @@ def test_agent_registry_contains_all_10_specialists():
     provider_map = {a.id: a.model_provider for a in get_all_specialist_agents()}
     expected_providers = {
         "researcher": "gemini",
-        "architect": "groq",
+        "architect": "nvidia",
         "coder": "huggingface",
         "debugger": "nvidia",
         "security_analyst": "mistral",
         "data_analyst": "openrouter",
-        "critic": "groq",
+        "critic": "gemini",
         "fact_checker": "mistral",
-        "strategist": "nvidia",
+        "strategist": "groq",
         "synthesizer": "cohere"
     }
     assert provider_map == expected_providers

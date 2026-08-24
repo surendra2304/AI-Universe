@@ -8,7 +8,7 @@ from rich.table import Table
 from rich.markdown import Markdown
 
 from app.core.orchestrator import orchestrator
-from app.agents.registry import agent_registry
+from app.agents.roles import get_all_specialist_agents
 
 # Configure stdout
 sys.stdout.reconfigure(encoding="utf-8")
@@ -28,7 +28,7 @@ ROLE_COLORS = {
 }
 
 
-async def run_live_debate(question: str):
+async def run_live_debate(question: str, use_all_agents: bool = True):
     console.print(Panel.fit(
         f"[bold white]{question}[/bold white]",
         title="🌌 [bold cyan]AI UNIVERSE — LIVE MULTI-AGENT ADVERSARIAL DEBATE[/bold cyan]",
@@ -38,19 +38,20 @@ async def run_live_debate(question: str):
     # Initialize memory
     await orchestrator.memory.initialize()
 
-    # Get active agents for debate
-    agent_ids = ["architect", "security_analyst", "critic", "fact_checker", "synthesizer"]
-    panel_agents = [agent_registry.get_agent(aid) for aid in agent_ids if agent_registry.get_agent(aid)]
+    # Retrieve all 10 specialist agents
+    all_agents = get_all_specialist_agents()
+    panel_agents = all_agents if use_all_agents else all_agents[:5]
 
-    console.print("\n[bold yellow]Panel of Specialists Assembled:[/bold yellow]")
+    console.print(f"\n[bold yellow]Full Panel of {len(panel_agents)} Specialists Assembled across All Active Cloud Providers:[/bold yellow]")
     table = Table(show_header=True, header_style="bold magenta")
-    table.add_column("Role", style="bold")
+    table.add_column("#", justify="center")
+    table.add_column("Specialist Role", style="bold")
     table.add_column("Agent ID")
-    table.add_column("Assigned Provider", style="cyan")
-    table.add_column("Model Name", style="green")
+    table.add_column("Cloud Provider", style="cyan")
+    table.add_column("Assigned Model", style="green")
 
-    for a in panel_agents:
-        table.add_row(a.role, a.id, a.model_provider.upper(), a.model_name)
+    for idx, a in enumerate(panel_agents, 1):
+        table.add_row(str(idx), a.role, a.id, a.model_provider.upper(), a.model_name)
     console.print(table)
     console.print("\n" + "="*80 + "\n")
 
@@ -58,7 +59,7 @@ async def run_live_debate(question: str):
     engine = orchestrator.debate_engine
     engine.memory = orchestrator.memory
 
-    with console.status("[bold green]Executing 6-Round Adversarial Protocol across Cloud Providers...", spinner="dots"):
+    with console.status(f"[bold green]Executing 6-Round Adversarial Protocol across {len(panel_agents)} Cloud Models...", spinner="dots"):
         result = await engine.run_debate(
             task_id="live_demo_task",
             question=question,
@@ -66,7 +67,7 @@ async def run_live_debate(question: str):
             require_evidence=True
         )
 
-    # Now visually display each round of argument, fight, critique, rebuttal, and synthesis!
+    # Display each round of debate, critique, rebuttal, and synthesis
     for r in result.rounds:
         round_title = f"ROUND {r.round_number}: {r.stage_name.replace('_', ' ').upper()}"
         console.print(f"\n[bold yellow]{'━'*30} {round_title} {'━'*30}[/bold yellow]\n")
@@ -108,4 +109,4 @@ if __name__ == "__main__":
         "Should high-frequency trading platforms use a distributed event-driven microservices architecture, "
         "or a shared-memory modular monolith with hardware lock-free queues?"
     )
-    asyncio.run(run_live_debate(test_question))
+    asyncio.run(run_live_debate(test_question, use_all_agents=True))

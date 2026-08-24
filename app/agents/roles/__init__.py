@@ -36,8 +36,8 @@ def get_all_specialist_agents() -> List[Agent]:
                 "data pipelines, and system interfaces. Focus on modularity, high cohesion, low coupling, fail-safe "
                 "mechanisms, and clear component boundaries. Always state trade-offs explicitly."
             ),
-            model_provider="groq",
-            model_name="openai/gpt-oss-120b",
+            model_provider="nvidia",
+            model_name="meta/llama-3.1-70b-instruct",
             strengths=["system architecture", "interface design", "scalability", "modularity", "trade-off analysis"],
             weaknesses=["low-level syntax micro-optimizations"]
         ),
@@ -111,8 +111,8 @@ def get_all_specialist_agents() -> List[Agent]:
                 "challenge assumptions, expose hidden flaws, identify single points of failure, and provide "
                 "counterexamples. Be constructive but uncompromising in your scrutiny."
             ),
-            model_provider="groq",
-            model_name="openai/gpt-oss-120b",
+            model_provider="gemini",
+            model_name="gemini-3.7-flash",
             strengths=["red teaming", "counterexamples", "fallacy detection", "failure mode prediction"],
             weaknesses=["building final constructive consensus alone"]
         ),
@@ -141,8 +141,8 @@ def get_all_specialist_agents() -> List[Agent]:
                 "and prioritizing architectural or operational alternatives. Weigh complexity against value, "
                 "latency against quality, and immediate cost against long-term maintenance."
             ),
-            model_provider="nvidia",
-            model_name="meta/llama-3.1-70b-instruct",
+            model_provider="groq",
+            model_name="openai/gpt-oss-120b",
             strengths=["multi-criteria decision analysis", "cost-benefit evaluation", "roadmap prioritization"],
             weaknesses=["line-by-line syntax debugging"]
         ),
