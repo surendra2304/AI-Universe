@@ -20,7 +20,7 @@ class AskRequest(BaseModel):
 
 
 class AskResponse(BaseModel):
-    """Structured response for the /ask and /debate endpoints."""
+    """Structured response for the /ask endpoint."""
     task_id: str
     run_id: str
     answer: str
@@ -33,6 +33,29 @@ class AskResponse(BaseModel):
     total_tokens: int
     unresolved_disagreements: List[str] = Field(default_factory=list)
     key_evidence: List[str] = Field(default_factory=list)
+
+
+class DebateRequest(BaseModel):
+    """Payload for explicitly requesting a multi-agent structured debate."""
+    question: str = Field(description="The question or proposal to debate")
+    max_agents: int = Field(default=5, ge=2, le=10)
+    require_evidence: bool = Field(default=True)
+    context_data: Dict[str, Any] = Field(default_factory=dict)
+
+
+class DebateResponse(BaseModel):
+    """Structured response for the /debate endpoint."""
+    task_id: str
+    run_id: str
+    answer: str
+    mode_used: str = "debate"
+    agents_used: List[str]
+    models_used: List[str]
+    confidence: float
+    unresolved_disagreements: List[str] = Field(default_factory=list)
+    key_evidence: List[str] = Field(default_factory=list)
+    total_tokens: int = 0
+    latency_seconds: float = 0.0
 
 
 @router.post("/ask", response_model=AskResponse, status_code=status.HTTP_200_OK)
@@ -75,8 +98,8 @@ async def ask_question(request: AskRequest) -> AskResponse:
         )
 
 
-@router.post("/debate", response_model=AskResponse, status_code=status.HTTP_200_OK)
-async def trigger_debate(request: AskRequest) -> AskResponse:
+@router.post("/debate", response_model=DebateResponse, status_code=status.HTTP_200_OK)
+async def trigger_debate(request: DebateRequest) -> DebateResponse:
     """Explicitly trigger the 6-Round Structured Multi-Agent Debate Engine."""
     if not request.question.strip():
         raise HTTPException(
@@ -94,19 +117,18 @@ async def trigger_debate(request: AskRequest) -> AskResponse:
 
     try:
         result = await orchestrator.process_task(orch_request)
-        return AskResponse(
+        return DebateResponse(
             task_id=result.task_id,
             run_id=result.run_id,
             answer=result.answer,
             mode_used="debate",
-            provider="gemini",
-            models_used=result.models_used,
             agents_used=result.agents_used,
+            models_used=result.models_used,
             confidence=result.confidence,
-            latency_seconds=result.total_latency_seconds,
-            total_tokens=result.total_tokens,
             unresolved_disagreements=result.unresolved_disagreements,
-            key_evidence=result.key_evidence
+            key_evidence=result.key_evidence,
+            total_tokens=result.total_tokens,
+            latency_seconds=result.total_latency_seconds
         )
     except Exception as exc:
         raise HTTPException(
