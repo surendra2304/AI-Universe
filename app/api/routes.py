@@ -1,0 +1,83 @@
+"""FastAPI API routes for AI Universe."""
+
+from typing import Any, Dict, List, Optional
+from fastapi import APIRouter, HTTPException, status
+from pydantic import BaseModel, Field
+
+from app.core.orchestrator import OrchestrationRequest, orchestrator
+
+
+router = APIRouter()
+
+
+class AskRequest(BaseModel):
+    """Payload for submitting a question to AI Universe."""
+    question: str = Field(description="The user or system inquiry to analyze and answer")
+    mode: str = Field(default="auto", description="auto, fast, review, debate")
+    max_agents: int = Field(default=5, ge=1, le=10)
+    require_evidence: bool = Field(default=True)
+    context_data: Dict[str, Any] = Field(default_factory=dict)
+
+
+class AskResponse(BaseModel):
+    """Structured response for the /ask endpoint."""
+    task_id: str
+    run_id: str
+    answer: str
+    mode_used: str
+    provider: str
+    models_used: List[str]
+    agents_used: List[str]
+    confidence: float
+    latency_seconds: float
+    total_tokens: int
+
+
+@router.post("/ask", response_model=AskResponse, status_code=status.HTTP_200_OK)
+async def ask_question(request: AskRequest) -> AskResponse:
+    """Submit a question to the AI Universe orchestrator."""
+    if not request.question.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Question cannot be empty."
+        )
+
+    orch_request = OrchestrationRequest(
+        question=request.question,
+        mode=request.mode,
+        max_agents=request.max_agents,
+        require_evidence=request.require_evidence,
+        context_data=request.context_data
+    )
+
+    try:
+        result = await orchestrator.process_task(orch_request)
+        return AskResponse(
+            task_id=result.task_id,
+            run_id=result.run_id,
+            answer=result.answer,
+            mode_used=result.mode_used,
+            provider="gemini",
+            models_used=result.models_used,
+            agents_used=result.agents_used,
+            confidence=result.confidence,
+            latency_seconds=result.total_latency_seconds,
+            total_tokens=result.total_tokens
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Task orchestration failed: {str(exc)}"
+        )
+
+
+@router.get("/tasks/{task_id}")
+async def get_task(task_id: str):
+    """Retrieve details and state of a task by ID."""
+    status_data = await orchestrator.get_task_status(task_id)
+    if not status_data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Task '{task_id}' not found."
+        )
+    return status_data

@@ -2,8 +2,10 @@
 
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from app.api.routes import router as api_router
 from app.core.config import settings
-from app.utils.logger import setup_logger, logger
+from app.core.orchestrator import orchestrator
+from app.utils.logger import logger, setup_logger
 
 
 @asynccontextmanager
@@ -18,6 +20,8 @@ async def lifespan(app: FastAPI):
         settings.HOST,
         settings.PORT
     )
+    # Initialize persistent SQLite memory database
+    await orchestrator.memory.initialize()
     yield
     logger.info("Shutting down %s", settings.APP_NAME)
 
@@ -28,6 +32,9 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan
 )
+
+# Mount API routes
+app.include_router(api_router)
 
 
 @app.get("/")
