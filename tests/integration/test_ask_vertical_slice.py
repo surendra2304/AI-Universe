@@ -75,8 +75,11 @@ async def test_ask_endpoint_complex_debate_routing(client_with_test_db):
         total_tokens=50
     )
 
-    with patch("app.providers.gemini.GeminiProvider.generate", new_callable=AsyncMock) as mock_generate:
-        mock_generate.return_value = mock_llm_response
+    with patch("app.agents.debate.get_provider") as mock_get_prov:
+        mock_prov = AsyncMock()
+        mock_prov.provider_name = "mock_provider"
+        mock_prov.generate.return_value = mock_llm_response
+        mock_get_prov.return_value = mock_prov
 
         response = client.post(
             "/ask",

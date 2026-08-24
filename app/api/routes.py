@@ -88,7 +88,7 @@ async def ask_question(request: AskRequest) -> AskResponse:
             run_id=result.run_id,
             answer=result.answer,
             mode_used=result.mode_used,
-            provider="gemini",
+            provider=result.provider_used,
             models_used=result.models_used,
             agents_used=result.agents_used,
             confidence=result.confidence,

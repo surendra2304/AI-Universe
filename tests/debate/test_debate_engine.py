@@ -38,8 +38,11 @@ async def test_6_round_debate_execution(debate_env):
         latency_seconds=0.3
     )
 
-    with patch("app.providers.gemini.GeminiProvider.generate", new_callable=AsyncMock) as mock_generate:
-        mock_generate.return_value = mock_llm_response
+    with patch("app.agents.debate.get_provider") as mock_get_prov:
+        mock_prov = AsyncMock()
+        mock_prov.provider_name = "mock_provider"
+        mock_prov.generate.return_value = mock_llm_response
+        mock_get_prov.return_value = mock_prov
 
         agents = [
             agent_registry.get_agent("architect"),
@@ -89,8 +92,11 @@ async def test_fastapi_debate_endpoint(tmp_path):
         total_tokens=70
     )
 
-    with patch("app.providers.gemini.GeminiProvider.generate", new_callable=AsyncMock) as mock_generate:
-        mock_generate.return_value = mock_llm_response
+    with patch("app.agents.debate.get_provider") as mock_get_prov:
+        mock_prov = AsyncMock()
+        mock_prov.provider_name = "mock_provider"
+        mock_prov.generate.return_value = mock_llm_response
+        mock_get_prov.return_value = mock_prov
 
         with TestClient(app) as client:
             resp = client.post(

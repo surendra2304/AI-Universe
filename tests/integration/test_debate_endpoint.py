@@ -34,8 +34,11 @@ async def test_debate_endpoint_end_to_end(client_with_test_db):
         latency_seconds=0.35
     )
 
-    with patch("app.providers.gemini.GeminiProvider.generate", new_callable=AsyncMock) as mock_generate:
-        mock_generate.return_value = mock_llm_response
+    with patch("app.agents.debate.get_provider") as mock_get_prov:
+        mock_prov = AsyncMock()
+        mock_prov.provider_name = "mock_provider"
+        mock_prov.generate.return_value = mock_llm_response
+        mock_get_prov.return_value = mock_prov
 
         response = client.post(
             "/debate",

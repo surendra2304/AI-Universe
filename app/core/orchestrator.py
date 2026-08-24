@@ -39,6 +39,7 @@ class OrchestrationResult(BaseModel):
     question: str
     answer: str
     mode_used: str
+    provider_used: str = "gemini"
     agents_used: List[str]
     models_used: List[str]
     confidence: float = Field(ge=0.0, le=1.0)
@@ -163,6 +164,7 @@ class Orchestrator(BaseOrchestrator):
                     question=request.question,
                     answer=debate_result.final_answer,
                     mode_used="debate",
+                    provider_used="multi_provider",
                     agents_used=debate_result.participating_agents,
                     models_used=[a.model_name for a in participating_agents],
                     confidence=debate_result.confidence,
@@ -218,6 +220,7 @@ class Orchestrator(BaseOrchestrator):
                 question=request.question,
                 answer=response.content,
                 mode_used=mode_used,
+                provider_used=primary_agent.model_provider,
                 agents_used=[primary_agent.id],
                 models_used=[response.model],
                 confidence=0.90,

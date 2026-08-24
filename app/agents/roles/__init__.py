@@ -1,4 +1,4 @@
-"""Definition and registration of the 10 Specialist Agent Roles for AI Universe."""
+"""Definition and registration of the 10 Specialist Agent Roles across 10 Cloud Providers."""
 
 from typing import List
 from app.agents.base import Agent
@@ -6,7 +6,10 @@ from app.agents.registry import agent_registry
 
 
 def get_all_specialist_agents() -> List[Agent]:
-    """Returns the list of 10 configured specialist agents."""
+    """
+    Returns the list of 10 configured specialist agents.
+    Every agent is assigned to a distinct cloud provider adapter.
+    """
     return [
         Agent(
             id="researcher",
@@ -33,8 +36,8 @@ def get_all_specialist_agents() -> List[Agent]:
                 "data pipelines, and system interfaces. Focus on modularity, high cohesion, low coupling, fail-safe "
                 "mechanisms, and clear component boundaries. Always state trade-offs explicitly."
             ),
-            model_provider="gemini",
-            model_name="gemini-2.5-pro",
+            model_provider="groq",
+            model_name="llama-3.3-70b-versatile",
             strengths=["system architecture", "interface design", "scalability", "modularity", "trade-off analysis"],
             weaknesses=["low-level syntax micro-optimizations"]
         ),
@@ -48,8 +51,8 @@ def get_all_specialist_agents() -> List[Agent]:
                 "and production-ready code. Adhere to language best practices, type annotations, error handling, "
                 "and maintainability. Avoid premature optimization and untested logic."
             ),
-            model_provider="gemini",
-            model_name="gemini-2.5-flash",
+            model_provider="deepseek",
+            model_name="deepseek-chat",
             strengths=["clean code", "refactoring", "API implementation", "async programming", "typing"],
             weaknesses=["high-level business prioritization"]
         ),
@@ -63,8 +66,8 @@ def get_all_specialist_agents() -> List[Agent]:
                 "analysis, trace stack traces, and eliminate logic flaws and race conditions. Demand reproduction "
                 "evidence before accepting fixes."
             ),
-            model_provider="gemini",
-            model_name="gemini-2.5-flash",
+            model_provider="cerebras",
+            model_name="llama3.1-70b",
             strengths=["root cause analysis", "error tracing", "deadlock detection", "edge case discovery"],
             weaknesses=["speculative feature redesign"]
         ),
@@ -78,8 +81,8 @@ def get_all_specialist_agents() -> List[Agent]:
                 "threat surfaces, prompt injection risks, secret exposures, and privilege escalations. Treat all "
                 "external input as untrusted and enforce least privilege."
             ),
-            model_provider="gemini",
-            model_name="gemini-2.5-pro",
+            model_provider="mistral",
+            model_name="mistral-small-latest",
             strengths=["threat modeling", "vulnerability analysis", "zero-secret enforcement", "injection defense"],
             weaknesses=["lenient convenience-oriented shortcuts"]
         ),
@@ -93,8 +96,8 @@ def get_all_specialist_agents() -> List[Agent]:
                 "mathematical formulations, evaluate benchmark metrics, and interpret structured schemas. Demand "
                 "statistical rigor and clear metric definitions."
             ),
-            model_provider="gemini",
-            model_name="gemini-2.5-flash",
+            model_provider="openrouter",
+            model_name="meta-llama/llama-3.3-70b-instruct:free",
             strengths=["quantitative analysis", "SQL/schema reasoning", "statistical evaluation", "metrics calculation"],
             weaknesses=["abstract narrative generation"]
         ),
@@ -108,8 +111,8 @@ def get_all_specialist_agents() -> List[Agent]:
                 "challenge assumptions, expose hidden flaws, identify single points of failure, and provide "
                 "counterexamples. Be constructive but uncompromising in your scrutiny."
             ),
-            model_provider="gemini",
-            model_name="gemini-2.5-pro",
+            model_provider="together",
+            model_name="meta-llama/Llama-3.3-70B-Instruct-Turbo",
             strengths=["red teaming", "counterexamples", "fallacy detection", "failure mode prediction"],
             weaknesses=["building final constructive consensus alone"]
         ),
@@ -123,8 +126,8 @@ def get_all_specialist_agents() -> List[Agent]:
                 "unsupported assertions, and hallucinations. Categorize claims as verified, plausible, unverified, "
                 "or false. Refuse to let speculation pass as evidence."
             ),
-            model_provider="gemini",
-            model_name="gemini-2.5-flash",
+            model_provider="fireworks",
+            model_name="accounts/fireworks/models/llama-v3p1-70b-instruct",
             strengths=["fact verification", "claim categorization", "hallucination detection", "consistency checks"],
             weaknesses=["speculative technical design"]
         ),
@@ -138,8 +141,8 @@ def get_all_specialist_agents() -> List[Agent]:
                 "and prioritizing architectural or operational alternatives. Weigh complexity against value, "
                 "latency against quality, and immediate cost against long-term maintenance."
             ),
-            model_provider="gemini",
-            model_name="gemini-2.5-pro",
+            model_provider="nvidia",
+            model_name="meta/llama-3.1-70b-instruct",
             strengths=["multi-criteria decision analysis", "cost-benefit evaluation", "roadmap prioritization"],
             weaknesses=["line-by-line syntax debugging"]
         ),
@@ -153,8 +156,8 @@ def get_all_specialist_agents() -> List[Agent]:
                 "perspectives, critiques, and evidence, and synthesize one clear, actionable, and nuanced conclusion. "
                 "Explicitly highlight consensus, remaining uncertainties, and dissenting views."
             ),
-            model_provider="gemini",
-            model_name="gemini-2.5-pro",
+            model_provider="cohere",
+            model_name="command-r-plus",
             strengths=["multi-perspective synthesis", "conflict resolution", "uncertainty calibration"],
             weaknesses=["one-sided partisan argumentation"]
         )

@@ -39,9 +39,26 @@ def test_agent_registry_contains_all_10_specialists():
         assert len(agent.role) > 0
         assert len(agent.purpose) > 0
         assert len(agent.system_instructions) > 20
-        assert agent.model_provider == "gemini"
+        assert len(agent.model_provider) > 0
+        assert len(agent.model_name) > 0
         assert len(agent.strengths) > 0
         assert agent.status == "active"
+
+    # Verify each agent is mapped to a distinct cloud provider
+    provider_map = {a.id: a.model_provider for a in get_all_specialist_agents()}
+    expected_providers = {
+        "researcher": "gemini",
+        "architect": "groq",
+        "coder": "deepseek",
+        "debugger": "cerebras",
+        "security_analyst": "mistral",
+        "data_analyst": "openrouter",
+        "critic": "together",
+        "fact_checker": "fireworks",
+        "strategist": "nvidia",
+        "synthesizer": "cohere"
+    }
+    assert provider_map == expected_providers
 
 
 def test_agent_capability_lookup():

@@ -34,7 +34,12 @@ async def test_benchmark_harness_suite(test_exp_env):
         latency_seconds=0.4
     )
 
-    with patch("app.providers.gemini.GeminiProvider.generate", new_callable=AsyncMock) as mock_gen:
+    with patch("app.agents.debate.get_provider") as mock_debate_prov, \
+         patch("app.providers.gemini.GeminiProvider.generate", new_callable=AsyncMock) as mock_gen:
+        mock_prov = AsyncMock()
+        mock_prov.provider_name = "mock_provider"
+        mock_prov.generate.return_value = mock_llm_response
+        mock_debate_prov.return_value = mock_prov
         mock_gen.return_value = mock_llm_response
 
         exp = await harness.run_benchmark_suite(benchmark_ids=["bench_001_arch"])
@@ -57,7 +62,14 @@ async def test_baseline_vs_debate_comparison(test_exp_env):
         latency_seconds=0.5
     )
 
-    with patch("app.providers.gemini.GeminiProvider.generate", new_callable=AsyncMock) as mock_gen:
+    with patch("app.agents.debate.get_provider") as mock_debate_prov, \
+         patch("app.core.orchestrator.get_provider") as mock_orch_prov, \
+         patch("app.providers.gemini.GeminiProvider.generate", new_callable=AsyncMock) as mock_gen:
+        mock_prov = AsyncMock()
+        mock_prov.provider_name = "mock_provider"
+        mock_prov.generate.return_value = mock_llm_response
+        mock_debate_prov.return_value = mock_prov
+        mock_orch_prov.return_value = mock_prov
         mock_gen.return_value = mock_llm_response
 
         exp = await harness.run_baseline_vs_debate_comparison(
@@ -80,7 +92,14 @@ async def test_experiments_api_endpoints(test_exp_env):
         total_tokens=40
     )
 
-    with patch("app.providers.gemini.GeminiProvider.generate", new_callable=AsyncMock) as mock_gen:
+    with patch("app.agents.debate.get_provider") as mock_debate_prov, \
+         patch("app.core.orchestrator.get_provider") as mock_orch_prov, \
+         patch("app.providers.gemini.GeminiProvider.generate", new_callable=AsyncMock) as mock_gen:
+        mock_prov = AsyncMock()
+        mock_prov.provider_name = "mock_provider"
+        mock_prov.generate.return_value = mock_llm_response
+        mock_debate_prov.return_value = mock_prov
+        mock_orch_prov.return_value = mock_prov
         mock_gen.return_value = mock_llm_response
 
         with TestClient(app) as client:

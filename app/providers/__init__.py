@@ -1,4 +1,4 @@
-"""Provider factory and registry for AI Universe."""
+"""Provider factory and registry for AI Universe (10 Cloud Providers)."""
 
 from typing import Dict, Type
 from app.providers.base import BaseLLMProvider
@@ -7,6 +7,11 @@ from app.providers.groq import GroqProvider
 from app.providers.cerebras import CerebrasProvider
 from app.providers.mistral import MistralProvider
 from app.providers.openrouter import OpenRouterProvider
+from app.providers.cohere import CohereProvider
+from app.providers.together import TogetherProvider
+from app.providers.fireworks import FireworksProvider
+from app.providers.deepseek import DeepSeekProvider
+from app.providers.nvidia import NvidiaProvider
 
 _PROVIDER_MAP: Dict[str, Type[BaseLLMProvider]] = {
     "gemini": GeminiProvider,
@@ -14,6 +19,11 @@ _PROVIDER_MAP: Dict[str, Type[BaseLLMProvider]] = {
     "cerebras": CerebrasProvider,
     "mistral": MistralProvider,
     "openrouter": OpenRouterProvider,
+    "cohere": CohereProvider,
+    "together": TogetherProvider,
+    "fireworks": FireworksProvider,
+    "deepseek": DeepSeekProvider,
+    "nvidia": NvidiaProvider,
 }
 
 _PROVIDER_CACHE: Dict[str, BaseLLMProvider] = {}
@@ -44,5 +54,10 @@ __all__ = [
     "CerebrasProvider",
     "MistralProvider",
     "OpenRouterProvider",
+    "CohereProvider",
+    "TogetherProvider",
+    "FireworksProvider",
+    "DeepSeekProvider",
+    "NvidiaProvider",
     "get_provider",
 ]

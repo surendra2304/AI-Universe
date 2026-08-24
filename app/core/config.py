@@ -24,12 +24,17 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "sqlite:///data/universe.db"
 
-    # Provider API Keys
+    # 10 Cloud Provider API Keys
     GEMINI_API_KEY: Optional[str] = Field(default=None)
     GROQ_API_KEY: Optional[str] = Field(default=None)
     CEREBRAS_API_KEY: Optional[str] = Field(default=None)
     MISTRAL_API_KEY: Optional[str] = Field(default=None)
     OPENROUTER_API_KEY: Optional[str] = Field(default=None)
+    COHERE_API_KEY: Optional[str] = Field(default=None)
+    TOGETHER_API_KEY: Optional[str] = Field(default=None)
+    FIREWORKS_API_KEY: Optional[str] = Field(default=None)
+    DEEPSEEK_API_KEY: Optional[str] = Field(default=None)
+    NVIDIA_API_KEY: Optional[str] = Field(default=None)
 
     # Integration Keys
     FRIDAY_API_KEY: Optional[str] = Field(default="dev_friday_key_secret_boundary")
