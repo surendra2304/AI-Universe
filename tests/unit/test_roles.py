@@ -54,7 +54,7 @@ def test_agent_registry_contains_all_10_specialists():
         "security_analyst": "mistral",
         "data_analyst": "openrouter",
         "critic": "groq",
-        "fact_checker": "cloudflare",
+        "fact_checker": "mistral",
         "strategist": "nvidia",
         "synthesizer": "cohere"
     }

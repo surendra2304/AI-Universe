@@ -126,8 +126,8 @@ def get_all_specialist_agents() -> List[Agent]:
                 "unsupported assertions, and hallucinations. Categorize claims as verified, plausible, unverified, "
                 "or false. Refuse to let speculation pass as evidence."
             ),
-            model_provider="cloudflare",
-            model_name="@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+            model_provider="mistral",
+            model_name="mistral-small-latest",
             strengths=["fact verification", "claim categorization", "hallucination detection", "consistency checks"],
             weaknesses=["speculative technical design"]
         ),

@@ -1,4 +1,4 @@
-"""System policies, execution guardrails, and provider switching rules across 8 Free Cloud Providers."""
+"""System policies, execution guardrails, and provider switching rules across 7 Free Cloud Providers."""
 
 from enum import Enum
 from typing import Dict, List, Optional
@@ -21,7 +21,7 @@ class FallbackRoute(BaseModel):
     fallback_model: str
 
 
-# Explicit provider fallback configuration for the 8 active free providers
+# Explicit provider fallback configuration for the 7 active verified free providers
 PROVIDER_FALLBACK_MATRIX: Dict[str, FallbackRoute] = {
     "gemini": FallbackRoute(
         primary_provider="gemini",
@@ -41,7 +41,7 @@ PROVIDER_FALLBACK_MATRIX: Dict[str, FallbackRoute] = {
     "openrouter": FallbackRoute(
         primary_provider="openrouter",
         fallback_provider="gemini",
-        fallback_model="gemini-1.5-flash"
+        fallback_model="gemini-3.7-flash"
     ),
     "cohere": FallbackRoute(
         primary_provider="cohere",
@@ -52,11 +52,6 @@ PROVIDER_FALLBACK_MATRIX: Dict[str, FallbackRoute] = {
         primary_provider="huggingface",
         fallback_provider="openrouter",
         fallback_model="meta-llama/llama-3.3-70b-instruct:free"
-    ),
-    "cloudflare": FallbackRoute(
-        primary_provider="cloudflare",
-        fallback_provider="groq",
-        fallback_model="llama-3.3-70b-versatile"
     ),
     "nvidia": FallbackRoute(
         primary_provider="nvidia",

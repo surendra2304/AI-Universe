@@ -1,4 +1,4 @@
-"""Unit and mock tests for all 7 non-Gemini provider adapters (Groq, Mistral, OpenRouter, Cohere, HuggingFace, Cloudflare, NVIDIA)."""
+"""Unit and mock tests for all 6 non-Gemini provider adapters (Groq, Mistral, OpenRouter, Cohere, HuggingFace, NVIDIA)."""
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -10,7 +10,6 @@ from app.providers.mistral import MistralProvider
 from app.providers.openrouter import OpenRouterProvider
 from app.providers.cohere import CohereProvider
 from app.providers.huggingface import HuggingFaceProvider
-from app.providers.cloudflare import CloudflareProvider
 from app.providers.nvidia import NvidiaProvider
 
 
@@ -20,14 +19,10 @@ from app.providers.nvidia import NvidiaProvider
     ("openrouter", OpenRouterProvider, "anthropic/claude-3.7-sonnet"),
     ("cohere", CohereProvider, "command-r-plus"),
     ("huggingface", HuggingFaceProvider, "meta-llama/Llama-3.3-70B-Instruct"),
-    ("cloudflare", CloudflareProvider, "@cf/meta/llama-3.3-70b-instruct-fp8-fast"),
     ("nvidia", NvidiaProvider, "meta/llama-3.1-70b-instruct"),
 ])
 def test_provider_factory_and_capabilities(provider_name, cls, default_model):
-    kwargs = {"api_key": "test_key_123"}
-    if provider_name == "cloudflare":
-        kwargs["account_id"] = "test_account_123"
-    provider = get_provider(provider_name, **kwargs)
+    provider = get_provider(provider_name, api_key="test_key_123")
     assert isinstance(provider, cls)
     assert provider.provider_name == provider_name
     caps = provider.capabilities()
@@ -36,16 +31,13 @@ def test_provider_factory_and_capabilities(provider_name, cls, default_model):
 
 
 @pytest.mark.parametrize("provider_name", [
-    "groq", "mistral", "openrouter", "cohere", "huggingface", "cloudflare", "nvidia"
+    "groq", "mistral", "openrouter", "cohere", "huggingface", "nvidia"
 ])
 @pytest.mark.asyncio
 async def test_openai_compatible_generate(provider_name):
     # Unpatch for unit testing OpenAICompatibleProvider._generate directly
     original_generate = OpenAICompatibleProvider.__dict__.get("generate")
-    kwargs = {"api_key": "test_key_mock"}
-    if provider_name == "cloudflare":
-        kwargs["account_id"] = "test_acc_mock"
-    provider = get_provider(provider_name, **kwargs)
+    provider = get_provider(provider_name, api_key="test_key_mock")
     req = ProviderRequest(
         messages=[ProviderMessage(role="user", content="Hello world")]
     )
