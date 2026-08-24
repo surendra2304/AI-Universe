@@ -59,6 +59,30 @@ class MessageRecord(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
+class StrategyRecord(BaseModel):
+    """Learned routing and orchestration pattern."""
+    id: str
+    task_type: str
+    strategy: str
+    score: float = Field(ge=0.0, le=1.0)
+    sample_size: int = 1
+    recommended_agents: List[str] = Field(default_factory=list)
+    recommended_provider: str = "gemini"
+    recommended_model: str = "gemini-2.5-flash"
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
+class ExperimentRecord(BaseModel):
+    """Controlled multi-model or multi-agent experiment."""
+    id: str
+    hypothesis: str
+    configuration: Dict[str, Any] = Field(default_factory=dict)
+    status: str = "completed"
+    result: Optional[Dict[str, Any]] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 class BaseMemory(ABC):
     """Abstract base class for persistent memory operations."""
 
@@ -120,4 +144,29 @@ class BaseMemory(ABC):
         limit: int = 5
     ) -> List[MemoryRecord]:
         """Search memory records by semantic/text query, optionally filtered by agent_id."""
+        pass
+
+    @abstractmethod
+    async def save_strategy(self, strategy: StrategyRecord) -> None:
+        """Save or update a learned strategy record."""
+        pass
+
+    @abstractmethod
+    async def get_strategy(self, task_type: str) -> Optional[StrategyRecord]:
+        """Retrieve the best learned strategy for a specific task type."""
+        pass
+
+    @abstractmethod
+    async def list_strategies(self) -> List[StrategyRecord]:
+        """List all learned strategies."""
+        pass
+
+    @abstractmethod
+    async def save_experiment(self, experiment: ExperimentRecord) -> None:
+        """Save an experiment record."""
+        pass
+
+    @abstractmethod
+    async def get_experiment(self, experiment_id: str) -> Optional[ExperimentRecord]:
+        """Retrieve experiment details by ID."""
         pass

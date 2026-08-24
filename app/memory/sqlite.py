@@ -8,12 +8,20 @@ from typing import Any, AsyncIterator, Dict, List, Optional
 import aiosqlite
 
 from app.core.config import settings
-from app.memory.base import BaseMemory, MemoryRecord, MessageRecord, RunRecord, TaskRecord
+from app.memory.base import (
+    BaseMemory,
+    ExperimentRecord,
+    MemoryRecord,
+    MessageRecord,
+    RunRecord,
+    StrategyRecord,
+    TaskRecord
+)
 from app.utils.logger import logger
 
 
 class SQLiteMemory(BaseMemory):
-    """Asynchronous SQLite storage implementation for agents, tasks, runs, messages, and memories."""
+    """Asynchronous SQLite storage implementation for agents, tasks, runs, messages, memories, strategies, and experiments."""
 
     def __init__(self, db_path: Optional[str] = None) -> None:
         raw_path = db_path or settings.DATABASE_URL
@@ -119,11 +127,38 @@ class SQLiteMemory(BaseMemory):
                 )
             """)
 
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS strategies (
+                    id TEXT PRIMARY KEY,
+                    task_type TEXT NOT NULL UNIQUE,
+                    strategy TEXT NOT NULL,
+                    score REAL NOT NULL DEFAULT 0.0,
+                    sample_size INTEGER NOT NULL DEFAULT 1,
+                    recommended_agents TEXT,
+                    recommended_provider TEXT NOT NULL DEFAULT 'gemini',
+                    recommended_model TEXT NOT NULL DEFAULT 'gemini-2.5-flash',
+                    created_at TEXT NOT NULL,
+                    metadata_json TEXT
+                )
+            """)
+
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS experiments (
+                    id TEXT PRIMARY KEY,
+                    hypothesis TEXT NOT NULL,
+                    configuration TEXT,
+                    status TEXT NOT NULL DEFAULT 'completed',
+                    result_json TEXT,
+                    created_at TEXT NOT NULL
+                )
+            """)
+
             # Fast query indexes
             await db.execute("CREATE INDEX IF NOT EXISTS idx_memories_agent ON memories(agent_id)")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_runs_task ON runs(task_id)")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_messages_task ON messages(task_id)")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)")
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_strategies_type ON strategies(task_type)")
 
             await db.commit()
             logger.info("SQLite database initialized at: %s", self.db_path)
@@ -366,3 +401,131 @@ class SQLiteMemory(BaseMemory):
                         created_at=datetime.fromisoformat(row["created_at"])
                     ))
         return records
+
+    async def save_strategy(self, strategy: StrategyRecord) -> None:
+        """Save or update a learned strategy record."""
+        agents_str = ",".join(strategy.recommended_agents)
+        meta_json = json.dumps(strategy.metadata)
+        created_str = strategy.created_at.isoformat()
+
+        async with self.connect() as db:
+            await db.execute("""
+                INSERT INTO strategies (
+                    id, task_type, strategy, score, sample_size,
+                    recommended_agents, recommended_provider, recommended_model,
+                    created_at, metadata_json
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(task_type) DO UPDATE SET
+                    strategy=excluded.strategy,
+                    score=excluded.score,
+                    sample_size=excluded.sample_size,
+                    recommended_agents=excluded.recommended_agents,
+                    recommended_provider=excluded.recommended_provider,
+                    recommended_model=excluded.recommended_model,
+                    metadata_json=excluded.metadata_json
+            """, (
+                strategy.id,
+                strategy.task_type,
+                strategy.strategy,
+                strategy.score,
+                strategy.sample_size,
+                agents_str,
+                strategy.recommended_provider,
+                strategy.recommended_model,
+                created_str,
+                meta_json
+            ))
+            await db.commit()
+
+    async def get_strategy(self, task_type: str) -> Optional[StrategyRecord]:
+        """Retrieve the best learned strategy for a specific task type."""
+        async with self.connect() as db:
+            async with db.execute(
+                "SELECT * FROM strategies WHERE task_type = ?", (task_type,)
+            ) as cursor:
+                row = await cursor.fetchone()
+                if not row:
+                    return None
+
+                agents = [a.strip() for a in row["recommended_agents"].split(",") if a.strip()] if row["recommended_agents"] else []
+                meta = json.loads(row["metadata_json"]) if row["metadata_json"] else {}
+
+                return StrategyRecord(
+                    id=row["id"],
+                    task_type=row["task_type"],
+                    strategy=row["strategy"],
+                    score=row["score"],
+                    sample_size=row["sample_size"],
+                    recommended_agents=agents,
+                    recommended_provider=row["recommended_provider"],
+                    recommended_model=row["recommended_model"],
+                    created_at=datetime.fromisoformat(row["created_at"]),
+                    metadata=meta
+                )
+
+    async def list_strategies(self) -> List[StrategyRecord]:
+        """List all learned strategies."""
+        records: List[StrategyRecord] = []
+        async with self.connect() as db:
+            async with db.execute("SELECT * FROM strategies ORDER BY score DESC") as cursor:
+                rows = await cursor.fetchall()
+                for row in rows:
+                    agents = [a.strip() for a in row["recommended_agents"].split(",") if a.strip()] if row["recommended_agents"] else []
+                    meta = json.loads(row["metadata_json"]) if row["metadata_json"] else {}
+                    records.append(StrategyRecord(
+                        id=row["id"],
+                        task_type=row["task_type"],
+                        strategy=row["strategy"],
+                        score=row["score"],
+                        sample_size=row["sample_size"],
+                        recommended_agents=agents,
+                        recommended_provider=row["recommended_provider"],
+                        recommended_model=row["recommended_model"],
+                        created_at=datetime.fromisoformat(row["created_at"]),
+                        metadata=meta
+                    ))
+        return records
+
+    async def save_experiment(self, experiment: ExperimentRecord) -> None:
+        """Save an experiment record."""
+        config_json = json.dumps(experiment.configuration)
+        res_json = json.dumps(experiment.result) if experiment.result else None
+        created_str = experiment.created_at.isoformat()
+
+        async with self.connect() as db:
+            await db.execute("""
+                INSERT INTO experiments (id, hypothesis, configuration, status, result_json, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    status=excluded.status,
+                    result_json=excluded.result_json
+            """, (
+                experiment.id,
+                experiment.hypothesis,
+                config_json,
+                experiment.status,
+                res_json,
+                created_str
+            ))
+            await db.commit()
+
+    async def get_experiment(self, experiment_id: str) -> Optional[ExperimentRecord]:
+        """Retrieve experiment details by ID."""
+        async with self.connect() as db:
+            async with db.execute("SELECT * FROM experiments WHERE id = ?", (experiment_id,)) as cursor:
+                row = await cursor.fetchone()
+                if not row:
+                    return None
+
+                config = json.loads(row["configuration"]) if row["configuration"] else {}
+                result = json.loads(row["result_json"]) if row["result_json"] else None
+
+                return ExperimentRecord(
+                    id=row["id"],
+                    hypothesis=row["hypothesis"],
+                    configuration=config,
+                    status=row["status"],
+                    result=result,
+                    created_at=datetime.fromisoformat(row["created_at"])
+                )

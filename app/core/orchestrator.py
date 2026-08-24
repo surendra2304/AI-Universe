@@ -11,6 +11,8 @@ from app.agents.debate import DebateEngine, debate_engine
 from app.agents.registry import agent_registry
 from app.agents.roles import register_all_specialists
 from app.agents.router import router as task_router
+from app.learning.performance import PerformanceTracker
+from app.learning.strategy_store import StrategyStore
 from app.memory.base import BaseMemory, RunRecord, TaskRecord
 from app.memory.sqlite import SQLiteMemory
 from app.providers import get_provider
@@ -76,6 +78,8 @@ class Orchestrator(BaseOrchestrator):
         self.router = task_router
         self.registry = agent_registry
         self.debate_engine = DebateEngine(memory=self.memory, registry=self.registry)
+        self.strategy_store = StrategyStore(memory=self.memory)
+        self.performance_tracker = PerformanceTracker(memory=self.memory)
         
         # Ensure all 10 specialist roles are registered
         register_all_specialists()
@@ -86,10 +90,23 @@ class Orchestrator(BaseOrchestrator):
         run_id = generate_run_id()
         start_time = time.perf_counter()
 
+        self.strategy_store.memory = self.memory
+        self.performance_tracker.memory = self.memory
+        self.debate_engine.memory = self.memory
+
+        # Check for learned strategy recommendations if mode is 'auto'
+        learned_strat = None
+        if request.mode == "auto":
+            task_domain = self.router.detect_domain_specialist(request.question)
+            try:
+                learned_strat = await self.strategy_store.recommend_strategy(task_domain)
+            except Exception as e:
+                logger.debug("Strategy store lookup skipped: %s", str(e))
+
         # 1. Route task and select specialist agents with telemetry guardrails
         decision = self.router.route_task(
             question=request.question,
-            requested_mode=request.mode,
+            requested_mode=learned_strat.recommended_mode if learned_strat else request.mode,
             max_agents=request.max_agents,
             max_budget=request.max_budget,
             max_latency=request.max_latency
@@ -113,6 +130,7 @@ class Orchestrator(BaseOrchestrator):
                 "route_reason": route_reason,
                 "selected_agents": selected_agent_ids,
                 "routing_telemetry": decision.telemetry,
+                "learned_strategy_applied": bool(learned_strat),
                 "request_context": request.context_data
             }
         )
