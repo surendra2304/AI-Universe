@@ -97,7 +97,7 @@ def get_all_specialist_agents() -> List[Agent]:
                 "statistical rigor and clear metric definitions."
             ),
             model_provider="openrouter",
-            model_name="meta-llama/llama-3.3-70b-instruct:free",
+            model_name="nvidia/nemotron-3.5-lightning:free",
             strengths=["quantitative analysis", "SQL/schema reasoning", "statistical evaluation", "metrics calculation"],
             weaknesses=["abstract narrative generation"]
         ),

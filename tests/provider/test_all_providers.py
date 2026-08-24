@@ -16,7 +16,7 @@ from app.providers.nvidia import NvidiaProvider
 @pytest.mark.parametrize("provider_name,cls,default_model", [
     ("groq", GroqProvider, "openai/gpt-oss-120b"),
     ("mistral", MistralProvider, "mistral-large-latest"),
-    ("openrouter", OpenRouterProvider, "anthropic/claude-3.7-sonnet"),
+    ("openrouter", OpenRouterProvider, "nvidia/nemotron-3.5-lightning:free"),
     ("cohere", CohereProvider, "command-r7b-12-2024"),
     ("huggingface", HuggingFaceProvider, "meta-llama/llama-3.1-8b-instruct"),
     ("nvidia", NvidiaProvider, "meta/llama-3.1-70b-instruct"),

@@ -9,13 +9,13 @@ class OpenRouterProvider(OpenAICompatibleProvider):
     """Adapter for OpenRouter multi-model aggregation API."""
 
     BASE_URL = "https://openrouter.ai/api/v1"
-    DEFAULT_MODEL = "anthropic/claude-3.7-sonnet"
+    DEFAULT_MODEL = "nvidia/nemotron-3.5-lightning:free"
     SUPPORTED_MODELS = [
-        "anthropic/claude-3.7-sonnet",
-        "openai/gpt-4o",
-        "meta-llama/llama-3.3-70b-instruct",
-        "deepseek/deepseek-r1",
-        "google/gemini-2.5-flash"
+        "nvidia/nemotron-3.5-lightning:free",
+        "liquid/lfm-2.5-2.6b:free",
+        "poolside/laguna-s-2.1:free",
+        "dots-studio/dots-3-note-preview:free",
+        "meta-llama/llama-3.3-70b-instruct"
     ]
 
     def __init__(
