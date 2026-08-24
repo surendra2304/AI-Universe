@@ -44,21 +44,25 @@ def test_agent_registry_contains_all_10_specialists():
         assert len(agent.strengths) > 0
         assert agent.status == "active"
 
-    # Verify each agent is mapped to a distinct cloud provider
+    # Verify agent model assignments
     provider_map = {a.id: a.model_provider for a in get_all_specialist_agents()}
     expected_providers = {
         "researcher": "gemini",
         "architect": "groq",
-        "coder": "deepseek",
-        "debugger": "cerebras",
+        "coder": "huggingface",
+        "debugger": "nvidia",
         "security_analyst": "mistral",
         "data_analyst": "openrouter",
-        "critic": "together",
-        "fact_checker": "fireworks",
+        "critic": "groq",
+        "fact_checker": "cloudflare",
         "strategist": "nvidia",
         "synthesizer": "cohere"
     }
     assert provider_map == expected_providers
+
+    # Verify Gemini agent uses gemini-1.5-flash
+    researcher = agent_registry.get_agent("researcher")
+    assert researcher.model_name == "gemini-1.5-flash"
 
 
 def test_agent_capability_lookup():

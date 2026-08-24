@@ -115,11 +115,11 @@ def test_provider_switching_policy():
     fallback = ProviderSwitchingPolicy.get_fallback_provider("gemini", SwitchReason.QUOTA, stage="round_1")
     assert fallback is not None
     assert fallback.fallback_provider == "openrouter"
-    assert fallback.fallback_model == "google/gemini-2.5-flash"
+    assert fallback.fallback_model == "google/gemini-flash-1.5"
 
     groq_fallback = ProviderSwitchingPolicy.get_fallback_provider("groq", SwitchReason.LATENCY)
     assert groq_fallback is not None
-    assert groq_fallback.fallback_provider == "cerebras"
+    assert groq_fallback.fallback_provider == "nvidia"
 
     # Consequential stage restriction
     assert ProviderSwitchingPolicy.can_switch_in_stage("cross_review_critique", allow_mid_stage=False) is False

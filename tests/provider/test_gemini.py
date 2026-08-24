@@ -18,7 +18,7 @@ def gemini_provider():
 def test_gemini_capabilities(gemini_provider):
     caps = gemini_provider.capabilities()
     assert caps.provider_name == "gemini"
-    assert "gemini-2.5-flash" in caps.supported_models
+    assert "gemini-1.5-flash" in caps.supported_models
     assert caps.supports_streaming is True
     assert caps.supports_structured_output is True
 
@@ -78,7 +78,7 @@ async def test_gemini_generate_success(gemini_provider):
         assert result.prompt_tokens == 15
         assert result.completion_tokens == 8
         assert result.total_tokens == 23
-        assert result.model == "gemini-2.5-flash"
+        assert result.model == "gemini-1.5-flash"
         assert result.provider == "gemini"
 
 

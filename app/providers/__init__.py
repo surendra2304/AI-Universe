@@ -1,14 +1,12 @@
-"""Provider factory and registry for AI Universe (10 Permanently Free Cloud Providers)."""
+"""Provider factory and registry for AI Universe (8 Active Free Cloud Providers)."""
 
 from typing import Dict, Type
 from app.providers.base import BaseLLMProvider
 from app.providers.gemini import GeminiProvider
 from app.providers.groq import GroqProvider
-from app.providers.cerebras import CerebrasProvider
 from app.providers.mistral import MistralProvider
 from app.providers.openrouter import OpenRouterProvider
 from app.providers.cohere import CohereProvider
-from app.providers.sambanova import SambaNovaProvider
 from app.providers.huggingface import HuggingFaceProvider
 from app.providers.cloudflare import CloudflareProvider
 from app.providers.nvidia import NvidiaProvider
@@ -16,11 +14,9 @@ from app.providers.nvidia import NvidiaProvider
 _PROVIDER_MAP: Dict[str, Type[BaseLLMProvider]] = {
     "gemini": GeminiProvider,
     "groq": GroqProvider,
-    "cerebras": CerebrasProvider,
     "mistral": MistralProvider,
     "openrouter": OpenRouterProvider,
     "cohere": CohereProvider,
-    "sambanova": SambaNovaProvider,
     "huggingface": HuggingFaceProvider,
     "cloudflare": CloudflareProvider,
     "nvidia": NvidiaProvider,
@@ -51,11 +47,9 @@ __all__ = [
     "BaseLLMProvider",
     "GeminiProvider",
     "GroqProvider",
-    "CerebrasProvider",
     "MistralProvider",
     "OpenRouterProvider",
     "CohereProvider",
-    "SambaNovaProvider",
     "HuggingFaceProvider",
     "CloudflareProvider",
     "NvidiaProvider",

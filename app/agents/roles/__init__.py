@@ -1,4 +1,4 @@
-"""Definition and registration of the 10 Specialist Agent Roles across 10 Cloud Providers."""
+"""Definition and registration of the 10 Specialist Agent Roles for AI Universe."""
 
 from typing import List
 from app.agents.base import Agent
@@ -8,7 +8,7 @@ from app.agents.registry import agent_registry
 def get_all_specialist_agents() -> List[Agent]:
     """
     Returns the list of 10 configured specialist agents.
-    Every agent is assigned to a distinct cloud provider adapter.
+    Every agent is assigned to an active cloud provider adapter.
     """
     return [
         Agent(
@@ -22,7 +22,7 @@ def get_all_specialist_agents() -> List[Agent]:
                 "avoid unsubstantiated speculation, and prioritize accuracy and clarity."
             ),
             model_provider="gemini",
-            model_name="gemini-2.5-flash",
+            model_name="gemini-1.5-flash",
             strengths=["information retrieval", "knowledge synthesis", "literature review", "comparative analysis"],
             weaknesses=["speculative technical depth without source data"]
         ),
@@ -51,8 +51,8 @@ def get_all_specialist_agents() -> List[Agent]:
                 "and production-ready code. Adhere to language best practices, type annotations, error handling, "
                 "and maintainability. Avoid premature optimization and untested logic."
             ),
-            model_provider="deepseek",
-            model_name="deepseek-chat",
+            model_provider="huggingface",
+            model_name="meta-llama/Llama-3.3-70B-Instruct",
             strengths=["clean code", "refactoring", "API implementation", "async programming", "typing"],
             weaknesses=["high-level business prioritization"]
         ),
@@ -66,8 +66,8 @@ def get_all_specialist_agents() -> List[Agent]:
                 "analysis, trace stack traces, and eliminate logic flaws and race conditions. Demand reproduction "
                 "evidence before accepting fixes."
             ),
-            model_provider="cerebras",
-            model_name="llama3.1-70b",
+            model_provider="nvidia",
+            model_name="meta/llama-3.1-8b-instruct",
             strengths=["root cause analysis", "error tracing", "deadlock detection", "edge case discovery"],
             weaknesses=["speculative feature redesign"]
         ),
@@ -111,8 +111,8 @@ def get_all_specialist_agents() -> List[Agent]:
                 "challenge assumptions, expose hidden flaws, identify single points of failure, and provide "
                 "counterexamples. Be constructive but uncompromising in your scrutiny."
             ),
-            model_provider="together",
-            model_name="meta-llama/Llama-3.3-70B-Instruct-Turbo",
+            model_provider="groq",
+            model_name="llama-3.3-70b-versatile",
             strengths=["red teaming", "counterexamples", "fallacy detection", "failure mode prediction"],
             weaknesses=["building final constructive consensus alone"]
         ),
@@ -126,8 +126,8 @@ def get_all_specialist_agents() -> List[Agent]:
                 "unsupported assertions, and hallucinations. Categorize claims as verified, plausible, unverified, "
                 "or false. Refuse to let speculation pass as evidence."
             ),
-            model_provider="fireworks",
-            model_name="accounts/fireworks/models/llama-v3p1-70b-instruct",
+            model_provider="cloudflare",
+            model_name="@cf/meta/llama-3.3-70b-instruct-fp8-fast",
             strengths=["fact verification", "claim categorization", "hallucination detection", "consistency checks"],
             weaknesses=["speculative technical design"]
         ),

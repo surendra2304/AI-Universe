@@ -1,4 +1,4 @@
-"""Unit and mock tests for all 9 non-Gemini provider adapters (Groq, Cerebras, Mistral, OpenRouter, Cohere, SambaNova, HuggingFace, Cloudflare, NVIDIA)."""
+"""Unit and mock tests for all 7 non-Gemini provider adapters (Groq, Mistral, OpenRouter, Cohere, HuggingFace, Cloudflare, NVIDIA)."""
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -6,11 +6,9 @@ from app.providers import get_provider
 from app.providers.base import ProviderMessage, ProviderRequest
 from app.providers.openai_compatible import OpenAICompatibleProvider
 from app.providers.groq import GroqProvider
-from app.providers.cerebras import CerebrasProvider
 from app.providers.mistral import MistralProvider
 from app.providers.openrouter import OpenRouterProvider
 from app.providers.cohere import CohereProvider
-from app.providers.sambanova import SambaNovaProvider
 from app.providers.huggingface import HuggingFaceProvider
 from app.providers.cloudflare import CloudflareProvider
 from app.providers.nvidia import NvidiaProvider
@@ -18,11 +16,9 @@ from app.providers.nvidia import NvidiaProvider
 
 @pytest.mark.parametrize("provider_name,cls,default_model", [
     ("groq", GroqProvider, "llama-3.3-70b-versatile"),
-    ("cerebras", CerebrasProvider, "llama3.1-70b"),
     ("mistral", MistralProvider, "mistral-large-latest"),
     ("openrouter", OpenRouterProvider, "anthropic/claude-3.7-sonnet"),
     ("cohere", CohereProvider, "command-r-plus"),
-    ("sambanova", SambaNovaProvider, "Meta-Llama-3.3-70B-Instruct"),
     ("huggingface", HuggingFaceProvider, "meta-llama/Llama-3.3-70B-Instruct"),
     ("cloudflare", CloudflareProvider, "@cf/meta/llama-3.3-70b-instruct-fp8-fast"),
     ("nvidia", NvidiaProvider, "meta/llama-3.1-70b-instruct"),
@@ -40,7 +36,7 @@ def test_provider_factory_and_capabilities(provider_name, cls, default_model):
 
 
 @pytest.mark.parametrize("provider_name", [
-    "groq", "cerebras", "mistral", "openrouter", "cohere", "sambanova", "huggingface", "cloudflare", "nvidia"
+    "groq", "mistral", "openrouter", "cohere", "huggingface", "cloudflare", "nvidia"
 ])
 @pytest.mark.asyncio
 async def test_openai_compatible_generate(provider_name):

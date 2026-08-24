@@ -1,4 +1,4 @@
-"""System policies, execution guardrails, and provider switching rules across 10 Free Cloud Providers."""
+"""System policies, execution guardrails, and provider switching rules across 8 Free Cloud Providers."""
 
 from enum import Enum
 from typing import Dict, List, Optional
@@ -21,42 +21,32 @@ class FallbackRoute(BaseModel):
     fallback_model: str
 
 
-# Explicit provider fallback configuration for all 10 free providers
+# Explicit provider fallback configuration for the 8 active free providers
 PROVIDER_FALLBACK_MATRIX: Dict[str, FallbackRoute] = {
     "gemini": FallbackRoute(
         primary_provider="gemini",
         fallback_provider="openrouter",
-        fallback_model="google/gemini-2.5-flash"
+        fallback_model="google/gemini-flash-1.5"
     ),
     "groq": FallbackRoute(
         primary_provider="groq",
-        fallback_provider="cerebras",
-        fallback_model="llama3.1-70b"
-    ),
-    "cerebras": FallbackRoute(
-        primary_provider="cerebras",
-        fallback_provider="groq",
-        fallback_model="llama-3.3-70b-versatile"
+        fallback_provider="nvidia",
+        fallback_model="meta/llama-3.1-8b-instruct"
     ),
     "mistral": FallbackRoute(
         primary_provider="mistral",
         fallback_provider="openrouter",
-        fallback_model="mistralai/mistral-large-2411"
+        fallback_model="mistralai/mistral-small-latest"
     ),
     "openrouter": FallbackRoute(
         primary_provider="openrouter",
         fallback_provider="gemini",
-        fallback_model="gemini-2.5-flash"
+        fallback_model="gemini-1.5-flash"
     ),
     "cohere": FallbackRoute(
         primary_provider="cohere",
         fallback_provider="openrouter",
         fallback_model="cohere/command-r-plus"
-    ),
-    "sambanova": FallbackRoute(
-        primary_provider="sambanova",
-        fallback_provider="groq",
-        fallback_model="llama-3.3-70b-versatile"
     ),
     "huggingface": FallbackRoute(
         primary_provider="huggingface",
