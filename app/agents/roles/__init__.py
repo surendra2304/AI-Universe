@@ -52,7 +52,7 @@ def get_all_specialist_agents() -> List[Agent]:
                 "and maintainability. Avoid premature optimization and untested logic."
             ),
             model_provider="huggingface",
-            model_name="meta-llama/Llama-3.3-70B-Instruct",
+            model_name="meta-llama/llama-3.1-8b-instruct",
             strengths=["clean code", "refactoring", "API implementation", "async programming", "typing"],
             weaknesses=["high-level business prioritization"]
         ),

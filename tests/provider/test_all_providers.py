@@ -18,7 +18,7 @@ from app.providers.nvidia import NvidiaProvider
     ("mistral", MistralProvider, "mistral-large-latest"),
     ("openrouter", OpenRouterProvider, "anthropic/claude-3.7-sonnet"),
     ("cohere", CohereProvider, "command-r7b-12-2024"),
-    ("huggingface", HuggingFaceProvider, "meta-llama/Llama-3.3-70B-Instruct"),
+    ("huggingface", HuggingFaceProvider, "meta-llama/llama-3.1-8b-instruct"),
     ("nvidia", NvidiaProvider, "meta/llama-3.1-70b-instruct"),
 ])
 def test_provider_factory_and_capabilities(provider_name, cls, default_model):
