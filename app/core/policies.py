@@ -1,4 +1,4 @@
-"""System policies, execution guardrails, and provider switching rules across 10 Cloud Providers."""
+"""System policies, execution guardrails, and provider switching rules across 10 Free Cloud Providers."""
 
 from enum import Enum
 from typing import Dict, List, Optional
@@ -21,7 +21,7 @@ class FallbackRoute(BaseModel):
     fallback_model: str
 
 
-# Explicit provider fallback configuration for all 10 providers
+# Explicit provider fallback configuration for all 10 free providers
 PROVIDER_FALLBACK_MATRIX: Dict[str, FallbackRoute] = {
     "gemini": FallbackRoute(
         primary_provider="gemini",
@@ -53,20 +53,20 @@ PROVIDER_FALLBACK_MATRIX: Dict[str, FallbackRoute] = {
         fallback_provider="openrouter",
         fallback_model="cohere/command-r-plus"
     ),
-    "together": FallbackRoute(
-        primary_provider="together",
-        fallback_provider="fireworks",
-        fallback_model="accounts/fireworks/models/llama-v3p1-70b-instruct"
+    "sambanova": FallbackRoute(
+        primary_provider="sambanova",
+        fallback_provider="groq",
+        fallback_model="llama-3.3-70b-versatile"
     ),
-    "fireworks": FallbackRoute(
-        primary_provider="fireworks",
-        fallback_provider="together",
-        fallback_model="meta-llama/Llama-3.3-70B-Instruct-Turbo"
-    ),
-    "deepseek": FallbackRoute(
-        primary_provider="deepseek",
+    "huggingface": FallbackRoute(
+        primary_provider="huggingface",
         fallback_provider="openrouter",
-        fallback_model="deepseek/deepseek-chat"
+        fallback_model="meta-llama/llama-3.3-70b-instruct:free"
+    ),
+    "cloudflare": FallbackRoute(
+        primary_provider="cloudflare",
+        fallback_provider="groq",
+        fallback_model="llama-3.3-70b-versatile"
     ),
     "nvidia": FallbackRoute(
         primary_provider="nvidia",

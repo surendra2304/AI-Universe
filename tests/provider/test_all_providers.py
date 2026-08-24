@@ -1,4 +1,4 @@
-"""Unit and mock tests for all 9 non-Gemini provider adapters (Groq, Cerebras, Mistral, OpenRouter, Cohere, Together, Fireworks, DeepSeek, NVIDIA)."""
+"""Unit and mock tests for all 9 non-Gemini provider adapters (Groq, Cerebras, Mistral, OpenRouter, Cohere, SambaNova, HuggingFace, Cloudflare, NVIDIA)."""
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -10,9 +10,9 @@ from app.providers.cerebras import CerebrasProvider
 from app.providers.mistral import MistralProvider
 from app.providers.openrouter import OpenRouterProvider
 from app.providers.cohere import CohereProvider
-from app.providers.together import TogetherProvider
-from app.providers.fireworks import FireworksProvider
-from app.providers.deepseek import DeepSeekProvider
+from app.providers.sambanova import SambaNovaProvider
+from app.providers.huggingface import HuggingFaceProvider
+from app.providers.cloudflare import CloudflareProvider
 from app.providers.nvidia import NvidiaProvider
 
 
@@ -22,13 +22,16 @@ from app.providers.nvidia import NvidiaProvider
     ("mistral", MistralProvider, "mistral-large-latest"),
     ("openrouter", OpenRouterProvider, "anthropic/claude-3.7-sonnet"),
     ("cohere", CohereProvider, "command-r-plus"),
-    ("together", TogetherProvider, "meta-llama/Llama-3.3-70B-Instruct-Turbo"),
-    ("fireworks", FireworksProvider, "accounts/fireworks/models/llama-v3p1-70b-instruct"),
-    ("deepseek", DeepSeekProvider, "deepseek-chat"),
+    ("sambanova", SambaNovaProvider, "Meta-Llama-3.3-70B-Instruct"),
+    ("huggingface", HuggingFaceProvider, "meta-llama/Llama-3.3-70B-Instruct"),
+    ("cloudflare", CloudflareProvider, "@cf/meta/llama-3.3-70b-instruct-fp8-fast"),
     ("nvidia", NvidiaProvider, "meta/llama-3.1-70b-instruct"),
 ])
 def test_provider_factory_and_capabilities(provider_name, cls, default_model):
-    provider = get_provider(provider_name, api_key="test_key_123")
+    kwargs = {"api_key": "test_key_123"}
+    if provider_name == "cloudflare":
+        kwargs["account_id"] = "test_account_123"
+    provider = get_provider(provider_name, **kwargs)
     assert isinstance(provider, cls)
     assert provider.provider_name == provider_name
     caps = provider.capabilities()
@@ -37,13 +40,16 @@ def test_provider_factory_and_capabilities(provider_name, cls, default_model):
 
 
 @pytest.mark.parametrize("provider_name", [
-    "groq", "cerebras", "mistral", "openrouter", "cohere", "together", "fireworks", "deepseek", "nvidia"
+    "groq", "cerebras", "mistral", "openrouter", "cohere", "sambanova", "huggingface", "cloudflare", "nvidia"
 ])
 @pytest.mark.asyncio
 async def test_openai_compatible_generate(provider_name):
     # Unpatch for unit testing OpenAICompatibleProvider._generate directly
     original_generate = OpenAICompatibleProvider.__dict__.get("generate")
-    provider = get_provider(provider_name, api_key="test_key_mock")
+    kwargs = {"api_key": "test_key_mock"}
+    if provider_name == "cloudflare":
+        kwargs["account_id"] = "test_acc_mock"
+    provider = get_provider(provider_name, **kwargs)
     req = ProviderRequest(
         messages=[ProviderMessage(role="user", content="Hello world")]
     )
