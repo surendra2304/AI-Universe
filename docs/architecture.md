@@ -7,9 +7,10 @@ AI Universe is a local-first, multi-agent intelligence platform designed for dee
 ## 1. Core Architectural Tenets
 
 1. **Independent Intelligence**: AI Universe is an autonomous intelligence engine. FRIDAY is an autonomous agent operating at the OS and application layer. They communicate over strict, typed API boundaries.
-2. **Confidence is Not Correctness**: Authoritative prose is separated from empirical validity. LLM confidence scores are calibrated, and meaningful dissent is preserved rather than smoothed over.
-3. **Graceful Cost & Latency Degradation**: Trivial questions are routed to fast single-agent execution, while complex trade-offs trigger 6-Round adversarial debates.
-4. **Zero Secrets in Code or Memory**: All keys are strictly loaded via environment variables and sanitized in logs and database stores.
+2. **FRIDAY is a Peer Client, Not a Wrapper**: AI Universe is completely standalone. FRIDAY interfaces with AI Universe via secure, authenticated HTTP endpoints (`/v1/friday/*`), receiving full deliberation provenance, surviving claims, and dissenting views.
+3. **Confidence is Not Correctness**: Authoritative prose is separated from empirical validity. LLM confidence scores are calibrated, and meaningful dissent is preserved rather than smoothed over.
+4. **Graceful Cost & Latency Degradation**: Trivial questions are routed to fast single-agent execution, while complex trade-offs trigger 6-Round adversarial debates.
+5. **Zero Secrets in Code or Memory**: All keys are strictly loaded via environment variables and sanitized in logs and database stores.
 
 ---
 
@@ -19,6 +20,7 @@ AI Universe is a local-first, multi-agent intelligence platform designed for dee
  ┌──────────────────────────────────────────────────────────┐
  │                     FastAPI & CLI Layer                  │
  │   /ask   │   /debate   │   /experiments   │   /health    │
+ │            /v1/friday/ask   │   /v1/friday/debate        │
  └────────────────────────────┬─────────────────────────────┘
                               │
  ┌────────────────────────────▼─────────────────────────────┐
@@ -59,8 +61,8 @@ AI Universe is a local-first, multi-agent intelligence platform designed for dee
 
 ---
 
-## 4. Evaluation & Learning Loop
+## 4. FRIDAY Integration Boundary
 
-- **8 Rubric Dimensions**: `correctness`, `relevance`, `completeness`, `reasoning_quality`, `evidence_quality`, `safety`, `latency`, `usage_efficiency`.
-- **Hybrid Scoring**: LLM-as-a-judge (`gemini-2.5-pro`) for semantic quality + deterministic mathematical calculation for latency and token budgets.
-- **Strategy Store & Performance Tracker**: Moving average empirical tracking optimizing future task routing based on historical outcomes.
+AI Universe provides dedicated, authenticated integration endpoints for FRIDAY:
+- **Authentication**: Validated via `X-FRIDAY-API-Key` header with constant-time comparison.
+- **Provenance & Dissent**: Returns explicit `provenance` lineage, `key_evidence`, and `unresolved_disagreements`, allowing FRIDAY to autonomously decide whether to act upon or escalate recommendations.

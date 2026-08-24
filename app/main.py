@@ -5,6 +5,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app.api.friday_routes import friday_router
 from app.api.routes import router as api_router
 from app.core.config import settings
 from app.core.orchestrator import orchestrator
@@ -56,6 +57,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 # Mount API routes
 app.include_router(api_router)
+app.include_router(friday_router)
 
 
 @app.get("/")
