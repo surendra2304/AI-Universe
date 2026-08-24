@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 from app.agents.base import Agent
 from app.agents.registry import agent_registry
+from app.agents.roles import register_all_specialists
 from app.agents.router import router as task_router
 from app.memory.base import BaseMemory, RunRecord, TaskRecord
 from app.memory.sqlite import SQLiteMemory
@@ -67,27 +68,13 @@ class Orchestrator(BaseOrchestrator):
     def __init__(
         self,
         memory: Optional[BaseMemory] = None,
-        default_agent: Optional[Agent] = None
     ) -> None:
         self.memory = memory or SQLiteMemory()
         self.router = task_router
         self.registry = agent_registry
         
-        # Ensure default generalist/researcher agent exists
-        if not self.registry.get_agent("researcher"):
-            self.default_agent = default_agent or Agent(
-                id="researcher",
-                name="Primary Researcher",
-                role="Researcher",
-                purpose="Direct question answering and knowledge synthesis",
-                system_instructions="Provide concise, accurate, and critically evaluated answers.",
-                model_provider="gemini",
-                model_name="gemini-2.5-flash",
-                strengths=["research", "synthesis", "clarity"]
-            )
-            self.registry.register_agent(self.default_agent)
-        else:
-            self.default_agent = self.registry.get_agent("researcher")
+        # Ensure all 10 specialist roles are registered
+        register_all_specialists()
 
     async def process_task(self, request: OrchestrationRequest) -> OrchestrationResult:
         """Execute full end-to-end question answering vertical slice."""
@@ -95,25 +82,38 @@ class Orchestrator(BaseOrchestrator):
         run_id = generate_run_id()
         start_time = time.perf_counter()
 
-        # Classify task mode
-        mode_used, route_reason = self.router.classify_mode(request.question, request.mode)
-        logger.info("Executing task %s in mode '%s' (reason: %s)", task_id, mode_used, route_reason)
+        # 1. Route task and select specialist agents
+        decision = self.router.route_task(
+            question=request.question,
+            requested_mode=request.mode,
+            max_agents=request.max_agents
+        )
 
-        # 1. Create and persist initial task record
+        mode_used = decision.mode
+        route_reason = decision.reason
+        selected_agent_ids = decision.selected_agent_ids
+        primary_agent_id = selected_agent_ids[0]
+
+        # 2. Retrieve primary agent configuration from registry
+        agent = self.registry.get_agent(primary_agent_id) or self.registry.get_agent("researcher")
+        provider = get_provider(agent.model_provider)
+
+        # 3. Create and persist initial task record
         task_record = TaskRecord(
             id=task_id,
             question=request.question,
             mode=mode_used,
             status="running",
-            metadata={"route_reason": route_reason, "request_context": request.context_data}
+            metadata={
+                "route_reason": route_reason,
+                "selected_agents": selected_agent_ids,
+                "primary_agent": agent.id,
+                "request_context": request.context_data
+            }
         )
         await self.memory.save_task(task_record)
 
-        # 2. Select agent and provider
-        agent = self.default_agent
-        provider = get_provider(agent.model_provider)
-
-        # 3. Retrieve agent memories if available
+        # 4. Retrieve agent memories if available
         prior_memories = await self.memory.get_agent_memories(agent.id, limit=3)
         memory_context = "\n".join([f"- {m.content}" for m in prior_memories]) if prior_memories else ""
 
@@ -121,7 +121,7 @@ class Orchestrator(BaseOrchestrator):
         if memory_context:
             system_prompt += f"\n\nContext & Relevant Past Memory:\n{memory_context}"
 
-        # 4. Dispatch request to provider
+        # 5. Dispatch request to provider
         provider_req = ProviderRequest(
             messages=[ProviderMessage(role="user", content=request.question)],
             system_instruction=system_prompt,
@@ -132,14 +132,14 @@ class Orchestrator(BaseOrchestrator):
             response = await provider.generate(provider_req)
             latency = time.perf_counter() - start_time
 
-            # 5. Persist Run record audit trail
+            # 6. Persist Run record audit trail
             run_record = RunRecord(
                 id=run_id,
                 task_id=task_id,
                 agent_id=agent.id,
                 provider=provider.provider_name,
                 model=response.model,
-                stage="single_agent_execution",
+                stage=f"{mode_used}_execution",
                 prompt_tokens=response.prompt_tokens or 0,
                 completion_tokens=response.completion_tokens or 0,
                 latency_seconds=latency,
@@ -147,7 +147,7 @@ class Orchestrator(BaseOrchestrator):
             )
             await self.memory.save_run(run_record)
 
-            # 6. Update Task record with completion state
+            # 7. Update Task record with completion state
             task_record.status = "completed"
             task_record.result = response.content
             task_record.confidence = 0.90
@@ -160,7 +160,7 @@ class Orchestrator(BaseOrchestrator):
                 question=request.question,
                 answer=response.content,
                 mode_used=mode_used,
-                agents_used=[agent.id],
+                agents_used=selected_agent_ids,
                 models_used=[response.model],
                 confidence=0.90,
                 total_tokens=response.total_tokens or 0,
@@ -171,21 +171,19 @@ class Orchestrator(BaseOrchestrator):
             latency = time.perf_counter() - start_time
             logger.error("Task %s failed during execution: %s", task_id, str(exc))
 
-            # Record failed run
             run_record = RunRecord(
                 id=run_id,
                 task_id=task_id,
                 agent_id=agent.id,
                 provider=provider.provider_name,
                 model=agent.model_name,
-                stage="single_agent_execution",
+                stage=f"{mode_used}_execution",
                 latency_seconds=latency,
                 status="failed",
                 error=str(exc)
             )
             await self.memory.save_run(run_record)
 
-            # Record failed task
             task_record.status = "failed"
             task_record.completed_at = datetime.utcnow()
             task_record.metadata["error"] = str(exc)
