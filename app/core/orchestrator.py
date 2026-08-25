@@ -11,6 +11,7 @@ from app.agents.debate import DebateEngine, debate_engine
 from app.agents.registry import agent_registry
 from app.agents.roles import register_all_specialists
 from app.agents.router import router as task_router
+from app.core.policies import ProviderSwitchingPolicy, SwitchReason
 from app.learning.performance import PerformanceTracker
 from app.learning.strategy_store import StrategyStore
 from app.memory.base import BaseMemory, RunRecord, TaskRecord
