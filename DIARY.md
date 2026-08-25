@@ -9,3 +9,5 @@ A personal development journal documenting how I built AI Universe — a local-f
 **[→ Day 1 — 2026-08-24](diary/2026-08-24.md)** — System inception, 7 cloud providers, 10 specialist agents, SQLite database, first debate engine.
 
 **[→ Day 2 — 2026-08-25](diary/2026-08-25.md)** — Real-time collaboration engine, FRIDAY API endpoints, provider failover fix, Cerebras purge.
+
+**[→ Day 3 — 2026-08-26](diary/2026-08-26.md)** — Unified CollaborationEngine on all API paths. Fast=2 agents, review=3 agents, debate=full panel. No more single-agent bypass.

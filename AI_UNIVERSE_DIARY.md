@@ -12,6 +12,7 @@ A local-first, multi-agent intelligence platform where 10 specialist AI agents c
 | :--- | :--- | :---: | :---: |
 | Day 1 — 2026-08-24 | Foundation, 7-Provider Gateway & 10 Specialist Agents | ✅ Verified | [2026-08-24](diary/2026-08-24.md) |
 | Day 2 — 2026-08-25 | Real-Time Collaboration Engine, FRIDAY API & Failover Hardening | ✅ Verified | [2026-08-25](diary/2026-08-25.md) |
+| Day 3 — 2026-08-26 | Unified CollaborationEngine on All API Paths — No More Single-Agent Fast Path | ✅ Verified | [2026-08-26](diary/2026-08-26.md) |
 
 ---
 
@@ -50,3 +51,22 @@ A local-first, multi-agent intelligence platform where 10 specialist AI agents c
   - Completely purged all Cerebras references — provider file, imports, config keys, and API routes — keeping exactly 7 active cloud providers.
 
 - 📊 **Test Results**: **67 passed** in 12.60s across parallel collaboration, targeted conflict rebuttal, FRIDAY auth (200/401/403), and discovery endpoint schemas.
+
+---
+
+### 🔧 Day 3 — 2026-08-26: Unified Collaboration Engine Across All API Paths
+
+- 🎯 **Focus**: Fixing a fundamental flaw where `fast` and `review` mode API calls were bypassing the `CollaborationEngine` entirely and calling a single agent directly.
+
+- 💡 **What I Accomplished**:
+  - Discovered that `/v1/friday/ask` requests were hitting a single LLM provider with one agent instead of running parallel collaboration — defeating the entire purpose of the multi-agent architecture.
+  - Removed the separate single-agent code path from `app/core/orchestrator.py` completely. All modes now route through `CollaborationEngine`.
+  - `fast` mode now assembles 2 agents in parallel (domain specialist + Synthesizer). `review` assembles 3 agents (router pair + cross-checker). `debate` uses the full router-selected panel of 3-5 agents.
+  - The `CollaborationEngine` handles instant consensus merge or targeted rebuttal internally — the orchestrator just decides the agent count.
+
+- 🔧 **Fixes & Hardening**:
+  - Cleaned up now-unused imports from `orchestrator.py` (`get_provider`, `ProviderMessage`, `ProviderRequest`, `RunRecord`, `ProviderSwitchingPolicy`, `generate_run_id`).
+  - Updated 4 tests that were asserting stale single-agent behavior to correctly assert collaboration engine outputs (`mode_used in ["consensus", "debate"]`, `run_id.startswith("deb_")`, `confidence > 0.8`).
+  - Removed stale `app.core.orchestrator.get_provider` mock patches from experiment tests.
+
+- 📊 **Test Results**: **67 passed** — all green.
