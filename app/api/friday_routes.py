@@ -131,3 +131,73 @@ async def friday_debate(request: FridayRequest) -> FridayResponse:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"FRIDAY debate orchestration failed: {str(exc)}"
         )
+
+
+class AgentMetadata(BaseModel):
+    """Detailed metadata for a specialist agent in AI Universe."""
+    id: str
+    name: str
+    role: str
+    purpose: str
+    provider: str
+    model: str
+    strengths: List[str] = Field(default_factory=list)
+    status: str = "active"
+
+
+class FridayInfoResponse(BaseModel):
+    """System metadata and active agent list for discovery."""
+    platform: str = "AI Universe"
+    version: str = "1.0.0"
+    total_specialists: int
+    active_cloud_providers: List[str]
+    agents: List[AgentMetadata]
+
+
+@friday_router.get("/agents", response_model=List[AgentMetadata], status_code=status.HTTP_200_OK)
+async def list_friday_agents() -> List[AgentMetadata]:
+    """
+    Returns the live catalog of all 10 specialist agents, their cloud providers, and assigned models.
+    Enables FRIDAY to query exact agent models without hallucination.
+    """
+    agents = orchestrator.registry.list_agents()
+    return [
+        AgentMetadata(
+            id=a.id,
+            name=a.name,
+            role=a.role,
+            purpose=a.purpose,
+            provider=a.model_provider,
+            model=a.model_name,
+            strengths=a.strengths,
+            status=a.status
+        )
+        for a in agents
+    ]
+
+
+@friday_router.get("/info", response_model=FridayInfoResponse, status_code=status.HTTP_200_OK)
+async def get_friday_info() -> FridayInfoResponse:
+    """
+    Returns system status, active cloud providers, and specialist agent models.
+    """
+    agents = orchestrator.registry.list_agents()
+    agent_metas = [
+        AgentMetadata(
+            id=a.id,
+            name=a.name,
+            role=a.role,
+            purpose=a.purpose,
+            provider=a.model_provider,
+            model=a.model_name,
+            strengths=a.strengths,
+            status=a.status
+        )
+        for a in agents
+    ]
+    unique_providers = list({a.model_provider for a in agents})
+    return FridayInfoResponse(
+        total_specialists=len(agents),
+        active_cloud_providers=unique_providers,
+        agents=agent_metas
+    )

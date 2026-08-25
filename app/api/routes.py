@@ -157,6 +157,25 @@ async def get_task(task_id: str):
     return status_data
 
 
+@router.get("/agents")
+async def list_public_agents():
+    """Retrieve list of all active specialist agents in AI Universe."""
+    agents = orchestrator.registry.list_agents()
+    return [
+        {
+            "id": a.id,
+            "name": a.name,
+            "role": a.role,
+            "purpose": a.purpose,
+            "provider": a.model_provider,
+            "model": a.model_name,
+            "strengths": a.strengths,
+            "status": a.status
+        }
+        for a in agents
+    ]
+
+
 class ExperimentTriggerRequest(BaseModel):
     """Payload to trigger an experiment run via API."""
     experiment_type: str = Field(description="benchmark_suite, baseline_vs_debate, model_comparison")
