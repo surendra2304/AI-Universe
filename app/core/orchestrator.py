@@ -11,14 +11,11 @@ from app.agents.debate import DebateEngine, debate_engine
 from app.agents.registry import agent_registry
 from app.agents.roles import register_all_specialists
 from app.agents.router import router as task_router
-from app.core.policies import ProviderSwitchingPolicy, SwitchReason
 from app.learning.performance import PerformanceTracker
 from app.learning.strategy_store import StrategyStore
-from app.memory.base import BaseMemory, RunRecord, TaskRecord
+from app.memory.base import BaseMemory, TaskRecord
 from app.memory.sqlite import SQLiteMemory
-from app.providers import get_provider
-from app.providers.base import ProviderMessage, ProviderRequest
-from app.utils.ids import generate_run_id, generate_task_id
+from app.utils.ids import generate_task_id
 from app.utils.logger import logger
 
 
@@ -89,7 +86,6 @@ class Orchestrator(BaseOrchestrator):
     async def process_task(self, request: OrchestrationRequest) -> OrchestrationResult:
         """Execute full end-to-end question answering vertical slice."""
         task_id = generate_task_id()
-        run_id = generate_run_id()
         start_time = time.perf_counter()
 
         self.strategy_store.memory = self.memory
@@ -139,128 +135,68 @@ class Orchestrator(BaseOrchestrator):
         await self.memory.save_task(task_record)
 
         try:
-            # 3A. DEBATE MODE: Execute the 6-Round Structured Debate Protocol
-            if mode_used == "debate":
-                logger.info("Triggering 6-Round Debate Protocol for task %s", task_id)
-                self.debate_engine.memory = self.memory
-                debate_result = await self.debate_engine.run_debate(
-                    task_id=task_id,
-                    question=request.question,
-                    participating_agents=participating_agents,
-                    require_evidence=request.require_evidence
-                )
-                latency = time.perf_counter() - start_time
+            # ALL MODES use the CollaborationEngine for parallel teamwork:
+            # fast   → 2 agents in parallel (primary domain specialist + Synthesizer)
+            # review → 3 agents in parallel (router pair + one cross-checker)
+            # debate → full router panel (3-5 agents)
+            # CollaborationEngine handles instant consensus merge OR targeted rebuttal internally.
 
-                actual_mode = getattr(debate_result, "mode_used", "debate")
-                task_record.status = "completed"
-                task_record.result = debate_result.final_answer
-                task_record.confidence = debate_result.confidence
-                task_record.mode = actual_mode
-                task_record.completed_at = datetime.utcnow()
-                task_record.metadata["debate_id"] = debate_result.debate_id
-                task_record.metadata["unresolved_disagreements"] = debate_result.unresolved_disagreements
-                await self.memory.save_task(task_record)
+            if mode_used == "fast" and len(participating_agents) < 2:
+                # Pad to 2 agents: add Synthesizer as the second collaborator
+                synthesizer = self.registry.get_agent("synthesizer")
+                if synthesizer and (not participating_agents or synthesizer.id != participating_agents[0].id):
+                    participating_agents = participating_agents + [synthesizer]
 
-                return OrchestrationResult(
-                    task_id=task_id,
-                    run_id=debate_result.debate_id,
-                    question=request.question,
-                    answer=debate_result.final_answer,
-                    mode_used=actual_mode,
-                    provider_used="multi_provider",
-                    agents_used=debate_result.participating_agents,
-                    models_used=[a.model_name for a in participating_agents],
-                    confidence=debate_result.confidence,
-                    unresolved_disagreements=debate_result.unresolved_disagreements,
-                    key_evidence=debate_result.key_evidence,
-                    total_tokens=debate_result.total_tokens,
-                    total_latency_seconds=round(latency, 4)
-                )
+            elif mode_used == "review" and len(participating_agents) < 3:
+                # Pad to 3 agents: add a cross-checking specialist
+                extra_candidates = ["fact_checker", "critic", "strategist", "researcher"]
+                existing_ids = [a.id for a in participating_agents]
+                for cid in extra_candidates:
+                    if len(participating_agents) >= 3:
+                        break
+                    agent = self.registry.get_agent(cid)
+                    if agent and agent.id not in existing_ids:
+                        participating_agents = participating_agents + [agent]
+                        existing_ids.append(agent.id)
 
-            # 3B. FAST / REVIEW MODE: Single / Pair execution
-            primary_agent = participating_agents[0] if participating_agents else self.registry.get_agent("researcher")
-            provider = get_provider(primary_agent.model_provider)
-
-            prior_memories = await self.memory.get_agent_memories(primary_agent.id, limit=3)
-            memory_context = "\n".join([f"- {m.content}" for m in prior_memories]) if prior_memories else ""
-
-            system_prompt = primary_agent.system_instructions
-            if memory_context:
-                system_prompt += f"\n\nContext & Relevant Past Memory:\n{memory_context}"
-
-            provider_req = ProviderRequest(
-                messages=[ProviderMessage(role="user", content=request.question)],
-                system_instruction=system_prompt,
-                model=primary_agent.model_name,
-                max_tokens=1024
+            logger.info(
+                "CollaborationEngine: task %s | mode '%s' | %d agents: %s",
+                task_id, mode_used, len(participating_agents),
+                [a.id for a in participating_agents]
             )
 
-            # Attempt primary provider; auto-fallback on timeout or error
-            response = None
-            provider_used_name = primary_agent.model_provider
-            model_used_name = primary_agent.model_name
-            try:
-                response = await provider.generate(provider_req)
-            except Exception as primary_exc:
-                logger.warning(
-                    "Primary provider %s failed (%s); attempting policy fallback.",
-                    primary_agent.model_provider, str(primary_exc)
-                )
-                fallback_route = ProviderSwitchingPolicy.get_fallback_provider(
-                    primary_agent.model_provider, SwitchReason.TIMEOUT, stage=mode_used
-                )
-                if fallback_route:
-                    try:
-                        fallback_prov = get_provider(fallback_route.fallback_provider)
-                        fallback_req = ProviderRequest(
-                            messages=[ProviderMessage(role="user", content=request.question)],
-                            system_instruction=system_prompt,
-                            model=fallback_route.fallback_model,
-                            max_tokens=1024
-                        )
-                        response = await fallback_prov.generate(fallback_req)
-                        provider_used_name = fallback_route.fallback_provider
-                        model_used_name = fallback_route.fallback_model
-                        logger.info("Fallback succeeded via %s / %s", provider_used_name, model_used_name)
-                    except Exception as fb_exc:
-                        logger.error("Fallback provider %s also failed: %s", fallback_route.fallback_provider, str(fb_exc))
-                        raise fb_exc
-                else:
-                    raise primary_exc
-
+            self.debate_engine.memory = self.memory
+            collab_result = await self.debate_engine.run_collaboration(
+                task_id=task_id,
+                question=request.question,
+                participating_agents=participating_agents,
+                require_evidence=request.require_evidence
+            )
             latency = time.perf_counter() - start_time
 
-            run_record = RunRecord(
-                id=run_id,
-                task_id=task_id,
-                agent_id=primary_agent.id,
-                provider=provider_used_name,
-                model=response.model,
-                stage=f"{mode_used}_execution",
-                prompt_tokens=response.prompt_tokens or 0,
-                completion_tokens=response.completion_tokens or 0,
-                latency_seconds=latency,
-                status="completed"
-            )
-            await self.memory.save_run(run_record)
-
+            actual_mode = getattr(collab_result, "mode_used", mode_used)
             task_record.status = "completed"
-            task_record.result = response.content
-            task_record.confidence = 0.90
+            task_record.result = collab_result.final_answer
+            task_record.confidence = collab_result.confidence
+            task_record.mode = actual_mode
             task_record.completed_at = datetime.utcnow()
+            task_record.metadata["debate_id"] = collab_result.debate_id
+            task_record.metadata["unresolved_disagreements"] = collab_result.unresolved_disagreements
             await self.memory.save_task(task_record)
 
             return OrchestrationResult(
                 task_id=task_id,
-                run_id=run_id,
+                run_id=collab_result.debate_id,
                 question=request.question,
-                answer=response.content,
-                mode_used=mode_used,
-                provider_used=provider_used_name,
-                agents_used=[primary_agent.id],
-                models_used=[response.model],
-                confidence=0.90,
-                total_tokens=response.total_tokens or 0,
+                answer=collab_result.final_answer,
+                mode_used=actual_mode,
+                provider_used="multi_provider",
+                agents_used=collab_result.participating_agents,
+                models_used=[a.model_name for a in participating_agents],
+                confidence=collab_result.confidence,
+                unresolved_disagreements=collab_result.unresolved_disagreements,
+                key_evidence=collab_result.key_evidence,
+                total_tokens=collab_result.total_tokens,
                 total_latency_seconds=round(latency, 4)
             )
 
