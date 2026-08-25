@@ -153,10 +153,23 @@ class SQLiteMemory(BaseMemory):
                 )
             """)
 
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS evaluations (
+                    id TEXT PRIMARY KEY,
+                    run_id TEXT NOT NULL,
+                    criterion TEXT NOT NULL,
+                    score REAL NOT NULL,
+                    feedback TEXT,
+                    created_at TEXT NOT NULL,
+                    FOREIGN KEY (run_id) REFERENCES runs(id)
+                )
+            """)
+
             # Fast query indexes
             await db.execute("CREATE INDEX IF NOT EXISTS idx_memories_agent ON memories(agent_id)")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_runs_task ON runs(task_id)")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_messages_task ON messages(task_id)")
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_evaluations_run ON evaluations(run_id)")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_strategies_type ON strategies(task_type)")
 

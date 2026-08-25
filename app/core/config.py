@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     COHERE_API_KEY: Optional[str] = Field(default=None)
     HUGGINGFACE_API_KEY: Optional[str] = Field(default=None)
     NVIDIA_API_KEY: Optional[str] = Field(default=None)
+    CEREBRAS_API_KEY: Optional[str] = Field(default=None)
 
     # Integration Keys
     FRIDAY_API_KEY: Optional[str] = Field(default="dev_friday_key_secret_boundary")
