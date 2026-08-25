@@ -1,55 +1,63 @@
-# AI UNIVERSE — Master Project Diary & Development Chronicle
+# 🌌 AI Universe — Master Chronicle
 
-**Inception Date**: 24 August 2026  
-**Repository**: [surendra2304/AI-Universe](https://github.com/surendra2304/AI-Universe)
+**Started**: 24 August 2026  
+**GitHub**: [surendra2304/AI-Universe](https://github.com/surendra2304/AI-Universe)
 
 ---
 
-## 🌌 What is AI Universe?
+## What is AI Universe?
 
-AI Universe is a local-first multi-agent intelligence platform where a panel of specialized AI personas collaborate in real-time to solve complex software engineering and architectural challenges.
+AI Universe is a local-first, multi-agent intelligence platform I built from scratch. Instead of relying on a single AI model, it coordinates a panel of 10 specialist agents — Architect, Coder, Security Analyst, Debugger, Researcher, Critic, Fact Checker, Strategist, Synthesizer, and Data Analyst — that think simultaneously and collaborate in real time to solve complex software engineering problems.
+
+The core idea is simple: run agents in parallel, check if they agree, and if they do — merge and respond instantly. Only trigger a full debate if there's a genuine technical conflict or safety concern.
+
+It's powered by 7 permanently free cloud AI providers — Gemini, Groq, Mistral, OpenRouter, NVIDIA NIM, Cohere, and HuggingFace — with automatic failover if any provider is slow or down.
+
+---
+
+## How It Works
 
 ```
-                  ┌────────────────────────────────────────────────────────┐
-                  │                 USER / FRIDAY INQUIRY                  │
-                  └───────────────────────────┬────────────────────────────┘
-                                              │
-                                              ▼
-                  ┌────────────────────────────────────────────────────────┐
-                  │          Real-Time Parallel Collaboration              │
-                  │    Architect • Coder • Security • Critic • Debugger    │
-                  └───────────────────────────┬────────────────────────────┘
-                                              │
-                                     [Consensus Check]
-                                    /                 \
-                                   /                   \
-                   (Aligned Ideas)▼                     ▼(Severe Conflict)
-                  ┌────────────────────────┐   ┌───────────────────────────┐
-                  │   Instant Synthesis    │   │ Targeted Rebuttal Debate  │
-                  │  mode_used = consensus │   │    mode_used = debate     │
-                  └──────────────┬─────────┘   └─────────────┬─────────────┘
-                                 │                           │
-                                 └─────────────┬─────────────┘
-                                               ▼
-                  ┌────────────────────────────────────────────────────────┐
-                  │          Final Actionable Response + Telemetry         │
-                  └────────────────────────────────────────────────────────┘
+User / FRIDAY sends a query
+        │
+        ▼
+   Task Router picks 2–4 relevant agents
+        │
+        ▼
+  ┌─────────────────────────────────┐
+  │  Agents think in parallel       │
+  │  Architect • Coder • Security   │
+  └──────────────┬──────────────────┘
+                 │
+         Synthesizer reviews
+                 │
+       ┌─────────┴─────────┐
+       │                   │
+   All agree?         Conflict found?
+       │                   │
+       ▼                   ▼
+  Instant merge       Targeted rebuttal
+  → Final answer      → Resolve → Final answer
 ```
 
 ---
 
-## 📅 Diary Chronicle
+## The Journey
 
-| Entry | Date | Title | Key Milestone Summary | Tests |
-| :---: | :---: | :--- | :--- | :---: |
-| **[Day 1](diary/2026-08-24.md)** | `2026-08-24` | **Foundation & 7-Provider Gateway** | Setup repository, registered 10 specialist agent roles, established SQLite database, and connected 7 free cloud providers (Gemini, Groq, Mistral, OpenRouter, Cohere, HuggingFace, NVIDIA NIM). | **65 Passed** |
-| **[Day 2](diary/2026-08-25.md)** | `2026-08-25` | **Real-Time Collaboration & FRIDAY API** | Replaced rigid 6-round debate with real-time "Collaborate First, Debate on Conflict" engine ($< 5$s target). Built secured `/v1/friday/*` endpoints, resolved Gemini timeout failovers, and purged Cerebras. | **67 Passed** |
+### [Day 1 — 2026-08-24](diary/2026-08-24.md)
+I built the entire foundation in a single day. Connected 7 cloud providers, registered 10 specialist agents, set up the SQLite memory layer, and got the initial debate engine running. Hit 65 passing tests by end of day.
+
+### [Day 2 — 2026-08-25](diary/2026-08-25.md)
+I threw out the slow 6-round debate loop and rebuilt the engine around parallel collaboration. Added the FRIDAY REST API layer with authenticated endpoints, fixed a provider failover crash, and completely removed Cerebras. 67 tests, all passing.
 
 ---
 
-## 🛡️ Core Architectural Principles
+## Core Principles
 
-- **Local-First with Cloud Inference**: Orchestration, memory, routing, and SQLite run on my local machine, while AI inference runs across fast, zero-cost cloud APIs.
-- **Fail-Safe Resilience**: If any primary provider fails or times out, the system automatically redirects the query to an alternate cloud model without crashing.
-- **Collaborate First, Debate on Conflict**: Parallel execution and instant synthesis are prioritized for sub-second responses; full debates trigger only upon genuine technical contradictions or security risks.
-- **Auditable & Transparent**: Every run produces structured audit records tracking agents used, models consulted, token usage, latency, and confidence.
+**Local-First**: All orchestration, routing, and memory run on my machine. Only inference calls go to the cloud.
+
+**Zero Cost**: Every provider used has a permanently free tier. No credit cards, no billing surprises.
+
+**Fail-Safe**: If any provider times out or returns an error, the orchestrator automatically reroutes to a backup with no interruption.
+
+**Auditable**: Every task run is logged — which agents ran, which models answered, token usage, latency, and confidence score.

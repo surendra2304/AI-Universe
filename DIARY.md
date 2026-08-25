@@ -1,16 +1,16 @@
-# AI UNIVERSE DIARY
+# 🌌 AI Universe Diary
 
-Welcome to the AI Universe Project Diary!
-
-This repository contains the complete development story and daily milestones for AI Universe, written in clear and accessible first-person logs.
+This is the development diary for the AI Universe project. I write here to track what I built, what broke, what I fixed, and how the system is evolving day by day.
 
 ---
 
-### 📖 Navigation
-- **[Master Chronicle (AI_UNIVERSE_DIARY.md)](AI_UNIVERSE_DIARY.md)** — Architectural summary, system workflow diagram, and milestone overview.
+## Entries
+
+- [2026-08-24 — Day 1: Built the foundation, connected 7 cloud providers, registered 10 agents](diary/2026-08-24.md)
+- [2026-08-25 — Day 2: Rebuilt the engine for real-time collaboration, added FRIDAY API layer](diary/2026-08-25.md)
 
 ---
 
-### 📅 Daily Logs
-- **[2026-08-24 (Day 1)](diary/2026-08-24.md)**: System Inception, 10 Specialist Agents, 7 Free Cloud Providers, SQLite Database.
-- **[2026-08-25 (Day 2)](diary/2026-08-25.md)**: Real-Time Parallel Collaboration Engine, FRIDAY REST APIs, Provider Failover Hardening.
+## Overview
+
+For the full architecture, how the system works, and the project story — see the [Master Chronicle](AI_UNIVERSE_DIARY.md).
