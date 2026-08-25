@@ -125,8 +125,10 @@ class GeminiProvider(BaseLLMProvider):
         payload = self._build_payload(request)
 
         start_time = time.perf_counter()
+        timeout_config = httpx.Timeout(self.timeout, connect=10.0)
+        limits_config = httpx.Limits(max_connections=5, max_keepalive_connections=5)
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
+            async with httpx.AsyncClient(timeout=timeout_config, limits=limits_config) as client:
                 response = await client.post(url, headers=headers, json=payload)
                 latency = time.perf_counter() - start_time
 

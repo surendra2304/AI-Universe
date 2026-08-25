@@ -244,7 +244,10 @@ class DebateEngine:
         logger.info("Debate %s: Starting Round 1 - Independent Analysis (%d agents)", debate_id, len(participating_agents))
         round_1_messages: List[DebateMessage] = []
 
-        async def run_round_1_single(agent: Agent):
+        async def run_round_1_single(index: int, agent: Agent):
+            # Stagger network requests slightly to prevent overwhelming DNS/socket pool
+            if index > 0:
+                await asyncio.sleep(index * 0.1)
             prompt = (
                 f"Canonical Problem Statement:\n{state.canonical_problem}\n\n"
                 f"Provide your independent, specialist analysis from your perspective as {agent.role}. "
@@ -259,7 +262,7 @@ class DebateEngine:
             )
             return agent, text, t_count
 
-        r1_results = await asyncio.gather(*[run_round_1_single(agent) for agent in participating_agents])
+        r1_results = await asyncio.gather(*[run_round_1_single(i, agent) for i, agent in enumerate(participating_agents)])
         for agent, text, t_count in r1_results:
             total_tokens += t_count
             round_1_messages.append(DebateMessage(
