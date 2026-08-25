@@ -10,6 +10,7 @@ from app.agents.base import Agent, BaseAgentRegistry
 from app.agents.registry import agent_registry
 from app.memory.base import BaseMemory, MessageRecord, RunRecord
 from app.memory.sqlite import SQLiteMemory
+from app.core.policies import ProviderSwitchingPolicy, SwitchReason
 from app.providers import get_provider
 from app.providers.base import ProviderMessage, ProviderRequest
 from app.utils.ids import generate_debate_id, generate_message_id, generate_run_id
@@ -97,8 +98,35 @@ class DebateEngine:
             model=agent.model_name
         )
 
-        try:
-            resp = await provider.generate(req)
+        # Attempt primary call with 1 immediate retry on transient socket/connection drops
+        resp = None
+        last_error = None
+        for attempt in range(2):
+            try:
+                resp = await provider.generate(req)
+                break
+            except Exception as exc:
+                last_error = exc
+                await asyncio.sleep(0.5)
+
+        # If primary provider completely failed, attempt secondary fallback route
+        if resp is None:
+            fallback_route = ProviderSwitchingPolicy.get_fallback_provider(
+                agent.model_provider, SwitchReason.TIMEOUT, stage=stage_name
+            )
+            if fallback_route:
+                try:
+                    fallback_prov = get_provider(fallback_route.fallback_provider)
+                    fallback_req = ProviderRequest(
+                        messages=messages,
+                        system_instruction=system_instruction,
+                        model=fallback_route.fallback_model
+                    )
+                    resp = await fallback_prov.generate(fallback_req)
+                except Exception as fb_exc:
+                    last_error = fb_exc
+
+        if resp is not None:
             latency = time.perf_counter() - start_time
             tokens = resp.total_tokens or 0
 
@@ -107,7 +135,7 @@ class DebateEngine:
                 id=run_id,
                 task_id=task_id,
                 agent_id=agent.id,
-                provider=provider.provider_name,
+                provider=resp.provider or provider.provider_name,
                 model=resp.model,
                 stage=f"round_{round_number}_{stage_name}",
                 prompt_tokens=resp.prompt_tokens or 0,
@@ -130,10 +158,9 @@ class DebateEngine:
             await self.memory.save_message(msg_rec)
 
             return resp.content, tokens, latency
-
-        except Exception as exc:
+        else:
             latency = time.perf_counter() - start_time
-            error_msg = str(exc).split('\n')[0]
+            error_msg = str(last_error).split('\n')[0]
             logger.warning("Debate call for agent %s in %s had an issue: %s", agent.id, stage_name, error_msg)
             run_rec = RunRecord(
                 id=run_id,
