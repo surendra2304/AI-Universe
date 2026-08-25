@@ -1,16 +1,11 @@
-# 🌌 AI Universe Diary
+# 📔 AI Universe Diary
 
-This is the development diary for the AI Universe project. I write here to track what I built, what broke, what I fixed, and how the system is evolving day by day.
-
----
-
-## Entries
-
-- [2026-08-24 — Day 1: Built the foundation, connected 7 cloud providers, registered 10 agents](diary/2026-08-24.md)
-- [2026-08-25 — Day 2: Rebuilt the engine for real-time collaboration, added FRIDAY API layer](diary/2026-08-25.md)
+A personal development journal documenting how I built AI Universe — a local-first, multi-agent intelligence system. Read the daily entries below to see what I built each day and why.
 
 ---
 
-## Overview
+**[→ Master Chronicle](AI_UNIVERSE_DIARY.md)** — What AI Universe is and how it works.
 
-For the full architecture, how the system works, and the project story — see the [Master Chronicle](AI_UNIVERSE_DIARY.md).
+**[→ Day 1 — 2026-08-24](diary/2026-08-24.md)** — System inception, 7 cloud providers, 10 specialist agents, SQLite database, first debate engine.
+
+**[→ Day 2 — 2026-08-25](diary/2026-08-25.md)** — Real-time collaboration engine, FRIDAY API endpoints, provider failover fix, Cerebras purge.
