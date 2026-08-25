@@ -5,28 +5,51 @@
 
 ---
 
-## What is AI Universe?
+## 🌌 What is AI Universe?
 
-AI Universe is a local-first multi-agent intelligence system where a team of specialized AI agents (Architect, Security Analyst, Coder, Debugger, Fact Checker, Critic, Strategist, and Synthesizer) collaborate in real-time to solve complex technical and architectural problems.
+AI Universe is a local-first multi-agent intelligence platform where a panel of specialized AI personas collaborate in real-time to solve complex software engineering and architectural challenges.
 
-Instead of relying on a single AI model:
-1. **Parallel Collaboration**: Specialist agents analyze queries concurrently.
-2. **Instant Consensus**: When agents agree, their perspectives are merged into a unified conclusion immediately. Debates only trigger if there is a genuine technical conflict or security flaw.
-3. **7 Zero-Cost Cloud Providers**: Powered by Google Gemini, Groq, Mistral, OpenRouter, NVIDIA NIM, Cohere, and HuggingFace, with automatic fallback if an API is slow or times out.
-4. **FRIDAY Integration**: Secure REST API endpoints allow FRIDAY to consult AI Universe for multi-agent validation and debates.
+```
+                  ┌────────────────────────────────────────────────────────┐
+                  │                 USER / FRIDAY INQUIRY                  │
+                  └───────────────────────────┬────────────────────────────┘
+                                              │
+                                              ▼
+                  ┌────────────────────────────────────────────────────────┐
+                  │          Real-Time Parallel Collaboration              │
+                  │    Architect • Coder • Security • Critic • Debugger    │
+                  └───────────────────────────┬────────────────────────────┘
+                                              │
+                                     [Consensus Check]
+                                    /                 \
+                                   /                   \
+                   (Aligned Ideas)▼                     ▼(Severe Conflict)
+                  ┌────────────────────────┐   ┌───────────────────────────┐
+                  │   Instant Synthesis    │   │ Targeted Rebuttal Debate  │
+                  │  mode_used = consensus │   │    mode_used = debate     │
+                  └──────────────┬─────────┘   └─────────────┬─────────────┘
+                                 │                           │
+                                 └─────────────┬─────────────┘
+                                               ▼
+                  ┌────────────────────────────────────────────────────────┐
+                  │          Final Actionable Response + Telemetry         │
+                  └────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## Diary Navigation
+## 📅 Diary Chronicle
 
-- [2026-08-24 (Day 1: Inception, 7 Cloud Providers, SQLite Persistence)](diary/2026-08-24.md)
-- [2026-08-25 (Day 2: Real-Time Collaboration Engine, FRIDAY APIs, Failover Hardening)](diary/2026-08-25.md)
+| Entry | Date | Title | Key Milestone Summary | Tests |
+| :---: | :---: | :--- | :--- | :---: |
+| **[Day 1](diary/2026-08-24.md)** | `2026-08-24` | **Foundation & 7-Provider Gateway** | Setup repository, registered 10 specialist agent roles, established SQLite database, and connected 7 free cloud providers (Gemini, Groq, Mistral, OpenRouter, Cohere, HuggingFace, NVIDIA NIM). | **65 Passed** |
+| **[Day 2](diary/2026-08-25.md)** | `2026-08-25` | **Real-Time Collaboration & FRIDAY API** | Replaced rigid 6-round debate with real-time "Collaborate First, Debate on Conflict" engine ($< 5$s target). Built secured `/v1/friday/*` endpoints, resolved Gemini timeout failovers, and purged Cerebras. | **67 Passed** |
 
 ---
 
-## Milestone History
+## 🛡️ Core Architectural Principles
 
-| Date | Milestone | Key Achievements |
-|---|---|---|
-| **2026-08-24** | **Foundation & 7-Provider Gateway** | Built 10 specialist agent roles, set up SQLite persistence, integrated 7 free cloud AI providers, and created the initial debate engine. 65 tests passed. |
-| **2026-08-25** | **Real-Time Collaboration & FRIDAY Integration** | Upgraded to the "Collaborate First, Debate on Conflict" real-time engine. Added secured FRIDAY endpoints (`/v1/friday/status`, `/v1/friday/agents`, `/v1/friday/ask`, `/v1/friday/debate`). Fixed provider timeout failovers and purged Cerebras. 67 tests passed. |
+- **Local-First with Cloud Inference**: Orchestration, memory, routing, and SQLite run on my local machine, while AI inference runs across fast, zero-cost cloud APIs.
+- **Fail-Safe Resilience**: If any primary provider fails or times out, the system automatically redirects the query to an alternate cloud model without crashing.
+- **Collaborate First, Debate on Conflict**: Parallel execution and instant synthesis are prioritized for sub-second responses; full debates trigger only upon genuine technical contradictions or security risks.
+- **Auditable & Transparent**: Every run produces structured audit records tracking agents used, models consulted, token usage, latency, and confidence.
