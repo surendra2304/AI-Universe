@@ -201,3 +201,46 @@ async def get_friday_info() -> FridayInfoResponse:
         active_cloud_providers=unique_providers,
         agents=agent_metas
     )
+
+
+class FridayStatusResponse(BaseModel):
+    """Administrative status response returning live active agents, configured providers, and available models."""
+    active_agents: List[str] = Field(description="List of active agent roles currently registered")
+    configured_providers: List[str] = Field(description="List of provider names with valid API keys loaded from .env")
+    available_models: List[str] = Field(description="List of specific model names mapped to active agents and providers")
+
+
+@friday_router.get("/status", response_model=FridayStatusResponse, status_code=status.HTTP_200_OK)
+async def get_friday_status() -> FridayStatusResponse:
+    """
+    Administrative status endpoint for FRIDAY.
+    Returns:
+    - active_agents: list of unique agent roles currently registered.
+    - configured_providers: list of provider names with valid API keys loaded in .env.
+    - available_models: list of specific model names mapped to those providers.
+    """
+    from app.core.config import settings
+
+    # Check configured providers from .env settings
+    provider_keys = {
+        "Gemini": settings.GEMINI_API_KEY,
+        "Groq": settings.GROQ_API_KEY,
+        "Mistral": settings.MISTRAL_API_KEY,
+        "OpenRouter": settings.OPENROUTER_API_KEY,
+        "Cohere": settings.COHERE_API_KEY,
+        "HuggingFace": settings.HUGGINGFACE_API_KEY,
+        "Nvidia": settings.NVIDIA_API_KEY,
+        "Cerebras": settings.CEREBRAS_API_KEY,
+    }
+    configured_providers = [p for p, k in provider_keys.items() if k and k.strip()]
+
+    # Retrieve registered agents and their assigned models
+    agents = orchestrator.registry.list_agents()
+    active_agent_roles = [a.role for a in agents]
+    available_models = list(dict.fromkeys([a.model_name for a in agents]))
+
+    return FridayStatusResponse(
+        active_agents=active_agent_roles,
+        configured_providers=configured_providers,
+        available_models=available_models
+    )

@@ -111,3 +111,35 @@ async def test_friday_authentication_failure_invalid_key(friday_client):
     resp = client.post("/v1/friday/ask", headers=headers, json={"question": "Test forbidden inquiry"})
     assert resp.status_code == 403
     assert "Forbidden: Invalid FRIDAY API Key" in resp.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_friday_status_endpoint(friday_client):
+    client = friday_client
+    headers = {"X-FRIDAY-API-Key": "test_friday_secret_key_12345"}
+
+    # Test authenticated request
+    resp = client.get("/v1/friday/status", headers=headers)
+    assert resp.status_code == 200
+    data = resp.json()
+
+    # Validate schema fields
+    assert "active_agents" in data
+    assert "configured_providers" in data
+    assert "available_models" in data
+
+    # Validate active agent roles list
+    assert isinstance(data["active_agents"], list)
+    assert len(data["active_agents"]) == 10
+    assert "Architect" in data["active_agents"]
+    assert "Coder" in data["active_agents"]
+    assert "Critic" in data["active_agents"]
+
+    # Validate configured providers & models
+    assert isinstance(data["configured_providers"], list)
+    assert isinstance(data["available_models"], list)
+    assert len(data["available_models"]) > 0
+
+    # Test unauthorized request (missing header)
+    unauth_resp = client.get("/v1/friday/status")
+    assert unauth_resp.status_code == 401
