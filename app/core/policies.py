@@ -26,7 +26,7 @@ PROVIDER_FALLBACK_MATRIX: Dict[str, FallbackRoute] = {
     "gemini": FallbackRoute(
         primary_provider="gemini",
         fallback_provider="openrouter",
-        fallback_model="meta-llama/llama-3.3-70b-instruct:free"
+        fallback_model="nvidia/nemotron-3.5-lightning:free"
     ),
     "groq": FallbackRoute(
         primary_provider="groq",

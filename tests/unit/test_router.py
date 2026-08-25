@@ -115,7 +115,7 @@ def test_provider_switching_policy():
     fallback = ProviderSwitchingPolicy.get_fallback_provider("gemini", SwitchReason.QUOTA, stage="round_1")
     assert fallback is not None
     assert fallback.fallback_provider == "openrouter"
-    assert fallback.fallback_model == "meta-llama/llama-3.3-70b-instruct:free"
+    assert fallback.fallback_model == "nvidia/nemotron-3.5-lightning:free"
 
     groq_fallback = ProviderSwitchingPolicy.get_fallback_provider("groq", SwitchReason.LATENCY)
     assert groq_fallback is not None
