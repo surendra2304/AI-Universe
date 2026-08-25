@@ -95,7 +95,8 @@ class DebateEngine:
         req = ProviderRequest(
             messages=messages,
             system_instruction=system_instruction,
-            model=agent.model_name
+            model=agent.model_name,
+            max_tokens=1024
         )
 
         # Attempt primary call with 1 immediate retry on transient socket/connection drops
@@ -245,9 +246,9 @@ class DebateEngine:
         round_1_messages: List[DebateMessage] = []
 
         async def run_round_1_single(index: int, agent: Agent):
-            # Stagger network requests by 1.0s to give free-tier APIs breathing room and prevent 429/503 bursts
+            # Stagger network requests slightly (0.15s) to avoid burst contention while maximizing concurrency
             if index > 0:
-                await asyncio.sleep(index * 1.0)
+                await asyncio.sleep(index * 0.15)
             prompt = (
                 f"Canonical Problem Statement:\n{state.canonical_problem}\n\n"
                 f"Provide your independent, specialist analysis from your perspective as {agent.role}. "
