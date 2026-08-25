@@ -1,5 +1,6 @@
 """Google Gemini LLM Provider Adapter."""
 
+import asyncio
 import json
 import time
 from typing import Any, AsyncIterator, Dict, List, Optional
@@ -132,9 +133,13 @@ class GeminiProvider(BaseLLMProvider):
                 response = await client.post(url, headers=headers, json=payload)
                 latency = time.perf_counter() - start_time
 
-                if response.status_code == 429:
-                    logger.warning("Gemini rate limit (429) encountered on model %s", model)
-                    raise RuntimeError("Gemini API rate limit exceeded (HTTP 429).")
+                if response.status_code in (429, 503):
+                    logger.warning("Gemini transient error (%d) encountered on model %s; cooling down for 2.0s", response.status_code, model)
+                    await asyncio.sleep(2.0)
+                    if response.status_code == 429:
+                        raise RuntimeError("Gemini API rate limit exceeded (HTTP 429).")
+                    else:
+                        raise RuntimeError(f"Gemini API temporarily unavailable (HTTP 503): {response.text}")
                 elif response.status_code != 200:
                     error_msg = response.text
                     logger.error("Gemini API error (%d): %s", response.status_code, error_msg)

@@ -1,5 +1,6 @@
 """Base OpenAI-compatible LLM Provider Adapter."""
 
+import asyncio
 import json
 import time
 from typing import Any, AsyncIterator, Dict, List, Optional
@@ -117,9 +118,13 @@ class OpenAICompatibleProvider(BaseLLMProvider):
                 response = await client.post(url, headers=headers, json=payload)
                 latency = time.perf_counter() - start_time
 
-                if response.status_code == 429:
-                    logger.warning("%s rate limit (429) encountered on model %s", self._provider_name, model)
-                    raise RuntimeError(f"{self._provider_name.capitalize()} rate limit exceeded (HTTP 429).")
+                if response.status_code in (429, 503):
+                    logger.warning("%s transient error (%d) encountered on model %s; cooling down for 2.0s", self._provider_name, response.status_code, model)
+                    await asyncio.sleep(2.0)
+                    if response.status_code == 429:
+                        raise RuntimeError(f"{self._provider_name.capitalize()} rate limit exceeded (HTTP 429).")
+                    else:
+                        raise RuntimeError(f"{self._provider_name.capitalize()} service unavailable (HTTP 503): {response.text}")
                 elif response.status_code != 200:
                     error_msg = response.text
                     logger.error("%s API error (%d): %s", self._provider_name, response.status_code, error_msg)

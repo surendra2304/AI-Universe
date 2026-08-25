@@ -26,7 +26,7 @@ PROVIDER_FALLBACK_MATRIX: Dict[str, FallbackRoute] = {
     "gemini": FallbackRoute(
         primary_provider="gemini",
         fallback_provider="openrouter",
-        fallback_model="google/gemini-flash-1.5"
+        fallback_model="meta-llama/llama-3.3-70b-instruct:free"
     ),
     "groq": FallbackRoute(
         primary_provider="groq",
@@ -36,7 +36,7 @@ PROVIDER_FALLBACK_MATRIX: Dict[str, FallbackRoute] = {
     "mistral": FallbackRoute(
         primary_provider="mistral",
         fallback_provider="openrouter",
-        fallback_model="mistralai/mistral-small-latest"
+        fallback_model="nvidia/nemotron-3.5-lightning:free"
     ),
     "openrouter": FallbackRoute(
         primary_provider="openrouter",
@@ -46,17 +46,17 @@ PROVIDER_FALLBACK_MATRIX: Dict[str, FallbackRoute] = {
     "cohere": FallbackRoute(
         primary_provider="cohere",
         fallback_provider="openrouter",
-        fallback_model="cohere/command-r-plus"
+        fallback_model="nvidia/nemotron-3.5-lightning:free"
     ),
     "huggingface": FallbackRoute(
         primary_provider="huggingface",
         fallback_provider="openrouter",
-        fallback_model="meta-llama/llama-3.3-70b-instruct:free"
+        fallback_model="nvidia/nemotron-3.5-lightning:free"
     ),
     "nvidia": FallbackRoute(
         primary_provider="nvidia",
         fallback_provider="groq",
-        fallback_model="llama-3.3-70b-versatile"
+        fallback_model="openai/gpt-oss-120b"
     )
 }
 

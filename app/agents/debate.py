@@ -245,9 +245,9 @@ class DebateEngine:
         round_1_messages: List[DebateMessage] = []
 
         async def run_round_1_single(index: int, agent: Agent):
-            # Stagger network requests slightly to prevent overwhelming DNS/socket pool
+            # Stagger network requests by 1.0s to give free-tier APIs breathing room and prevent 429/503 bursts
             if index > 0:
-                await asyncio.sleep(index * 0.1)
+                await asyncio.sleep(index * 1.0)
             prompt = (
                 f"Canonical Problem Statement:\n{state.canonical_problem}\n\n"
                 f"Provide your independent, specialist analysis from your perspective as {agent.role}. "
