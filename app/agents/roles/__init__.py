@@ -37,7 +37,7 @@ def get_all_specialist_agents() -> List[Agent]:
                 "mechanisms, and clear component boundaries. Always state trade-offs explicitly."
             ),
             model_provider="nvidia",
-            model_name="meta/llama-3.1-70b-instruct",
+            model_name="meta/llama-3.1-8b-instruct",
             strengths=["system architecture", "interface design", "scalability", "modularity", "trade-off analysis"],
             weaknesses=["low-level syntax micro-optimizations"]
         ),

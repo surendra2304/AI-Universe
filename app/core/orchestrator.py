@@ -188,17 +188,50 @@ class Orchestrator(BaseOrchestrator):
             provider_req = ProviderRequest(
                 messages=[ProviderMessage(role="user", content=request.question)],
                 system_instruction=system_prompt,
-                model=primary_agent.model_name
+                model=primary_agent.model_name,
+                max_tokens=1024
             )
 
-            response = await provider.generate(provider_req)
+            # Attempt primary provider; auto-fallback on timeout or error
+            response = None
+            provider_used_name = primary_agent.model_provider
+            model_used_name = primary_agent.model_name
+            try:
+                response = await provider.generate(provider_req)
+            except Exception as primary_exc:
+                logger.warning(
+                    "Primary provider %s failed (%s); attempting policy fallback.",
+                    primary_agent.model_provider, str(primary_exc)
+                )
+                fallback_route = ProviderSwitchingPolicy.get_fallback_provider(
+                    primary_agent.model_provider, SwitchReason.TIMEOUT, stage=mode_used
+                )
+                if fallback_route:
+                    try:
+                        fallback_prov = get_provider(fallback_route.fallback_provider)
+                        fallback_req = ProviderRequest(
+                            messages=[ProviderMessage(role="user", content=request.question)],
+                            system_instruction=system_prompt,
+                            model=fallback_route.fallback_model,
+                            max_tokens=1024
+                        )
+                        response = await fallback_prov.generate(fallback_req)
+                        provider_used_name = fallback_route.fallback_provider
+                        model_used_name = fallback_route.fallback_model
+                        logger.info("Fallback succeeded via %s / %s", provider_used_name, model_used_name)
+                    except Exception as fb_exc:
+                        logger.error("Fallback provider %s also failed: %s", fallback_route.fallback_provider, str(fb_exc))
+                        raise fb_exc
+                else:
+                    raise primary_exc
+
             latency = time.perf_counter() - start_time
 
             run_record = RunRecord(
                 id=run_id,
                 task_id=task_id,
                 agent_id=primary_agent.id,
-                provider=provider.provider_name,
+                provider=provider_used_name,
                 model=response.model,
                 stage=f"{mode_used}_execution",
                 prompt_tokens=response.prompt_tokens or 0,
@@ -220,7 +253,7 @@ class Orchestrator(BaseOrchestrator):
                 question=request.question,
                 answer=response.content,
                 mode_used=mode_used,
-                provider_used=primary_agent.model_provider,
+                provider_used=provider_used_name,
                 agents_used=[primary_agent.id],
                 models_used=[response.model],
                 confidence=0.90,
