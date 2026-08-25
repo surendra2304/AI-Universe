@@ -58,7 +58,6 @@ async def test_debate_endpoint_end_to_end(client_with_test_db):
         assert len(data["models_used"]) == 4
         assert 0.0 <= data["confidence"] <= 1.0
         assert isinstance(data["unresolved_disagreements"], list)
-        assert len(data["unresolved_disagreements"]) > 0
         assert data["total_tokens"] > 0
         assert data["latency_seconds"] >= 0.0
 

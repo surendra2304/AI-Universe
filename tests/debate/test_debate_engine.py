@@ -1,11 +1,11 @@
-"""Unit and mock tests for the 6-Round Structured Debate Engine."""
+"""Unit and mock tests for the Real-Time Multi-Agent Collaboration Engine."""
 
 import pytest
 import pytest_asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 from fastapi.testclient import TestClient
 
-from app.agents.debate import DebateEngine
+from app.agents.debate import CollaborationEngine, DebateEngine
 from app.agents.registry import agent_registry
 from app.agents.roles import register_all_specialists
 from app.core.orchestrator import orchestrator
@@ -15,30 +15,31 @@ from app.providers.base import ProviderResponse
 
 
 @pytest_asyncio.fixture
-async def debate_env(tmp_path):
+async def collab_env(tmp_path):
     register_all_specialists()
-    test_db = str(tmp_path / "test_debate.db")
+    test_db = str(tmp_path / "test_collab.db")
     memory = SQLiteMemory(db_path=test_db)
     await memory.initialize()
-    engine = DebateEngine(memory=memory, registry=agent_registry)
+    engine = CollaborationEngine(memory=memory, registry=agent_registry)
     return engine, memory
 
 
 @pytest.mark.asyncio
-async def test_consensus_first_execution_path(debate_env):
-    """Verify that if specialists agree (CONSENSUS_REACHED: YES), rounds 2-6 are skipped and mode_used is consensus."""
-    engine, memory = debate_env
+async def test_parallel_collaboration_instant_synthesis(collab_env):
+    """Verify parallel specialist perspectives run via asyncio.gather and merge instantly."""
+    engine, memory = collab_env
 
-    # Provider returns consensus agreement check
-    def mock_generate_consensus(req):
-        if "CONSENSUS_REACHED:" in req.system_instruction or "Evaluate whether these specialist analyses" in req.messages[0].content:
+    def mock_generate(req):
+        # Synthesizer merges aligned perspectives
+        if "Consensus Synthesizer" in req.system_instruction or "evaluate the specialist proposals" in req.messages[0].content:
             return ProviderResponse(
-                content="CONSENSUS_REACHED: YES\nALIGNMENT_SUMMARY: All specialists agree on using a lock-free modular monolith.",
-                model="meta/llama-3.1-8b-instruct",
-                provider="nvidia"
+                content="Unified Consensus: Deploy a lock-free modular monolith with strict domain boundaries.",
+                model="command-r7b-12-2024",
+                provider="cohere"
             )
+        # Specialist perspectives
         return ProviderResponse(
-            content="Specialist analysis recommending modular monolith pattern.",
+            content="Specialist analysis recommending modular monolith design for high throughput.",
             model="gemini-3.6-flash",
             provider="gemini"
         )
@@ -46,7 +47,7 @@ async def test_consensus_first_execution_path(debate_env):
     with patch("app.agents.debate.get_provider") as mock_get_prov:
         mock_prov = AsyncMock()
         mock_prov.provider_name = "mock_provider"
-        mock_prov.generate.side_effect = mock_generate_consensus
+        mock_prov.generate.side_effect = mock_generate
         mock_get_prov.return_value = mock_prov
 
         agents = [
@@ -55,34 +56,48 @@ async def test_consensus_first_execution_path(debate_env):
             agent_registry.get_agent("coder")
         ]
 
-        result = await engine.run_debate(
-            task_id="task_consensus_001",
-            question="Should a low-latency trading engine use a modular monolith?",
+        result = await engine.run_collaboration(
+            task_id="task_collab_001",
+            question="Should a high-frequency trading platform use a modular monolith?",
             participating_agents=agents
         )
 
         assert result.debate_id.startswith("deb_")
-        assert result.task_id == "task_consensus_001"
+        assert result.task_id == "task_collab_001"
         assert result.mode_used == "consensus"
         assert result.confidence >= 0.90
         assert len(result.unresolved_disagreements) == 0
-        assert len(result.rounds) == 3  # Round 0 (Framing), Round 1 (Analysis), Round 5 (Consensus Synthesis)
+        assert len(result.rounds) == 2  # Round 1 (Parallel Perspectives), Round 2 (Consensus Synthesis)
+        assert "Unified Consensus" in result.final_answer
 
 
 @pytest.mark.asyncio
-async def test_full_debate_disagreement_path(debate_env):
-    """Verify that if disagreement is detected (CONSENSUS_REACHED: NO), the full 6-round debate protocol executes."""
-    engine, memory = debate_env
+async def test_targeted_rebuttal_on_severe_conflict(collab_env):
+    """Verify that when the Synthesizer detects CONFLICT_DETECTED, a targeted Rebuttal triggers."""
+    engine, memory = collab_env
 
-    def mock_generate_disagreement(req):
-        if "CONSENSUS_REACHED:" in req.system_instruction or "Evaluate whether these specialist analyses" in req.messages[0].content:
+    def mock_generate_conflict(req):
+        content_query = req.messages[0].content
+        if "evaluate the specialist proposals" in content_query:
             return ProviderResponse(
-                content="CONSENSUS_REACHED: NO\nALIGNMENT_SUMMARY: Severe conflict between Architect (monolith) and Security Analyst (isolated services).",
-                model="meta/llama-3.1-8b-instruct",
-                provider="nvidia"
+                content="CONFLICT_DETECTED: Fundamental architectural clash between Architect (shared memory) and Security Analyst (process sandboxing).",
+                model="command-r7b-12-2024",
+                provider="cohere"
+            )
+        elif "Adversarial Critic" in req.system_instruction or "challenge the conflicting assumptions" in content_query:
+            return ProviderResponse(
+                content="Adversarial Red Team: Sandboxing is required for untrusted modules; internal modules can share memory.",
+                model="gemini-3.5-flash",
+                provider="gemini"
+            )
+        elif "final, conclusive architectural recommendation" in content_query:
+            return ProviderResponse(
+                content="Final Resolution: Hybrid architecture combining shared-memory core with isolated sandboxes for untrusted plugins.",
+                model="command-r7b-12-2024",
+                provider="cohere"
             )
         return ProviderResponse(
-            content="Adversarial critique / specialist rebuttal output.",
+            content="Initial specialist recommendation.",
             model="gemini-3.6-flash",
             provider="gemini"
         )
@@ -90,7 +105,7 @@ async def test_full_debate_disagreement_path(debate_env):
     with patch("app.agents.debate.get_provider") as mock_get_prov:
         mock_prov = AsyncMock()
         mock_prov.provider_name = "mock_provider"
-        mock_prov.generate.side_effect = mock_generate_disagreement
+        mock_prov.generate.side_effect = mock_generate_conflict
         mock_get_prov.return_value = mock_prov
 
         agents = [
@@ -99,29 +114,28 @@ async def test_full_debate_disagreement_path(debate_env):
             agent_registry.get_agent("critic")
         ]
 
-        result = await engine.run_debate(
-            task_id="task_debate_002",
-            question="Microservices vs Modular Monolith under adversarial threat models?",
+        result = await engine.run_collaboration(
+            task_id="task_conflict_002",
+            question="Untrusted plugin security model?",
             participating_agents=agents
         )
 
         assert result.debate_id.startswith("deb_")
-        assert result.task_id == "task_debate_002"
+        assert result.task_id == "task_conflict_002"
         assert result.mode_used == "debate"
-        assert len(result.rounds) == 7  # Round 0 through Round 6
-        assert result.confidence > 0.8
-        assert len(result.unresolved_disagreements) > 0
+        assert len(result.rounds) == 3  # Round 1 (Parallel), Round 3 (Rebuttal), Round 4 (Final Resolution)
+        assert "Final Resolution" in result.final_answer
 
 
 @pytest.mark.asyncio
-async def test_fastapi_debate_endpoint(tmp_path):
-    test_db = str(tmp_path / "test_api_debate.db")
+async def test_fastapi_debate_endpoint_collaboration(tmp_path):
+    test_db = str(tmp_path / "test_api_collab.db")
     test_memory = SQLiteMemory(db_path=test_db)
     await test_memory.initialize()
     orchestrator.memory = test_memory
 
     mock_llm_response = ProviderResponse(
-        content="CONSENSUS_REACHED: NO\nSynthesized debate decision: Use capability-based security boundaries.",
+        content="Synthesized collaborative decision: Modular monolith with fine-grained capability isolation.",
         model="gemini-2.5-pro",
         provider="gemini",
         prompt_tokens=40,
@@ -146,6 +160,6 @@ async def test_fastapi_debate_endpoint(tmp_path):
 
             assert resp.status_code == 200
             data = resp.json()
-            assert data["mode_used"] in ["debate", "consensus"]
+            assert data["mode_used"] in ["debate", "consensus", "collaboration"]
             assert data["confidence"] > 0.8
             assert len(data["agents_used"]) == 4

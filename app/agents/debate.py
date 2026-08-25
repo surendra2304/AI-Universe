@@ -1,4 +1,11 @@
-"""6-Round Structured Debate and Discussion Engine for AI Universe."""
+"""Real-Time Multi-Agent Collaboration Engine for AI Universe.
+
+Implements the "Collaborate First, Debate on Conflict" model:
+- Step 1: Selected specialist agents generate independent perspectives in parallel via asyncio.gather.
+- Step 2: The Synthesizer immediately reviews the parallel responses and checks for major contradictions.
+- Step 3: If agents agree, the Synthesizer merges them into a final answer INSTANTLY (mode_used = "collaboration" or "consensus").
+- Step 4: ONLY IF the Synthesizer detects severe contradictions or unsafe logic, a targeted Rebuttal round is triggered.
+"""
 
 import asyncio
 import time
@@ -17,8 +24,8 @@ from app.utils.ids import generate_debate_id, generate_message_id, generate_run_
 from app.utils.logger import logger
 
 
-class DebateMessage(BaseModel):
-    """An individual message or argument in a debate round."""
+class CollaborationMessage(BaseModel):
+    """An individual message or perspective in a collaborative session."""
     id: str = Field(default_factory=generate_message_id)
     round_number: int
     stage_name: str
@@ -29,29 +36,21 @@ class DebateMessage(BaseModel):
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
 
-class DebateRoundLog(BaseModel):
-    """Log record summarizing an individual debate round."""
+class CollaborationRoundLog(BaseModel):
+    """Log record summarizing an individual round in the collaboration."""
     round_number: int
     stage_name: str
-    messages: List[DebateMessage] = Field(default_factory=list)
+    messages: List[CollaborationMessage] = Field(default_factory=list)
     summary: Optional[str] = None
 
 
-class DebateState(BaseModel):
-    """Complete in-flight state tracking for a multi-agent debate session."""
-    debate_id: str = Field(default_factory=generate_debate_id)
-    task_id: str
-    question: str
-    canonical_problem: Optional[str] = None
-    participating_agents: List[str] = Field(default_factory=list)
-    rounds: List[DebateRoundLog] = Field(default_factory=list)
-    claims: List[Dict[str, Any]] = Field(default_factory=list)
-    unresolved_disagreements: List[str] = Field(default_factory=list)
-    status: str = "in_progress"
+# Backward-compatibility alias for tests and older consumers
+DebateRoundLog = CollaborationRoundLog
+DebateMessage = CollaborationMessage
 
 
-class DebateResult(BaseModel):
-    """Final synthesized outcome of the 6-Round Structured Debate or Consensus Resolution."""
+class CollaborationResult(BaseModel):
+    """Outcome of the Real-Time Multi-Agent Collaboration Engine."""
     debate_id: str
     task_id: str
     canonical_problem: str
@@ -60,14 +59,18 @@ class DebateResult(BaseModel):
     unresolved_disagreements: List[str] = Field(default_factory=list)
     key_evidence: List[str] = Field(default_factory=list)
     participating_agents: List[str]
-    rounds: List[DebateRoundLog]
-    mode_used: str = "debate"
+    rounds: List[CollaborationRoundLog]
+    mode_used: str = "collaboration"
     total_tokens: int = 0
     total_latency_seconds: float = 0.0
 
 
-class DebateEngine:
-    """Coordinates the 6-Round Structured Debate Protocol."""
+# Backward-compatibility alias
+DebateResult = CollaborationResult
+
+
+class CollaborationEngine:
+    """Coordinates Real-Time Multi-Agent Collaboration and targeted conflict resolution."""
 
     def __init__(
         self,
@@ -100,7 +103,6 @@ class DebateEngine:
             max_tokens=1024
         )
 
-        # Attempt primary call with 1 immediate retry on transient socket/connection drops
         resp = None
         last_error = None
         for attempt in range(2):
@@ -109,9 +111,8 @@ class DebateEngine:
                 break
             except Exception as exc:
                 last_error = exc
-                await asyncio.sleep(0.5)
+                await asyncio.sleep(0.3)
 
-        # If primary provider completely failed, attempt secondary fallback route
         if resp is None:
             fallback_route = ProviderSwitchingPolicy.get_fallback_provider(
                 agent.model_provider, SwitchReason.TIMEOUT, stage=stage_name
@@ -122,7 +123,8 @@ class DebateEngine:
                     fallback_req = ProviderRequest(
                         messages=messages,
                         system_instruction=system_instruction,
-                        model=fallback_route.fallback_model
+                        model=fallback_route.fallback_model,
+                        max_tokens=1024
                     )
                     resp = await fallback_prov.generate(fallback_req)
                 except Exception as fb_exc:
@@ -163,7 +165,7 @@ class DebateEngine:
         else:
             latency = time.perf_counter() - start_time
             error_msg = str(last_error).split('\n')[0]
-            logger.warning("Debate call for agent %s in %s had an issue: %s", agent.id, stage_name, error_msg)
+            logger.warning("Collaboration call for agent %s in %s had an issue: %s", agent.id, stage_name, error_msg)
             run_rec = RunRecord(
                 id=run_id,
                 task_id=task_id,
@@ -179,81 +181,42 @@ class DebateEngine:
             fallback_content = f"*[Specialist {agent.role} temporarily offline / high demand on {provider.provider_name}: {error_msg}]*"
             return fallback_content, 0, latency
 
-    async def run_debate(
+    async def run_collaboration(
         self,
         task_id: str,
         question: str,
         participating_agents: Optional[List[Agent]] = None,
         require_evidence: bool = True
-    ) -> DebateResult:
-        """Executes the complete 6-Round Debate Protocol."""
-        debate_id = generate_debate_id()
+    ) -> CollaborationResult:
+        """
+        Executes the Real-Time Parallel Collaboration Protocol:
+        1. Parallel Specialist Perspectives (Round 1) via asyncio.gather.
+        2. Synthesizer Instant Contradiction & Alignment Check.
+        3. If aligned: Instant Merged Synthesis (sub-second post-step).
+        4. If severe conflict: Targeted Rebuttal round between conflicting specialists.
+        """
+        session_id = generate_debate_id()
         start_total_time = time.perf_counter()
         total_tokens = 0
+        rounds_log: List[CollaborationRoundLog] = []
 
-        # Ensure we have agents to participate
         if not participating_agents:
-            agent_ids = ["architect", "security_analyst", "coder", "critic", "strategist"]
+            agent_ids = ["architect", "security_analyst", "coder"]
             participating_agents = [self.registry.get_agent(aid) for aid in agent_ids if self.registry.get_agent(aid)]
 
-        agent_map = {a.id: a for a in participating_agents}
-        critic_agent = self.registry.get_agent("critic") or participating_agents[-1]
-        fact_checker_agent = self.registry.get_agent("fact_checker") or participating_agents[0]
         synthesizer_agent = self.registry.get_agent("synthesizer") or participating_agents[0]
-        framing_agent = self.registry.get_agent("strategist") or participating_agents[0]
-
-        state = DebateState(
-            debate_id=debate_id,
-            task_id=task_id,
-            question=question,
-            participating_agents=[a.id for a in participating_agents]
-        )
+        critic_agent = self.registry.get_agent("critic") or participating_agents[-1]
 
         # -------------------------------------------------------------
-        # ROUND 0: Problem Framing
+        # STEP 1: Parallel Independent Analysis (Round 1)
         # -------------------------------------------------------------
-        logger.info("Debate %s: Starting Round 0 - Problem Framing", debate_id)
-        framing_prompt = (
-            f"Analyze the user inquiry: '{question}'.\n"
-            "Produce a canonical problem statement with explicit technical requirements, assumptions, "
-            "and evaluation criteria for the debate panel."
-        )
-        framing_text, tokens, _ = await self._execute_agent_call(
-            task_id=task_id,
-            stage_name="problem_framing",
-            round_number=0,
-            agent=framing_agent,
-            messages=[ProviderMessage(role="user", content=framing_prompt)]
-        )
-        total_tokens += tokens
-        state.canonical_problem = framing_text
-        state.rounds.append(DebateRoundLog(
-            round_number=0,
-            stage_name="Problem Framing",
-            messages=[DebateMessage(
-                round_number=0,
-                stage_name="Problem Framing",
-                agent_id=framing_agent.id,
-                agent_role=framing_agent.role,
-                content=framing_text
-            )],
-            summary="Canonical problem statement established."
-        ))
+        logger.info("Collaboration %s: Firing parallel specialist analysis for %d agents", session_id, len(participating_agents))
 
-        # -------------------------------------------------------------
-        # ROUND 1: Independent Analysis (Parallel Execution)
-        # -------------------------------------------------------------
-        logger.info("Debate %s: Starting Round 1 - Independent Analysis (%d agents)", debate_id, len(participating_agents))
-        round_1_messages: List[DebateMessage] = []
-
-        async def run_round_1_single(index: int, agent: Agent):
-            # Stagger network requests slightly (0.15s) to avoid burst contention while maximizing concurrency
-            if index > 0:
-                await asyncio.sleep(index * 0.15)
+        async def analyze_agent(agent: Agent) -> Tuple[Agent, str, int]:
             prompt = (
-                f"Canonical Problem Statement:\n{state.canonical_problem}\n\n"
-                f"Provide your independent, specialist analysis from your perspective as {agent.role}. "
-                "Do not assume consensus. State all premises and technical reasoning explicitly."
+                f"Question / Goal:\n{question}\n\n"
+                f"As the {agent.role}, provide your direct, concise technical recommendation and core rationale. "
+                "Be concrete, identify primary trade-offs, and state assumptions explicitly."
             )
             text, t_count, _ = await self._execute_agent_call(
                 task_id=task_id,
@@ -264,10 +227,13 @@ class DebateEngine:
             )
             return agent, text, t_count
 
-        r1_results = await asyncio.gather(*[run_round_1_single(i, agent) for i, agent in enumerate(participating_agents)])
+        # Execute all specialist perspectives simultaneously with asyncio.gather
+        r1_results = await asyncio.gather(*[analyze_agent(agent) for agent in participating_agents])
+        round_1_messages: List[CollaborationMessage] = []
+
         for agent, text, t_count in r1_results:
             total_tokens += t_count
-            round_1_messages.append(DebateMessage(
+            round_1_messages.append(CollaborationMessage(
                 round_number=1,
                 stage_name="Independent Analysis",
                 agent_id=agent.id,
@@ -275,262 +241,172 @@ class DebateEngine:
                 content=text
             ))
 
-        state.rounds.append(DebateRoundLog(
+        rounds_log.append(CollaborationRoundLog(
             round_number=1,
             stage_name="Independent Analysis",
             messages=round_1_messages,
-            summary=f"Gathered {len(round_1_messages)} independent specialist proposals."
+            summary=f"Gathered {len(round_1_messages)} parallel specialist perspectives."
         ))
 
-        combined_r1_proposals = "\n\n".join([
-            f"=== Proposal by {m.agent_role} ({m.agent_id}) ===\n{m.content}"
+        combined_proposals = "\n\n".join([
+            f"=== Specialist Perspective: {m.agent_role} ({m.agent_id}) ===\n{m.content}"
             for m in round_1_messages
         ])
 
         # -------------------------------------------------------------
-        # STEP 2: Consensus Check (Teamwork / Consensus-First Protocol)
+        # STEP 2 & 3: Synthesizer Review & Instant Consensus Merge
         # -------------------------------------------------------------
-        logger.info("Debate %s: Evaluating consensus across independent analyses", debate_id)
-        consensus_checker_agent = self.registry.get_agent("debugger") or participating_agents[0]
-        consensus_check_prompt = (
-            f"Canonical Problem:\n{state.canonical_problem}\n\n"
-            f"Independent Specialist Analyses:\n{combined_r1_proposals}\n\n"
-            "Evaluate whether these specialist analyses fundamental agree or fundamentally contradict each other.\n"
-            "Respond in this exact structured format:\n"
-            "CONSENSUS_REACHED: [YES or NO]\n"
-            "ALIGNMENT_SUMMARY: [1-2 sentences explaining consensus or the core conflict]\n"
+        logger.info("Collaboration %s: Synthesizer reviewing parallel responses for conflict vs consensus", session_id)
+        synthesis_prompt = (
+            f"User Goal / Question:\n{question}\n\n"
+            f"Specialist Proposals:\n{combined_proposals}\n\n"
+            "As the Consensus Synthesizer, evaluate the specialist proposals:\n"
+            "1. If they are fundamentally aligned, merge them immediately into one comprehensive, unified, "
+            "and actionable final answer. Explicitly call out the winning recommendations and key trade-offs.\n"
+            "2. If there is an irreconcilable, dangerous technical conflict (e.g. security flaw or incompatible architectures), "
+            "start your response with 'CONFLICT_DETECTED:' followed by a description of the exact dispute.\n"
         )
-        consensus_eval_text, eval_tokens, _ = await self._execute_agent_call(
+
+        synthesis_text, syn_tokens, _ = await self._execute_agent_call(
             task_id=task_id,
-            stage_name="consensus_check",
-            round_number=1,
-            agent=consensus_checker_agent,
-            messages=[ProviderMessage(role="user", content=consensus_check_prompt)]
+            stage_name="consensus_synthesis",
+            round_number=2,
+            agent=synthesizer_agent,
+            messages=[ProviderMessage(role="user", content=synthesis_prompt)]
         )
-        total_tokens += eval_tokens
+        total_tokens += syn_tokens
 
-        is_consensus = "CONSENSUS_REACHED: YES" in consensus_eval_text.upper() or (
-            "CONSENSUS_REACHED:" not in consensus_eval_text.upper() and "AGREE" in consensus_eval_text.upper() and "CONFLICT" not in consensus_eval_text.upper()
+        has_severe_conflict = synthesis_text.strip().startswith("CONFLICT_DETECTED:") or (
+            "CONSENSUS_REACHED: NO" in synthesis_text.upper()
         )
 
-        if is_consensus:
-            logger.info("Debate %s: High specialist alignment detected. Synthesizing consensus and skipping full debate.", debate_id)
-            quick_synthesis_prompt = (
-                f"Canonical Problem:\n{state.canonical_problem}\n\n"
-                f"Aligned Specialist Proposals:\n{combined_r1_proposals}\n\n"
-                "The specialist panel is in broad consensus. Combine these aligned analyses into a clear, unified, "
-                "actionable final answer. Highlight the key recommendations and trade-offs clearly."
+        # -------------------------------------------------------------
+        # STEP 4: Targeted Rebuttal ONLY IF Severe Conflict Exists
+        # -------------------------------------------------------------
+        if has_severe_conflict:
+            logger.warning("Collaboration %s: Severe conflict detected. Triggering targeted adversarial rebuttal.", session_id)
+            rebuttal_prompt = (
+                f"Question:\n{question}\n\n"
+                f"Initial Proposals:\n{combined_proposals}\n\n"
+                f"Identified Conflict:\n{synthesis_text}\n\n"
+                "As the Adversarial Critic, challenge the conflicting assumptions and propose the safest resolution."
             )
-            synthesis_text, syn_tokens, _ = await self._execute_agent_call(
+            rebuttal_text, reb_tokens, _ = await self._execute_agent_call(
                 task_id=task_id,
-                stage_name="consensus_synthesis",
-                round_number=5,
-                agent=synthesizer_agent,
-                messages=[ProviderMessage(role="user", content=quick_synthesis_prompt)]
+                stage_name="targeted_rebuttal",
+                round_number=3,
+                agent=critic_agent,
+                messages=[ProviderMessage(role="user", content=rebuttal_prompt)]
             )
-            total_tokens += syn_tokens
-            total_duration = time.perf_counter() - start_total_time
+            total_tokens += reb_tokens
 
-            state.rounds.append(DebateRoundLog(
-                round_number=5,
-                stage_name="Consensus Synthesis",
-                messages=[DebateMessage(
-                    round_number=5,
-                    stage_name="Consensus Synthesis",
-                    agent_id=synthesizer_agent.id,
-                    agent_role=synthesizer_agent.role,
-                    content=synthesis_text
+            rounds_log.append(CollaborationRoundLog(
+                round_number=3,
+                stage_name="Targeted Rebuttal",
+                messages=[CollaborationMessage(
+                    round_number=3,
+                    stage_name="Targeted Rebuttal",
+                    agent_id=critic_agent.id,
+                    agent_role=critic_agent.role,
+                    content=rebuttal_text
                 )],
-                summary="Consensus achieved across independent specialist analyses; skipped rounds 2-6."
+                summary="Targeted rebuttal resolved conflicting specialist assumptions."
             ))
 
-            return DebateResult(
-                debate_id=debate_id,
+            # Final resolution synthesis post-rebuttal
+            final_synth_prompt = (
+                f"Question:\n{question}\n\n"
+                f"Targeted Rebuttal & Critique:\n{rebuttal_text}\n\n"
+                "Produce the final, conclusive architectural recommendation resolving the debate."
+            )
+            final_answer, fin_tokens, _ = await self._execute_agent_call(
                 task_id=task_id,
-                canonical_problem=state.canonical_problem or question,
-                final_answer=synthesis_text,
-                confidence=0.92,
-                unresolved_disagreements=[],
-                key_evidence=["Broad consensus verified across independent specialist panel."],
+                stage_name="final_resolution",
+                round_number=4,
+                agent=synthesizer_agent,
+                messages=[ProviderMessage(role="user", content=final_synth_prompt)]
+            )
+            total_tokens += fin_tokens
+
+            rounds_log.append(CollaborationRoundLog(
+                round_number=4,
+                stage_name="Final Resolution",
+                messages=[CollaborationMessage(
+                    round_number=4,
+                    stage_name="Final Resolution",
+                    agent_id=synthesizer_agent.id,
+                    agent_role=synthesizer_agent.role,
+                    content=final_answer
+                )],
+                summary="Synthesizer delivered resolved decision after targeted debate."
+            ))
+
+            total_duration = time.perf_counter() - start_total_time
+            return CollaborationResult(
+                debate_id=session_id,
+                task_id=task_id,
+                canonical_problem=question,
+                final_answer=final_answer,
+                confidence=0.88,
+                unresolved_disagreements=["Addressed through targeted adversarial rebuttal."],
+                key_evidence=["Resolved through targeted cross-specialist debate."],
                 participating_agents=[a.id for a in participating_agents],
-                rounds=state.rounds,
-                mode_used="consensus",
+                rounds=rounds_log,
+                mode_used="debate",
                 total_tokens=total_tokens,
                 total_latency_seconds=round(total_duration, 4)
             )
 
-        logger.info("Debate %s: Active disagreement detected among specialists. Proceeding with full 6-round debate.", debate_id)
-
-        # -------------------------------------------------------------
-        # ROUND 2: Cross-Review & Adversarial Critique
-        # -------------------------------------------------------------
-        logger.info("Debate %s: Starting Round 2 - Cross-Review & Adversarial Critique", debate_id)
-        critique_prompt = (
-            f"Canonical Problem:\n{state.canonical_problem}\n\n"
-            f"Specialist Proposals from Round 1:\n{combined_r1_proposals}\n\n"
-            "As the Adversarial Critic, rigorously attack weak assumptions, unstated trade-offs, "
-            "security/scalability risks, and logical fallacies across all proposals. Highlight specific conflicts."
-        )
-        critique_text, tokens, _ = await self._execute_agent_call(
-            task_id=task_id,
-            stage_name="cross_review_critique",
+        # Direct Instant Synthesis (Standard fast path)
+        rounds_log.append(CollaborationRoundLog(
             round_number=2,
-            agent=critic_agent,
-            messages=[ProviderMessage(role="user", content=critique_prompt)]
-        )
-        total_tokens += tokens
-        state.rounds.append(DebateRoundLog(
-            round_number=2,
-            stage_name="Cross-Review & Critique",
-            messages=[DebateMessage(
+            stage_name="Consensus Synthesis",
+            messages=[CollaborationMessage(
                 round_number=2,
-                stage_name="Cross-Review & Critique",
-                agent_id=critic_agent.id,
-                agent_role=critic_agent.role,
-                content=critique_text
-            )],
-            summary="Adversarial critique completed against Round 1 proposals."
-        ))
-
-        # -------------------------------------------------------------
-        # ROUND 3: Rebuttal by Specialists
-        # -------------------------------------------------------------
-        logger.info("Debate %s: Starting Round 3 - Rebuttal", debate_id)
-        rebuttal_agent = participating_agents[0]  # Primary proponent
-        rebuttal_prompt = (
-            f"Canonical Problem:\n{state.canonical_problem}\n\n"
-            f"Adversarial Critique:\n{critique_text}\n\n"
-            f"As {rebuttal_agent.role}, respond to the strongest criticisms. Concede valid points, clarify "
-            "misconceptions, and defend justified technical decisions."
-        )
-        rebuttal_text, tokens, _ = await self._execute_agent_call(
-            task_id=task_id,
-            stage_name="rebuttal",
-            round_number=3,
-            agent=rebuttal_agent,
-            messages=[ProviderMessage(role="user", content=rebuttal_prompt)]
-        )
-        total_tokens += tokens
-        state.rounds.append(DebateRoundLog(
-            round_number=3,
-            stage_name="Rebuttal",
-            messages=[DebateMessage(
-                round_number=3,
-                stage_name="Rebuttal",
-                agent_id=rebuttal_agent.id,
-                agent_role=rebuttal_agent.role,
-                content=rebuttal_text
-            )],
-            summary="Rebuttal defended valid claims and conceded weak points."
-        ))
-
-        # -------------------------------------------------------------
-        # ROUND 4: Evidence & Fact Checking
-        # -------------------------------------------------------------
-        logger.info("Debate %s: Starting Round 4 - Evidence Check", debate_id)
-        evidence_prompt = (
-            f"Debate Context:\n{combined_r1_proposals}\n\n"
-            f"Critique & Rebuttal:\n{critique_text}\n\n{rebuttal_text}\n\n"
-            "As the Fact Checker, separate verified technical claims from unproven assumptions. "
-            "List surviving claims and any unsupported assertions."
-        )
-        evidence_text, tokens, _ = await self._execute_agent_call(
-            task_id=task_id,
-            stage_name="evidence_check",
-            round_number=4,
-            agent=fact_checker_agent,
-            messages=[ProviderMessage(role="user", content=evidence_prompt)]
-        )
-        total_tokens += tokens
-        state.rounds.append(DebateRoundLog(
-            round_number=4,
-            stage_name="Evidence Check",
-            messages=[DebateMessage(
-                round_number=4,
-                stage_name="Evidence Check",
-                agent_id=fact_checker_agent.id,
-                agent_role=fact_checker_agent.role,
-                content=evidence_text
-            )],
-            summary="Fact checker verified empirical claims and isolated unverified assumptions."
-        ))
-
-        # -------------------------------------------------------------
-        # ROUND 5: Synthesis
-        # -------------------------------------------------------------
-        logger.info("Debate %s: Starting Round 5 - Synthesis", debate_id)
-        synthesis_prompt = (
-            f"Canonical Problem:\n{state.canonical_problem}\n\n"
-            f"Verified Evidence & Claims:\n{evidence_text}\n\n"
-            f"Critiques & Rebuttals:\n{critique_text}\n\n{rebuttal_text}\n\n"
-            "Produce the final synthesized answer. Integrate the strongest surviving technical recommendations, "
-            "highlight key trade-offs, and state remaining uncertainties explicitly."
-        )
-        synthesis_text, tokens, _ = await self._execute_agent_call(
-            task_id=task_id,
-            stage_name="consensus_synthesis",
-            round_number=5,
-            agent=synthesizer_agent,
-            messages=[ProviderMessage(role="user", content=synthesis_prompt)]
-        )
-        total_tokens += tokens
-        state.rounds.append(DebateRoundLog(
-            round_number=5,
-            stage_name="Synthesis",
-            messages=[DebateMessage(
-                round_number=5,
-                stage_name="Synthesis",
+                stage_name="Consensus Synthesis",
                 agent_id=synthesizer_agent.id,
                 agent_role=synthesizer_agent.role,
                 content=synthesis_text
             )],
-            summary="Synthesizer integrated verified claims into the final cohesive answer."
+            summary="Synthesizer successfully merged aligned specialist perspectives instantly."
         ))
 
-        # -------------------------------------------------------------
-        # ROUND 6: Confidence / Uncertainty Reporting
-        # -------------------------------------------------------------
-        logger.info("Debate %s: Starting Round 6 - Confidence & Uncertainty Evaluation", debate_id)
         total_duration = time.perf_counter() - start_total_time
-        
-        # Calculate calibrated confidence (0.85 - 0.95 depending on critique resolution)
-        confidence_score = 0.88
-        unresolved = [
-            "Trade-off between extreme low-latency vs strict cross-node consistency requires empirical load validation."
-        ]
-        key_evidence = [
-            "Verified modular decoupling minimizes single points of failure.",
-            "Zero-secret policy confirmed across audit boundaries."
-        ]
+        logger.info("Collaboration %s finished in %.2fs consuming ~%d tokens", session_id, total_duration, total_tokens)
 
-        state.unresolved_disagreements = unresolved
-        state.status = "completed"
-        state.rounds.append(DebateRoundLog(
-            round_number=6,
-            stage_name="Confidence & Uncertainty",
-            messages=[],
-            summary=f"Confidence calibrated at {confidence_score:.2f} with preserved uncertainty."
-        ))
-
-        logger.info(
-            "Debate %s completed in %.2fs consuming ~%d tokens",
-            debate_id, total_duration, total_tokens
-        )
-
-        return DebateResult(
-            debate_id=debate_id,
+        return CollaborationResult(
+            debate_id=session_id,
             task_id=task_id,
-            canonical_problem=state.canonical_problem,
+            canonical_problem=question,
             final_answer=synthesis_text,
-            confidence=confidence_score,
-            unresolved_disagreements=unresolved,
-            key_evidence=key_evidence,
+            confidence=0.92,
+            unresolved_disagreements=[],
+            key_evidence=["High specialist alignment merged into unified consensus."],
             participating_agents=[a.id for a in participating_agents],
-            rounds=state.rounds,
+            rounds=rounds_log,
+            mode_used="consensus",
             total_tokens=total_tokens,
             total_latency_seconds=round(total_duration, 4)
         )
 
+    # Backward-compatibility alias
+    async def run_debate(
+        self,
+        task_id: str,
+        question: str,
+        participating_agents: Optional[List[Agent]] = None,
+        require_evidence: bool = True
+    ) -> CollaborationResult:
+        """Backward-compatible entry point delegating to run_collaboration."""
+        return await self.run_collaboration(
+            task_id=task_id,
+            question=question,
+            participating_agents=participating_agents,
+            require_evidence=require_evidence
+        )
 
-# Global default debate engine instance
-debate_engine = DebateEngine()
+
+# Global default instances
+collaboration_engine = CollaborationEngine()
+DebateEngine = CollaborationEngine
+debate_engine = collaboration_engine
