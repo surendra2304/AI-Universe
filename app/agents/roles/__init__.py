@@ -22,7 +22,7 @@ def get_all_specialist_agents() -> List[Agent]:
                 "avoid unsubstantiated speculation, and prioritize accuracy and clarity."
             ),
             model_provider="gemini",
-            model_name="gemini-3.7-flash",
+            model_name="gemini-3.6-flash",
             strengths=["information retrieval", "knowledge synthesis", "literature review", "comparative analysis"],
             weaknesses=["speculative technical depth without source data"]
         ),
@@ -112,7 +112,7 @@ def get_all_specialist_agents() -> List[Agent]:
                 "counterexamples. Be constructive but uncompromising in your scrutiny."
             ),
             model_provider="gemini",
-            model_name="gemini-3.7-flash",
+            model_name="gemini-3.5-flash",
             strengths=["red teaming", "counterexamples", "fallacy detection", "failure mode prediction"],
             weaknesses=["building final constructive consensus alone"]
         ),

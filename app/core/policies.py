@@ -41,7 +41,7 @@ PROVIDER_FALLBACK_MATRIX: Dict[str, FallbackRoute] = {
     "openrouter": FallbackRoute(
         primary_provider="openrouter",
         fallback_provider="gemini",
-        fallback_model="gemini-3.7-flash"
+        fallback_model="gemini-3.6-flash"
     ),
     "cohere": FallbackRoute(
         primary_provider="cohere",

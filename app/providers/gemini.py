@@ -22,13 +22,13 @@ class GeminiProvider(BaseLLMProvider):
     """Adapter for Google Gemini API via async HTTP."""
 
     BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
-    DEFAULT_MODEL = "gemini-3.7-flash"
+    DEFAULT_MODEL = "gemini-3.6-flash"
     SUPPORTED_MODELS = [
-        "gemini-3.7-flash",
         "gemini-3.6-flash",
         "gemini-3.5-flash",
-        "gemini-1.5-flash",
-        "gemini-1.5-pro"
+        "gemini-3.7-flash",
+        "gemini-3.5-flash-lite",
+        "gemini-3.1-flash-lite"
     ]
 
     def __init__(
