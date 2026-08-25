@@ -15,9 +15,9 @@ async def verify_friday_api_key(
     Validates that the incoming request from FRIDAY possesses the authorized API Key.
     Enforces security boundary between FRIDAY and AI Universe.
     """
-    configured_key = settings.FRIDAY_API_KEY
+    configured_key = settings.FRIDAY_UNIVERSE_API_KEY
     if not configured_key:
-        logger.error("FRIDAY_API_KEY is not configured on the server.")
+        logger.error("FRIDAY_UNIVERSE_API_KEY is not configured on the server.")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Server security configuration error: FRIDAY integration key not configured."

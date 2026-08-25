@@ -14,4 +14,4 @@ def mock_all_provider_api_keys(monkeypatch):
     monkeypatch.setattr(settings, "COHERE_API_KEY", "mock_cohere_key_123")
     monkeypatch.setattr(settings, "HUGGINGFACE_API_KEY", "mock_huggingface_key_123")
     monkeypatch.setattr(settings, "NVIDIA_API_KEY", "mock_nvidia_key_123")
-    monkeypatch.setattr(settings, "FRIDAY_API_KEY", "test_friday_secret_key_12345")
+    monkeypatch.setattr(settings, "FRIDAY_UNIVERSE_API_KEY", "test_friday_secret_key_12345")

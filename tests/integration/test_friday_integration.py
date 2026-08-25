@@ -16,7 +16,7 @@ def friday_client(tmp_path):
     test_db = str(tmp_path / "test_friday_integration.db")
     memory = SQLiteMemory(db_path=test_db)
     orchestrator.memory = memory
-    settings.FRIDAY_API_KEY = "test_friday_secret_key_12345"
+    settings.FRIDAY_UNIVERSE_API_KEY = "test_friday_secret_key_12345"
 
     with TestClient(app) as client:
         yield client

@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     NVIDIA_API_KEY: Optional[str] = Field(default=None)
 
     # Integration Keys
-    FRIDAY_API_KEY: Optional[str] = Field(default="dev_friday_key_secret_boundary")
+    FRIDAY_UNIVERSE_API_KEY: Optional[str] = Field(default=None)
 
     # Operational Budgets & Limits
     MAX_BUDGET: float = Field(default=10.0, description="Maximum budget per request in USD or compute credits")
