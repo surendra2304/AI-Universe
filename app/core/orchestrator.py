@@ -150,9 +150,11 @@ class Orchestrator(BaseOrchestrator):
                 )
                 latency = time.perf_counter() - start_time
 
+                actual_mode = getattr(debate_result, "mode_used", "debate")
                 task_record.status = "completed"
                 task_record.result = debate_result.final_answer
                 task_record.confidence = debate_result.confidence
+                task_record.mode = actual_mode
                 task_record.completed_at = datetime.utcnow()
                 task_record.metadata["debate_id"] = debate_result.debate_id
                 task_record.metadata["unresolved_disagreements"] = debate_result.unresolved_disagreements
@@ -163,7 +165,7 @@ class Orchestrator(BaseOrchestrator):
                     run_id=debate_result.debate_id,
                     question=request.question,
                     answer=debate_result.final_answer,
-                    mode_used="debate",
+                    mode_used=actual_mode,
                     provider_used="multi_provider",
                     agents_used=debate_result.participating_agents,
                     models_used=[a.model_name for a in participating_agents],

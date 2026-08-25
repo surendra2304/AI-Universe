@@ -51,7 +51,7 @@ class DebateState(BaseModel):
 
 
 class DebateResult(BaseModel):
-    """Final synthesized outcome of the 6-Round Structured Debate."""
+    """Final synthesized outcome of the 6-Round Structured Debate or Consensus Resolution."""
     debate_id: str
     task_id: str
     canonical_problem: str
@@ -61,6 +61,7 @@ class DebateResult(BaseModel):
     key_evidence: List[str] = Field(default_factory=list)
     participating_agents: List[str]
     rounds: List[DebateRoundLog]
+    mode_used: str = "debate"
     total_tokens: int = 0
     total_latency_seconds: float = 0.0
 
@@ -281,15 +282,89 @@ class DebateEngine:
             summary=f"Gathered {len(round_1_messages)} independent specialist proposals."
         ))
 
-        # -------------------------------------------------------------
-        # ROUND 2: Cross-Review & Adversarial Critique
-        # -------------------------------------------------------------
-        logger.info("Debate %s: Starting Round 2 - Cross-Review & Adversarial Critique", debate_id)
         combined_r1_proposals = "\n\n".join([
             f"=== Proposal by {m.agent_role} ({m.agent_id}) ===\n{m.content}"
             for m in round_1_messages
         ])
 
+        # -------------------------------------------------------------
+        # STEP 2: Consensus Check (Teamwork / Consensus-First Protocol)
+        # -------------------------------------------------------------
+        logger.info("Debate %s: Evaluating consensus across independent analyses", debate_id)
+        consensus_checker_agent = self.registry.get_agent("debugger") or participating_agents[0]
+        consensus_check_prompt = (
+            f"Canonical Problem:\n{state.canonical_problem}\n\n"
+            f"Independent Specialist Analyses:\n{combined_r1_proposals}\n\n"
+            "Evaluate whether these specialist analyses fundamental agree or fundamentally contradict each other.\n"
+            "Respond in this exact structured format:\n"
+            "CONSENSUS_REACHED: [YES or NO]\n"
+            "ALIGNMENT_SUMMARY: [1-2 sentences explaining consensus or the core conflict]\n"
+        )
+        consensus_eval_text, eval_tokens, _ = await self._execute_agent_call(
+            task_id=task_id,
+            stage_name="consensus_check",
+            round_number=1,
+            agent=consensus_checker_agent,
+            messages=[ProviderMessage(role="user", content=consensus_check_prompt)]
+        )
+        total_tokens += eval_tokens
+
+        is_consensus = "CONSENSUS_REACHED: YES" in consensus_eval_text.upper() or (
+            "CONSENSUS_REACHED:" not in consensus_eval_text.upper() and "AGREE" in consensus_eval_text.upper() and "CONFLICT" not in consensus_eval_text.upper()
+        )
+
+        if is_consensus:
+            logger.info("Debate %s: High specialist alignment detected. Synthesizing consensus and skipping full debate.", debate_id)
+            quick_synthesis_prompt = (
+                f"Canonical Problem:\n{state.canonical_problem}\n\n"
+                f"Aligned Specialist Proposals:\n{combined_r1_proposals}\n\n"
+                "The specialist panel is in broad consensus. Combine these aligned analyses into a clear, unified, "
+                "actionable final answer. Highlight the key recommendations and trade-offs clearly."
+            )
+            synthesis_text, syn_tokens, _ = await self._execute_agent_call(
+                task_id=task_id,
+                stage_name="consensus_synthesis",
+                round_number=5,
+                agent=synthesizer_agent,
+                messages=[ProviderMessage(role="user", content=quick_synthesis_prompt)]
+            )
+            total_tokens += syn_tokens
+            total_duration = time.perf_counter() - start_total_time
+
+            state.rounds.append(DebateRoundLog(
+                round_number=5,
+                stage_name="Consensus Synthesis",
+                messages=[DebateMessage(
+                    round_number=5,
+                    stage_name="Consensus Synthesis",
+                    agent_id=synthesizer_agent.id,
+                    agent_role=synthesizer_agent.role,
+                    content=synthesis_text
+                )],
+                summary="Consensus achieved across independent specialist analyses; skipped rounds 2-6."
+            ))
+
+            return DebateResult(
+                debate_id=debate_id,
+                task_id=task_id,
+                canonical_problem=state.canonical_problem or question,
+                final_answer=synthesis_text,
+                confidence=0.92,
+                unresolved_disagreements=[],
+                key_evidence=["Broad consensus verified across independent specialist panel."],
+                participating_agents=[a.id for a in participating_agents],
+                rounds=state.rounds,
+                mode_used="consensus",
+                total_tokens=total_tokens,
+                total_latency_seconds=round(total_duration, 4)
+            )
+
+        logger.info("Debate %s: Active disagreement detected among specialists. Proceeding with full 6-round debate.", debate_id)
+
+        # -------------------------------------------------------------
+        # ROUND 2: Cross-Review & Adversarial Critique
+        # -------------------------------------------------------------
+        logger.info("Debate %s: Starting Round 2 - Cross-Review & Adversarial Critique", debate_id)
         critique_prompt = (
             f"Canonical Problem:\n{state.canonical_problem}\n\n"
             f"Specialist Proposals from Round 1:\n{combined_r1_proposals}\n\n"

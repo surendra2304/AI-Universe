@@ -109,7 +109,7 @@ async def friday_debate(request: FridayRequest) -> FridayResponse:
             task_id=result.task_id,
             run_id=result.run_id,
             answer=result.answer,
-            mode_used="debate",
+            mode_used=result.mode_used,
             confidence=result.confidence,
             unresolved_disagreements=result.unresolved_disagreements,
             key_evidence=result.key_evidence,
@@ -122,7 +122,8 @@ async def friday_debate(request: FridayRequest) -> FridayResponse:
                 "debate_id": result.run_id,
                 "platform": "AI Universe",
                 "version": "1.0.0",
-                "rounds_completed": 6
+                "mode_used": result.mode_used,
+                "rounds_completed": 6 if result.mode_used == "debate" else 2
             }
         )
     except Exception as exc:
