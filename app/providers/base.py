@@ -62,7 +62,7 @@ class BaseLLMProvider(ABC):
     @property
     @abstractmethod
     def provider_name(self) -> str:
-        """Name of the provider (e.g. gemini, groq, cerebras, mistral, openrouter)."""
+        """Name of the provider (e.g. gemini, groq, mistral, openrouter, nvidia)."""
         pass
 
     @abstractmethod

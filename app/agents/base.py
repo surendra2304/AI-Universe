@@ -13,7 +13,7 @@ class Agent(BaseModel):
     purpose: str = Field(description="Core purpose and mission of the agent")
     system_instructions: str = Field(description="Base prompt/system instructions guiding reasoning")
     allowed_tools: List[str] = Field(default_factory=list, description="List of tools the agent is permitted to call")
-    model_provider: str = Field(default="gemini", description="Underlying provider (gemini, groq, cerebras, etc.)")
+    model_provider: str = Field(default="gemini", description="Underlying provider (gemini, groq, mistral, etc.)")
     model_name: str = Field(default="gemini-2.5-flash", description="Provider model identifier")
     personality_style: Optional[str] = Field(default=None, description="Optional reasoning or interaction style")
     strengths: List[str] = Field(default_factory=list, description="Key domain capabilities and strengths")

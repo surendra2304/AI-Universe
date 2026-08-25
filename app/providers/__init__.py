@@ -9,7 +9,6 @@ from app.providers.openrouter import OpenRouterProvider
 from app.providers.cohere import CohereProvider
 from app.providers.huggingface import HuggingFaceProvider
 from app.providers.nvidia import NvidiaProvider
-from app.providers.cerebras import CerebrasProvider
 
 _PROVIDER_MAP: Dict[str, Type[BaseLLMProvider]] = {
     "gemini": GeminiProvider,
@@ -19,7 +18,6 @@ _PROVIDER_MAP: Dict[str, Type[BaseLLMProvider]] = {
     "cohere": CohereProvider,
     "huggingface": HuggingFaceProvider,
     "nvidia": NvidiaProvider,
-    "cerebras": CerebrasProvider,
 }
 
 _PROVIDER_CACHE: Dict[str, BaseLLMProvider] = {}

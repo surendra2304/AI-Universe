@@ -169,7 +169,7 @@ class BenchmarkHarness:
     ) -> ExperimentRecord:
         """Tests the same prompt across different cloud providers."""
         exp_id = generate_id("exp_models")
-        providers = providers_to_test or ["gemini", "groq", "cerebras", "mistral", "openrouter"]
+        providers = providers_to_test or ["gemini", "groq", "mistral", "openrouter", "nvidia"]
 
         matrix_results = []
         for p_name in providers:

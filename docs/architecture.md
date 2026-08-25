@@ -41,7 +41,7 @@ AI Universe is a local-first, multi-agent intelligence platform designed for dee
  │       Provider Gateway       │  │   Memory Subsystem     │
  │  - Google Gemini Adapter     │  │  - SQLite (aiosqlite)  │
  │  - Groq Adapter              │  │  - Agents & Tasks      │
- │  - Cerebras Adapter          │  │  - Runs & Messages     │
+ │  - NVIDIA NIM Adapter        │  │  - Runs & Messages     │
  │  - Mistral Adapter           │  │  - Memories (Scoped)   │
  │  - OpenRouter Adapter        │  │  - Strategies & Exp.   │
  └──────────────────────────────┘  └────────────────────────┘

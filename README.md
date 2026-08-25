@@ -11,7 +11,7 @@
 
 ### Core Principles
 - **AI Universe is not FRIDAY, and FRIDAY is not a wrapper around AI Universe.** They are two independent intelligent systems. Later, AI Universe can exchange specialized reasoning, analysis, and debate outcomes with FRIDAY through a secure API boundary.
-- **Multi-Model / Provider Agnostic**: Connects to **Gemini, Groq, Cerebras, Mistral, and OpenRouter** through a unified provider gateway.
+- **Multi-Model / Provider Agnostic**: Connects to **Gemini, Groq, Mistral, OpenRouter, NVIDIA, Cohere, and HuggingFace** through a unified provider gateway.
 - **Structured Debate Protocol**: Uses multi-agent adversarial critique, rebuttal, evidence checking, and uncertainty-aware synthesis.
 - **Persistent Memory & Learning**: Persistent SQLite memory with strict agent scoping, evaluation rubrics, and routing strategy optimization.
 - **Local-First, Cloud Inference**: Orchestration, storage, and UI run locally on your laptop, while model inference is dispatched to fast cloud provider APIs without GPU strain.

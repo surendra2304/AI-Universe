@@ -230,7 +230,6 @@ async def get_friday_status() -> FridayStatusResponse:
         "Cohere": settings.COHERE_API_KEY,
         "HuggingFace": settings.HUGGINGFACE_API_KEY,
         "Nvidia": settings.NVIDIA_API_KEY,
-        "Cerebras": settings.CEREBRAS_API_KEY,
     }
     configured_providers = [p for p, k in provider_keys.items() if k and k.strip()]
 
