@@ -54,19 +54,22 @@ A local-first, multi-agent intelligence platform where 10 specialist AI agents c
 
 ---
 
-### 🔧 Day 3 — 2026-08-26: Unified Collaboration Engine Across All API Paths
+### 🔧 Day 3 — 2026-08-26: Dynamic DAG Orchestration, Gateway Key Pooling & OpenRouter Fallback
 
-- 🎯 **Focus**: Fixing a fundamental flaw where `fast` and `review` mode API calls were bypassing the `CollaborationEngine` entirely and calling a single agent directly.
+- 🎯 **Focus**: Unifying the collaboration engine across all modes, building the ultimate provider gateway with key pooling and rate limiting, configuring specialist models, and building dynamic DAG execution with in-process CLI.
 
 - 💡 **What I Accomplished**:
-  - Discovered that `/v1/friday/ask` requests were hitting a single LLM provider with one agent instead of running parallel collaboration — defeating the entire purpose of the multi-agent architecture.
-  - Removed the separate single-agent code path from `app/core/orchestrator.py` completely. All modes now route through `CollaborationEngine`.
-  - `fast` mode now assembles 2 agents in parallel (domain specialist + Synthesizer). `review` assembles 3 agents (router pair + cross-checker). `debate` uses the full router-selected panel of 3-5 agents.
-  - The `CollaborationEngine` handles instant consensus merge or targeted rebuttal internally — the orchestrator just decides the agent count.
+  - Unified `CollaborationEngine` across `fast`, `review`, and `debate` modes, ensuring every request benefits from parallel multi-agent teamwork instead of single-agent bypasses.
+  - Implemented `ModelGateway` (`app/providers/gateway.py`) with comma-separated global key pools, round-robin rotation, 60s automatic quarantine on 429/503 errors, and per-provider isolated rate limiting.
+  - Built `ProviderHealthTracker` (`app/providers/health.py`) for live latency, 429 frequency, and health scoring ($0.0 - 1.0$).
+  - Developed dynamic capability-based OpenRouter fallback (`app/providers/openrouter.py`) with `get_best_free_model(capability)` querying live `/api/v1/models` for active `:free` models on primary provider failure.
+  - Configured 10 specialist agents with ranked model lists and capability tags, enforcing strict structured Pydantic communication schemas.
+  - Built `Dynamic DAG Orchestrator` (`app/core/dag.py`) executing tasks by complexity (`SIMPLE` = 1 model, `COMPLEX`/`STRATEGIC` = parallel multi-model dispatch & multi-model synthesis), dynamically skipping rate-limited providers.
+  - Refactored `app/cli.py` to run multi-agent debates directly in-process via `Orchestrator` and `SQLiteMemory` without requiring an active Uvicorn server.
+  - Upgraded Cohere provider adapter to `/v2/chat` and standardized integration key to `FRIDAY_UNIVERSE_API_KEY`.
 
 - 🔧 **Fixes & Hardening**:
-  - Cleaned up now-unused imports from `orchestrator.py` (`get_provider`, `ProviderMessage`, `ProviderRequest`, `RunRecord`, `ProviderSwitchingPolicy`, `generate_run_id`).
-  - Updated 4 tests that were asserting stale single-agent behavior to correctly assert collaboration engine outputs (`mode_used in ["consensus", "debate"]`, `run_id.startswith("deb_")`, `confidence > 0.8`).
-  - Removed stale `app.core.orchestrator.get_provider` mock patches from experiment tests.
+  - Fixed test assertions across vertical slices, FRIDAY integration routes, and debate endpoints to reflect multi-model collaboration.
+  - Resolved OpenRouter free tier slug deprecations and handled provider failthrough to healthy alternatives.
 
-- 📊 **Test Results**: **67 passed** — all green.
+- 📊 **Test Results**: **82 passed** in 11.85s across all unit, debate, gateway, and integration test suites.
