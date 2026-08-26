@@ -48,6 +48,11 @@ class Settings(BaseSettings):
 
     # Integration Keys
     FRIDAY_UNIVERSE_API_KEY: Optional[str] = Field(default=None)
+    X_FRIDAY_API_KEY: Optional[str] = Field(default=None)
+    FRIDAY_API_KEY: Optional[str] = Field(default=None)
+
+    def get_friday_api_key(self) -> Optional[str]:
+        return self.FRIDAY_UNIVERSE_API_KEY or self.X_FRIDAY_API_KEY or self.FRIDAY_API_KEY
 
     # Operational Budgets & Limits
     MAX_BUDGET: float = Field(default=10.0, description="Maximum budget per request in USD or compute credits")
