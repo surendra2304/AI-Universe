@@ -1,4 +1,4 @@
-"""Unit tests for Phase 0 abstract interfaces and data contracts."""
+"""Unit tests for Core Foundation abstract interfaces and data contracts."""
 
 import pytest
 from app.providers.base import (

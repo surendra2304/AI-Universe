@@ -1,4 +1,4 @@
-"""Unit tests for Phase 8 Learning System: PerformanceTracker and StrategyStore."""
+"""Unit tests for Learning Subsystem: PerformanceTracker and StrategyStore."""
 
 import pytest
 import pytest_asyncio

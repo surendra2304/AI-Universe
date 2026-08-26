@@ -1,4 +1,4 @@
-"""Integration tests for Phase 9: BenchmarkHarness, Experiment Runner, and API endpoints."""
+"""Integration tests for Experiments Harness: BenchmarkHarness, Experiment Runner, and API endpoints."""
 
 import asyncio
 import pytest

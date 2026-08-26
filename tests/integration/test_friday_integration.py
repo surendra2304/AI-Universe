@@ -1,4 +1,4 @@
-"""Integration tests for Phase 11: FRIDAY Peer Integration and Security Boundary."""
+"""Integration tests for FRIDAY Integration: FRIDAY Peer Integration and Security Boundary."""
 
 import pytest
 from unittest.mock import AsyncMock, patch
