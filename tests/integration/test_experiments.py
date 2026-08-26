@@ -62,11 +62,8 @@ async def test_baseline_vs_debate_comparison(test_exp_env):
         latency_seconds=0.5
     )
 
-    with patch("app.agents.debate.get_provider") as mock_debate_prov:
-        mock_prov = AsyncMock()
-        mock_prov.provider_name = "mock_provider"
-        mock_prov.generate.return_value = mock_llm_response
-        mock_debate_prov.return_value = mock_prov
+    with patch("app.agents.debate.model_gateway.execute", new_callable=AsyncMock) as mock_exec:
+        mock_exec.return_value = mock_llm_response
 
         exp = await harness.run_baseline_vs_debate_comparison(
             question="Compare microservices vs monolithic architecture."
@@ -88,11 +85,8 @@ async def test_experiments_api_endpoints(test_exp_env):
         total_tokens=40
     )
 
-    with patch("app.agents.debate.get_provider") as mock_debate_prov:
-        mock_prov = AsyncMock()
-        mock_prov.provider_name = "mock_provider"
-        mock_prov.generate.return_value = mock_llm_response
-        mock_debate_prov.return_value = mock_prov
+    with patch("app.agents.debate.model_gateway.execute", new_callable=AsyncMock) as mock_exec:
+        mock_exec.return_value = mock_llm_response
 
         with TestClient(app) as client:
             resp = client.post(

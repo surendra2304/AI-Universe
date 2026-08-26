@@ -69,35 +69,26 @@ class CohereProvider(BaseLLMProvider):
         if not self.api_key:
             raise ValueError("COHERE_API_KEY is not configured.")
 
-        url = "https://api.cohere.com/v1/chat"
+        url = "https://api.cohere.com/v2/chat"
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.api_key}"
         }
 
-        # Build message history for Cohere v1
-        chat_history = []
-        last_message = ""
+        # Build v2 messages list
+        v2_messages = []
         for m in request.messages:
-            if m == request.messages[-1] and m.role == "user":
-                last_message = m.content
-            else:
-                role = "USER" if m.role == "user" else "CHATBOT"
-                chat_history.append({"role": role, "message": m.content})
-
-        if not last_message and request.messages:
-            last_message = request.messages[-1].content
+            role = "user" if m.role == "user" else "assistant"
+            v2_messages.append({"role": role, "content": m.content})
 
         model = request.model or self.default_model
         payload = {
             "model": model,
-            "message": last_message,
+            "messages": v2_messages,
             "temperature": request.temperature,
         }
         if request.system_instruction:
-            payload["preamble"] = request.system_instruction
-        if chat_history:
-            payload["chat_history"] = chat_history
+            v2_messages.insert(0, {"role": "system", "content": request.system_instruction})
         if request.max_tokens:
             payload["max_tokens"] = request.max_tokens
 
@@ -113,8 +104,16 @@ class CohereProvider(BaseLLMProvider):
                     raise RuntimeError(f"Cohere API returned HTTP {response.status_code}: {response.text}")
 
                 data = response.json()
-                content = data.get("text", "")
-                meta = data.get("meta", {}).get("tokens", {})
+                # Parse Cohere v2 response format
+                content = ""
+                message_obj = data.get("message", {})
+                content_items = message_obj.get("content", [])
+                if content_items and isinstance(content_items, list):
+                    content = "".join(item.get("text", "") for item in content_items if isinstance(item, dict))
+                elif not content:
+                    content = data.get("text", "")
+
+                meta = data.get("usage", {}).get("tokens", {}) or data.get("meta", {}).get("tokens", {})
                 prompt_tokens = meta.get("input_tokens", 0)
                 completion_tokens = meta.get("output_tokens", 0)
                 total_tokens = prompt_tokens + completion_tokens

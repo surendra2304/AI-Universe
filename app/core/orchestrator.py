@@ -1,5 +1,6 @@
-"""Orchestrator core module for end-to-end task coordination and execution."""
+"""Orchestrator core module for Dynamic DAG task coordination and execution."""
 
+import asyncio
 import time
 from abc import ABC, abstractmethod
 from datetime import datetime
@@ -7,14 +8,16 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 from app.agents.base import Agent
-from app.agents.debate import DebateEngine, debate_engine
+from app.agents.debate import CollaborationEngine, DebateEngine, debate_engine
 from app.agents.registry import agent_registry
 from app.agents.roles import register_all_specialists
 from app.agents.router import router as task_router
+from app.core.dag import DAGNode, ExecutionDAG, TaskComplexity, classify_task_complexity
 from app.learning.performance import PerformanceTracker
 from app.learning.strategy_store import StrategyStore
 from app.memory.base import BaseMemory, TaskRecord
 from app.memory.sqlite import SQLiteMemory
+from app.providers.health import provider_health_tracker
 from app.utils.ids import generate_task_id
 from app.utils.logger import logger
 
@@ -37,12 +40,13 @@ class OrchestrationResult(BaseModel):
     question: str
     answer: str
     mode_used: str
-    provider_used: str = "gemini"
+    provider_used: str = "multi_provider"
     agents_used: List[str]
     models_used: List[str]
     confidence: float = Field(ge=0.0, le=1.0)
     unresolved_disagreements: List[str] = Field(default_factory=list)
     key_evidence: List[str] = Field(default_factory=list)
+    complexity: str = "simple"
     total_tokens: int = 0
     total_latency_seconds: float = 0.0
 
@@ -67,7 +71,7 @@ class BaseOrchestrator(ABC):
 
 
 class Orchestrator(BaseOrchestrator):
-    """Coordinates task routing, agent assignment, execution, memory persistence, and synthesis."""
+    """Coordinates task routing, DAG construction, agent assignment, memory persistence, and synthesis."""
 
     def __init__(
         self,
@@ -76,21 +80,63 @@ class Orchestrator(BaseOrchestrator):
         self.memory = memory or SQLiteMemory()
         self.router = task_router
         self.registry = agent_registry
-        self.debate_engine = DebateEngine(memory=self.memory, registry=self.registry)
+        self.debate_engine = CollaborationEngine(memory=self.memory, registry=self.registry)
         self.strategy_store = StrategyStore(memory=self.memory)
         self.performance_tracker = PerformanceTracker(memory=self.memory)
         
         # Ensure all 10 specialist roles are registered
         register_all_specialists()
 
+    def build_execution_dag(
+        self,
+        question: str,
+        participating_agents: List[Agent],
+        complexity: TaskComplexity
+    ) -> ExecutionDAG:
+        """
+        Builds a Directed Acyclic Graph for the given agents and complexity:
+        - Layer 0: Independent specialist analysis nodes (run in parallel via asyncio.gather)
+        - Layer 1: Synthesizer consensus node (depends on all Layer 0 nodes)
+        - Layer 2: (Optional if conflict occurs) Critic Rebuttal & Final Synthesizer
+        """
+        dag = ExecutionDAG()
+
+        # Add specialist analysis nodes (Layer 0)
+        for agent in participating_agents:
+            node = DAGNode(
+                node_id=f"node_{agent.id}",
+                agent_id=agent.id,
+                agent_role=agent.role,
+                dependencies=[],
+                stage_name="independent_analysis",
+                complexity=complexity
+            )
+            dag.add_node(node)
+
+        # Add synthesis node (Layer 1)
+        synth_node = DAGNode(
+            node_id="node_synthesizer",
+            agent_id="synthesizer",
+            agent_role="Synthesizer",
+            dependencies=[f"node_{agent.id}" for agent in participating_agents],
+            stage_name="consensus_synthesis",
+            complexity=complexity
+        )
+        dag.add_node(synth_node)
+        dag.build_layers()
+        return dag
+
     async def process_task(self, request: OrchestrationRequest) -> OrchestrationResult:
-        """Execute full end-to-end question answering vertical slice."""
+        """Execute full end-to-end task with Dynamic DAG Orchestration."""
         task_id = generate_task_id()
         start_time = time.perf_counter()
 
         self.strategy_store.memory = self.memory
         self.performance_tracker.memory = self.memory
         self.debate_engine.memory = self.memory
+
+        # 1. Classify Task Complexity (Simple, Complex, Strategic)
+        complexity = classify_task_complexity(request.question, request.mode)
 
         # Check for learned strategy recommendations if mode is 'auto'
         learned_strat = None
@@ -101,7 +147,7 @@ class Orchestrator(BaseOrchestrator):
             except Exception as e:
                 logger.debug("Strategy store lookup skipped: %s", str(e))
 
-        # 1. Route task and select specialist agents with telemetry guardrails
+        # 2. Route task and select specialist agents with telemetry guardrails
         decision = self.router.route_task(
             question=request.question,
             requested_mode=learned_strat.recommended_mode if learned_strat else request.mode,
@@ -118,7 +164,7 @@ class Orchestrator(BaseOrchestrator):
             if self.registry.get_agent(aid)
         ]
 
-        # 2. Create initial task record in SQLite with telemetry metadata
+        # 3. Create initial task record in SQLite with telemetry metadata
         task_record = TaskRecord(
             id=task_id,
             question=request.question,
@@ -127,6 +173,7 @@ class Orchestrator(BaseOrchestrator):
             metadata={
                 "route_reason": route_reason,
                 "selected_agents": selected_agent_ids,
+                "complexity": complexity.value,
                 "routing_telemetry": decision.telemetry,
                 "learned_strategy_applied": bool(learned_strat),
                 "request_context": request.context_data
@@ -135,42 +182,38 @@ class Orchestrator(BaseOrchestrator):
         await self.memory.save_task(task_record)
 
         try:
-            # ALL MODES use the CollaborationEngine for parallel teamwork:
-            # fast   → 2 agents in parallel (primary domain specialist + Synthesizer)
-            # review → 3 agents in parallel (router pair + one cross-checker)
-            # debate → full router panel (3-5 agents)
-            # CollaborationEngine handles instant consensus merge OR targeted rebuttal internally.
-
-            if mode_used == "fast" and len(participating_agents) < 2:
-                # Pad to 2 agents: add Synthesizer as the second collaborator
-                synthesizer = self.registry.get_agent("synthesizer")
-                if synthesizer and (not participating_agents or synthesizer.id != participating_agents[0].id):
-                    participating_agents = participating_agents + [synthesizer]
-
-            elif mode_used == "review" and len(participating_agents) < 3:
-                # Pad to 3 agents: add a cross-checking specialist
-                extra_candidates = ["fact_checker", "critic", "strategist", "researcher"]
+            # For review/debate modes, pad specialist agents if needed
+            if mode_used == "review" and len(participating_agents) < 2:
+                extra_candidates = ["critic", "fact_checker", "strategist", "researcher"]
                 existing_ids = [a.id for a in participating_agents]
                 for cid in extra_candidates:
-                    if len(participating_agents) >= 3:
+                    if len(participating_agents) >= 2:
                         break
                     agent = self.registry.get_agent(cid)
                     if agent and agent.id not in existing_ids:
                         participating_agents = participating_agents + [agent]
                         existing_ids.append(agent.id)
 
-            logger.info(
-                "CollaborationEngine: task %s | mode '%s' | %d agents: %s",
-                task_id, mode_used, len(participating_agents),
-                [a.id for a in participating_agents]
+            # 4. Build Dynamic DAG for execution
+            dag = self.build_execution_dag(
+                question=request.question,
+                participating_agents=participating_agents,
+                complexity=complexity
             )
 
+            logger.info(
+                "DAG Orchestrator: task %s | mode '%s' | complexity '%s' | %d agents | %d DAG layers",
+                task_id, mode_used, complexity.value, len(participating_agents), len(dag.layers)
+            )
+
+            # 5. Run Collaboration via CollaborationEngine with DAG Complexity
             self.debate_engine.memory = self.memory
             collab_result = await self.debate_engine.run_collaboration(
                 task_id=task_id,
                 question=request.question,
                 participating_agents=participating_agents,
-                require_evidence=request.require_evidence
+                require_evidence=request.require_evidence,
+                complexity=complexity
             )
             latency = time.perf_counter() - start_time
 
@@ -182,6 +225,8 @@ class Orchestrator(BaseOrchestrator):
             task_record.completed_at = datetime.utcnow()
             task_record.metadata["debate_id"] = collab_result.debate_id
             task_record.metadata["unresolved_disagreements"] = collab_result.unresolved_disagreements
+            task_record.metadata["complexity"] = complexity.value
+            task_record.metadata["models_used"] = collab_result.models_used
             await self.memory.save_task(task_record)
 
             return OrchestrationResult(
@@ -192,10 +237,11 @@ class Orchestrator(BaseOrchestrator):
                 mode_used=actual_mode,
                 provider_used="multi_provider",
                 agents_used=collab_result.participating_agents,
-                models_used=[a.model_name for a in participating_agents],
+                models_used=collab_result.models_used if collab_result.models_used else [a.model_name for a in participating_agents],
                 confidence=collab_result.confidence,
                 unresolved_disagreements=collab_result.unresolved_disagreements,
                 key_evidence=collab_result.key_evidence,
+                complexity=complexity.value,
                 total_tokens=collab_result.total_tokens,
                 total_latency_seconds=round(latency, 4)
             )

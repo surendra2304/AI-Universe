@@ -1,14 +1,18 @@
-"""Definition and registration of the 10 Specialist Agent Roles for AI Universe."""
+"""Definition and registration of the 10 Specialist Agent Roles for AI Universe.
+
+Each agent is configured with a hyper-specialized list of provider models and capability tags.
+The primary (1st) model is used for standard tasks; alternate models are used for complex or fallback tasks.
+"""
 
 from typing import List
-from app.agents.base import Agent
+from app.agents.base import Agent, AgentModelConfig
 from app.agents.registry import agent_registry
 
 
 def get_all_specialist_agents() -> List[Agent]:
     """
-    Returns the list of 10 configured specialist agents.
-    Every agent is assigned to an active cloud provider adapter.
+    Returns the list of 10 configured specialist agents with exact specialized model lists
+    and capability tags.
     """
     return [
         Agent(
@@ -22,7 +26,12 @@ def get_all_specialist_agents() -> List[Agent]:
                 "avoid unsubstantiated speculation, and prioritize accuracy and clarity."
             ),
             model_provider="gemini",
-            model_name="gemini-3.6-flash",
+            model_name="gemini-3.7-flash",
+            models=[
+                AgentModelConfig(provider="gemini", model="gemini-3.7-flash", capability="research"),
+                AgentModelConfig(provider="openrouter", model="deepseek/deepseek-v4-flash:free", capability="reasoning"),
+                AgentModelConfig(provider="cohere", model="command-a-plus-05-2026", capability="research"),
+            ],
             strengths=["information retrieval", "knowledge synthesis", "literature review", "comparative analysis"],
             weaknesses=["speculative technical depth without source data"]
         ),
@@ -37,7 +46,12 @@ def get_all_specialist_agents() -> List[Agent]:
                 "mechanisms, and clear component boundaries. Always state trade-offs explicitly."
             ),
             model_provider="nvidia",
-            model_name="meta/llama-3.1-8b-instruct",
+            model_name="nvidia/nemotron-3-ultra-550b-a55b",
+            models=[
+                AgentModelConfig(provider="nvidia", model="nvidia/nemotron-3-ultra-550b-a55b", capability="reasoning"),
+                AgentModelConfig(provider="gemini", model="gemini-3.7-flash", capability="reasoning"),
+                AgentModelConfig(provider="openrouter", model="deepseek/deepseek-v4-flash:free", capability="reasoning"),
+            ],
             strengths=["system architecture", "interface design", "scalability", "modularity", "trade-off analysis"],
             weaknesses=["low-level syntax micro-optimizations"]
         ),
@@ -51,8 +65,14 @@ def get_all_specialist_agents() -> List[Agent]:
                 "and production-ready code. Adhere to language best practices, type annotations, error handling, "
                 "and maintainability. Avoid premature optimization and untested logic."
             ),
-            model_provider="huggingface",
-            model_name="meta-llama/llama-3.1-8b-instruct",
+            model_provider="mistral",
+            model_name="mistral-small-2603",
+            models=[
+                AgentModelConfig(provider="mistral", model="mistral-small-2603", capability="coding"),
+                AgentModelConfig(provider="openrouter", model="deepseek/deepseek-v4-flash:free", capability="reasoning"),
+                AgentModelConfig(provider="gemini", model="gemini-3.7-flash", capability="coding"),
+                AgentModelConfig(provider="huggingface", model="Qwen/Qwen3-Coder-480B-A35B-Instruct", capability="coding"),
+            ],
             strengths=["clean code", "refactoring", "API implementation", "async programming", "typing"],
             weaknesses=["high-level business prioritization"]
         ),
@@ -66,8 +86,14 @@ def get_all_specialist_agents() -> List[Agent]:
                 "analysis, trace stack traces, and eliminate logic flaws and race conditions. Demand reproduction "
                 "evidence before accepting fixes."
             ),
-            model_provider="nvidia",
-            model_name="meta/llama-3.1-8b-instruct",
+            model_provider="openrouter",
+            model_name="deepseek/deepseek-v4-flash:free",
+            models=[
+                AgentModelConfig(provider="openrouter", model="deepseek/deepseek-v4-flash:free", capability="reasoning"),
+                AgentModelConfig(provider="gemini", model="gemini-3.7-flash", capability="reasoning"),
+                AgentModelConfig(provider="mistral", model="mistral-small-2603", capability="coding"),
+                AgentModelConfig(provider="huggingface", model="Qwen/Qwen3-Coder-480B-A35B-Instruct", capability="coding"),
+            ],
             strengths=["root cause analysis", "error tracing", "deadlock detection", "edge case discovery"],
             weaknesses=["speculative feature redesign"]
         ),
@@ -81,8 +107,13 @@ def get_all_specialist_agents() -> List[Agent]:
                 "threat surfaces, prompt injection risks, secret exposures, and privilege escalations. Treat all "
                 "external input as untrusted and enforce least privilege."
             ),
-            model_provider="mistral",
-            model_name="mistral-small-latest",
+            model_provider="nvidia",
+            model_name="nvidia/nemotron-3-ultra-550b-a55b",
+            models=[
+                AgentModelConfig(provider="nvidia", model="nvidia/nemotron-3-ultra-550b-a55b", capability="reasoning"),
+                AgentModelConfig(provider="openrouter", model="deepseek/deepseek-v4-flash:free", capability="reasoning"),
+                AgentModelConfig(provider="nvidia", model="nvidia/nemotron-3.5-content-safety", capability="safety"),
+            ],
             strengths=["threat modeling", "vulnerability analysis", "zero-secret enforcement", "injection defense"],
             weaknesses=["lenient convenience-oriented shortcuts"]
         ),
@@ -97,7 +128,12 @@ def get_all_specialist_agents() -> List[Agent]:
                 "statistical rigor and clear metric definitions."
             ),
             model_provider="openrouter",
-            model_name="nvidia/nemotron-3.5-lightning:free",
+            model_name="deepseek/deepseek-v4-flash:free",
+            models=[
+                AgentModelConfig(provider="openrouter", model="deepseek/deepseek-v4-flash:free", capability="reasoning"),
+                AgentModelConfig(provider="gemini", model="gemini-3.7-flash", capability="reasoning"),
+                AgentModelConfig(provider="groq", model="openai/gpt-oss-120b", capability="reasoning"),
+            ],
             strengths=["quantitative analysis", "SQL/schema reasoning", "statistical evaluation", "metrics calculation"],
             weaknesses=["abstract narrative generation"]
         ),
@@ -111,8 +147,13 @@ def get_all_specialist_agents() -> List[Agent]:
                 "challenge assumptions, expose hidden flaws, identify single points of failure, and provide "
                 "counterexamples. Be constructive but uncompromising in your scrutiny."
             ),
-            model_provider="gemini",
-            model_name="gemini-3.5-flash",
+            model_provider="openrouter",
+            model_name="deepseek/deepseek-v4-flash:free",
+            models=[
+                AgentModelConfig(provider="openrouter", model="deepseek/deepseek-v4-flash:free", capability="reasoning"),
+                AgentModelConfig(provider="groq", model="openai/gpt-oss-120b", capability="reasoning"),
+                AgentModelConfig(provider="cohere", model="command-a-plus-05-2026", capability="research"),
+            ],
             strengths=["red teaming", "counterexamples", "fallacy detection", "failure mode prediction"],
             weaknesses=["building final constructive consensus alone"]
         ),
@@ -126,8 +167,13 @@ def get_all_specialist_agents() -> List[Agent]:
                 "unsupported assertions, and hallucinations. Categorize claims as verified, plausible, unverified, "
                 "or false. Refuse to let speculation pass as evidence."
             ),
-            model_provider="mistral",
-            model_name="mistral-small-latest",
+            model_provider="gemini",
+            model_name="gemini-3.7-flash",
+            models=[
+                AgentModelConfig(provider="gemini", model="gemini-3.7-flash", capability="research"),
+                AgentModelConfig(provider="cohere", model="command-a-plus-05-2026", capability="research"),
+                AgentModelConfig(provider="openrouter", model="deepseek/deepseek-v4-flash:free", capability="reasoning"),
+            ],
             strengths=["fact verification", "claim categorization", "hallucination detection", "consistency checks"],
             weaknesses=["speculative technical design"]
         ),
@@ -141,8 +187,13 @@ def get_all_specialist_agents() -> List[Agent]:
                 "and prioritizing architectural or operational alternatives. Weigh complexity against value, "
                 "latency against quality, and immediate cost against long-term maintenance."
             ),
-            model_provider="groq",
-            model_name="openai/gpt-oss-120b",
+            model_provider="nvidia",
+            model_name="nvidia/nemotron-3-ultra-550b-a55b",
+            models=[
+                AgentModelConfig(provider="nvidia", model="nvidia/nemotron-3-ultra-550b-a55b", capability="reasoning"),
+                AgentModelConfig(provider="openrouter", model="deepseek/deepseek-v4-flash:free", capability="reasoning"),
+                AgentModelConfig(provider="gemini", model="gemini-3.7-flash", capability="reasoning"),
+            ],
             strengths=["multi-criteria decision analysis", "cost-benefit evaluation", "roadmap prioritization"],
             weaknesses=["line-by-line syntax debugging"]
         ),
@@ -156,8 +207,13 @@ def get_all_specialist_agents() -> List[Agent]:
                 "perspectives, critiques, and evidence, and synthesize one clear, actionable, and nuanced conclusion. "
                 "Explicitly highlight consensus, remaining uncertainties, and dissenting views."
             ),
-            model_provider="cohere",
-            model_name="command-r7b-12-2024",
+            model_provider="gemini",
+            model_name="gemini-3.7-flash",
+            models=[
+                AgentModelConfig(provider="gemini", model="gemini-3.7-flash", capability="synthesis"),
+                AgentModelConfig(provider="openrouter", model="deepseek/deepseek-v4-flash:free", capability="reasoning"),
+                AgentModelConfig(provider="cohere", model="command-a-plus-05-2026", capability="synthesis"),
+            ],
             strengths=["multi-perspective synthesis", "conflict resolution", "uncertainty calibration"],
             weaknesses=["one-sided partisan argumentation"]
         )

@@ -34,11 +34,8 @@ async def test_friday_ask_authenticated(friday_client):
         latency_seconds=0.35
     )
 
-    with patch("app.agents.debate.get_provider") as mock_get_prov:
-        mock_prov = AsyncMock()
-        mock_prov.provider_name = "mock_provider"
-        mock_prov.generate.return_value = mock_llm_response
-        mock_get_prov.return_value = mock_prov
+    with patch("app.agents.debate.model_gateway.execute", new_callable=AsyncMock) as mock_exec:
+        mock_exec.return_value = mock_llm_response
 
         headers = {"X-FRIDAY-API-Key": "test_friday_secret_key_12345"}
         resp = client.post(
@@ -72,11 +69,8 @@ async def test_friday_debate_provenance_and_dissent(friday_client):
         latency_seconds=0.60
     )
 
-    with patch("app.agents.debate.get_provider") as mock_get_prov:
-        mock_prov = AsyncMock()
-        mock_prov.provider_name = "mock_provider"
-        mock_prov.generate.return_value = mock_llm_response
-        mock_get_prov.return_value = mock_prov
+    with patch("app.agents.debate.model_gateway.execute", new_callable=AsyncMock) as mock_exec:
+        mock_exec.return_value = mock_llm_response
 
         headers = {"X-FRIDAY-API-Key": "test_friday_secret_key_12345"}
         resp = client.post(

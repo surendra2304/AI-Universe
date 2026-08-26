@@ -34,11 +34,8 @@ async def test_ask_endpoint_fast_mode(client_with_test_db):
         latency_seconds=0.45
     )
 
-    with patch("app.agents.debate.get_provider") as mock_get_prov:
-        mock_prov = AsyncMock()
-        mock_prov.provider_name = "mock_provider"
-        mock_prov.generate.return_value = mock_llm_response
-        mock_get_prov.return_value = mock_prov
+    with patch("app.agents.debate.model_gateway.execute", new_callable=AsyncMock) as mock_exec:
+        mock_exec.return_value = mock_llm_response
 
         response = client.post(
             "/ask",
@@ -76,11 +73,8 @@ async def test_ask_endpoint_complex_debate_routing(client_with_test_db):
         total_tokens=50
     )
 
-    with patch("app.agents.debate.get_provider") as mock_get_prov:
-        mock_prov = AsyncMock()
-        mock_prov.provider_name = "mock_provider"
-        mock_prov.generate.return_value = mock_llm_response
-        mock_get_prov.return_value = mock_prov
+    with patch("app.agents.debate.model_gateway.execute", new_callable=AsyncMock) as mock_exec:
+        mock_exec.return_value = mock_llm_response
 
         response = client.post(
             "/ask",

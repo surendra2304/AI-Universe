@@ -1,6 +1,6 @@
 """Application configuration settings for AI Universe."""
 
-from typing import Optional
+from typing import Dict, List, Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
 
@@ -24,14 +24,27 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "sqlite:///data/universe.db"
 
-    # 7 Active Cloud Provider API Keys (Verified Free Tiers)
+    # 7 Active Cloud Provider API Keys (Supports single or comma-separated lists)
     GEMINI_API_KEY: Optional[str] = Field(default=None)
+    GEMINI_API_KEYS: Optional[str] = Field(default=None)
+
     GROQ_API_KEY: Optional[str] = Field(default=None)
+    GROQ_API_KEYS: Optional[str] = Field(default=None)
+
     MISTRAL_API_KEY: Optional[str] = Field(default=None)
+    MISTRAL_API_KEYS: Optional[str] = Field(default=None)
+
     OPENROUTER_API_KEY: Optional[str] = Field(default=None)
+    OPENROUTER_API_KEYS: Optional[str] = Field(default=None)
+
     COHERE_API_KEY: Optional[str] = Field(default=None)
+    COHERE_API_KEYS: Optional[str] = Field(default=None)
+
     HUGGINGFACE_API_KEY: Optional[str] = Field(default=None)
+    HUGGINGFACE_API_KEYS: Optional[str] = Field(default=None)
+
     NVIDIA_API_KEY: Optional[str] = Field(default=None)
+    NVIDIA_API_KEYS: Optional[str] = Field(default=None)
 
     # Integration Keys
     FRIDAY_UNIVERSE_API_KEY: Optional[str] = Field(default=None)
@@ -39,6 +52,27 @@ class Settings(BaseSettings):
     # Operational Budgets & Limits
     MAX_BUDGET: float = Field(default=10.0, description="Maximum budget per request in USD or compute credits")
     REQUEST_TIMEOUT: float = Field(default=60.0, description="Default timeout in seconds for provider calls")
+
+    def get_provider_keys(self, provider_name: str) -> List[str]:
+        """
+        Returns a deduplicated list of non-empty API keys for the specified provider.
+        Checks both plural (e.g. GEMINI_API_KEYS) and singular (e.g. GEMINI_API_KEY) variables.
+        Supports comma-separated strings in both.
+        """
+        prov = provider_name.upper().strip()
+        keys: List[str] = []
+
+        singular_val = getattr(self, f"{prov}_API_KEY", None)
+        plural_val = getattr(self, f"{prov}_API_KEYS", None)
+
+        for raw_val in [plural_val, singular_val]:
+            if raw_val:
+                for k in raw_val.split(","):
+                    cleaned = k.strip().strip("'\"")
+                    if cleaned and cleaned not in keys:
+                        keys.append(cleaned)
+
+        return keys
 
 
 settings = Settings()

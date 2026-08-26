@@ -29,27 +29,20 @@ async def test_parallel_collaboration_instant_synthesis(collab_env):
     """Verify parallel specialist perspectives run via asyncio.gather and merge instantly."""
     engine, memory = collab_env
 
-    def mock_generate(req):
-        # Synthesizer merges aligned perspectives
-        if "Consensus Synthesizer" in req.system_instruction or "evaluate the specialist proposals" in req.messages[0].content:
+    async def mock_execute(provider_name, request, **kwargs):
+        if "Consensus Synthesizer" in (request.system_instruction or "") or "evaluate the specialist proposals" in request.messages[0].content:
             return ProviderResponse(
                 content="Unified Consensus: Deploy a lock-free modular monolith with strict domain boundaries.",
                 model="command-r7b-12-2024",
                 provider="cohere"
             )
-        # Specialist perspectives
         return ProviderResponse(
             content="Specialist analysis recommending modular monolith design for high throughput.",
             model="gemini-3.6-flash",
             provider="gemini"
         )
 
-    with patch("app.agents.debate.get_provider") as mock_get_prov:
-        mock_prov = AsyncMock()
-        mock_prov.provider_name = "mock_provider"
-        mock_prov.generate.side_effect = mock_generate
-        mock_get_prov.return_value = mock_prov
-
+    with patch("app.agents.debate.model_gateway.execute", side_effect=mock_execute):
         agents = [
             agent_registry.get_agent("architect"),
             agent_registry.get_agent("security_analyst"),
@@ -76,15 +69,15 @@ async def test_targeted_rebuttal_on_severe_conflict(collab_env):
     """Verify that when the Synthesizer detects CONFLICT_DETECTED, a targeted Rebuttal triggers."""
     engine, memory = collab_env
 
-    def mock_generate_conflict(req):
-        content_query = req.messages[0].content
+    async def mock_execute_conflict(provider_name, request, **kwargs):
+        content_query = request.messages[0].content
         if "evaluate the specialist proposals" in content_query:
             return ProviderResponse(
                 content="CONFLICT_DETECTED: Fundamental architectural clash between Architect (shared memory) and Security Analyst (process sandboxing).",
                 model="command-r7b-12-2024",
                 provider="cohere"
             )
-        elif "Adversarial Critic" in req.system_instruction or "challenge the conflicting assumptions" in content_query:
+        elif "Adversarial Critic" in (request.system_instruction or "") or "challenge the conflicting assumptions" in content_query:
             return ProviderResponse(
                 content="Adversarial Red Team: Sandboxing is required for untrusted modules; internal modules can share memory.",
                 model="gemini-3.5-flash",
@@ -102,12 +95,7 @@ async def test_targeted_rebuttal_on_severe_conflict(collab_env):
             provider="gemini"
         )
 
-    with patch("app.agents.debate.get_provider") as mock_get_prov:
-        mock_prov = AsyncMock()
-        mock_prov.provider_name = "mock_provider"
-        mock_prov.generate.side_effect = mock_generate_conflict
-        mock_get_prov.return_value = mock_prov
-
+    with patch("app.agents.debate.model_gateway.execute", side_effect=mock_execute_conflict):
         agents = [
             agent_registry.get_agent("architect"),
             agent_registry.get_agent("security_analyst"),
@@ -143,11 +131,8 @@ async def test_fastapi_debate_endpoint_collaboration(tmp_path):
         total_tokens=70
     )
 
-    with patch("app.agents.debate.get_provider") as mock_get_prov:
-        mock_prov = AsyncMock()
-        mock_prov.provider_name = "mock_provider"
-        mock_prov.generate.return_value = mock_llm_response
-        mock_get_prov.return_value = mock_prov
+    with patch("app.agents.debate.model_gateway.execute", new_callable=AsyncMock) as mock_exec:
+        mock_exec.return_value = mock_llm_response
 
         with TestClient(app) as client:
             resp = client.post(

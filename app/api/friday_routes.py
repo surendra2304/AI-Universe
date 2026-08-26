@@ -221,17 +221,12 @@ async def get_friday_status() -> FridayStatusResponse:
     """
     from app.core.config import settings
 
-    # Check configured providers from .env settings
-    provider_keys = {
-        "Gemini": settings.GEMINI_API_KEY,
-        "Groq": settings.GROQ_API_KEY,
-        "Mistral": settings.MISTRAL_API_KEY,
-        "OpenRouter": settings.OPENROUTER_API_KEY,
-        "Cohere": settings.COHERE_API_KEY,
-        "HuggingFace": settings.HUGGINGFACE_API_KEY,
-        "Nvidia": settings.NVIDIA_API_KEY,
-    }
-    configured_providers = [p for p, k in provider_keys.items() if k and k.strip()]
+    # Check configured providers from .env settings (supports single or comma-separated lists)
+    provider_names = ["Gemini", "Groq", "Mistral", "OpenRouter", "Cohere", "HuggingFace", "Nvidia"]
+    configured_providers = [
+        p for p in provider_names
+        if len(settings.get_provider_keys(p)) > 0
+    ]
 
     # Retrieve registered agents and their assigned models
     agents = orchestrator.registry.list_agents()
