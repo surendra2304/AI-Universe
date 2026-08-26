@@ -25,8 +25,15 @@ from app.core.orchestrator import OrchestrationRequest, Orchestrator
 from app.memory.sqlite import SQLiteMemory
 from app.experiments.harness import BenchmarkHarness, ExperimentRunRequest
 
+# Configure UTF-8 safe console for Windows terminal
+if sys.platform == "win32" and hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 cli_app = typer.Typer(help="AI Universe — Multi-Agent Intelligence CLI")
-console = Console() if Console else None
+console = Console(legacy_windows=False) if Console else None
 
 
 async def _run_in_process_ask(

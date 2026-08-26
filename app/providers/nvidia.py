@@ -4,14 +4,14 @@ from typing import List, Optional
 from app.core.config import settings
 from app.providers.openai_compatible import OpenAICompatibleProvider
 
-NVIDIA_DEFAULT_MODEL = "meta/llama-3.1-70b-instruct"
+NVIDIA_DEFAULT_MODEL = "nvidia/nemotron-3-ultra-550b-a55b"
 
 NVIDIA_SUPPORTED_MODELS: List[str] = [
-    "meta/llama-3.1-70b-instruct",
-    "meta/llama-3.1-8b-instruct",
-    "meta/llama-3.3-70b-instruct",
+    "nvidia/nemotron-3-ultra-550b-a55b",
+    "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "nvidia/llama-3.1-nemotron-70b-instruct",
     "mistralai/mistral-large-2-instruct",
-    "nvidia/llama-3.1-nemotron-70b-instruct"
+    "nvidia/nemotron-3.5-content-safety"
 ]
 
 

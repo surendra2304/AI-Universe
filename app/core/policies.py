@@ -31,7 +31,7 @@ PROVIDER_FALLBACK_MATRIX: Dict[str, FallbackRoute] = {
     "groq": FallbackRoute(
         primary_provider="groq",
         fallback_provider="nvidia",
-        fallback_model="meta/llama-3.3-70b-instruct"
+        fallback_model="nvidia/nemotron-3-ultra-550b-a55b"
     ),
     "mistral": FallbackRoute(
         primary_provider="mistral",
