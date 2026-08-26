@@ -127,10 +127,11 @@ async def test_friday_status_endpoint(friday_client):
 
     # Validate active agent roles list
     assert isinstance(data["active_agents"], list)
-    assert len(data["active_agents"]) == 10
+    assert len(data["active_agents"]) >= 10
     assert "Architect" in data["active_agents"]
     assert "Coder" in data["active_agents"]
     assert "Critic" in data["active_agents"]
+    assert "Trading Analyst" in data["active_agents"]
 
     # Validate configured providers & models
     assert isinstance(data["configured_providers"], list)

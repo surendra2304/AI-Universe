@@ -22,6 +22,7 @@ DOMAIN_KEYWORD_MAP = {
     "fact_checker": ["verify", "is it true", "fact", "check claim", "verifiable", "source", "accuracy"],
     "strategist": ["strategy", "priority", "roadmap", "decision", "trade-off", "cost-benefit", "plan"],
     "critic": ["critique", "red team", "weakness", "fallacy", "attack", "counterexample"],
+    "trading_analyst": ["trading", "trade", "pnl", "drawdown", "win rate", "profit factor", "stop loss", "take profit", "bot", "futures", "scalper"],
 }
 
 
@@ -58,6 +59,8 @@ class TaskRouter:
             return ["debugger", "coder"]
         elif primary == "data_analyst":
             return ["data_analyst", "fact_checker"]
+        elif primary == "trading_analyst":
+            return ["trading_analyst", "strategist"]
         else:
             return [primary, "critic"]
 
@@ -70,7 +73,7 @@ class TaskRouter:
         panel.append(primary)
 
         # Candidate specialists for debate
-        candidates = ["architect", "security_analyst", "coder", "critic", "strategist", "fact_checker", "data_analyst"]
+        candidates = ["trading_analyst", "strategist", "critic", "data_analyst", "architect", "security_analyst", "coder", "fact_checker"]
         for cand in candidates:
             if cand not in panel and len(panel) < max_agents:
                 panel.append(cand)

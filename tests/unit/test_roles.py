@@ -14,13 +14,14 @@ EXPECTED_ROLES = [
     "critic",
     "fact_checker",
     "strategist",
-    "synthesizer"
+    "synthesizer",
+    "trading_analyst"
 ]
 
 
 def test_specialist_agents_definition():
     agents = get_all_specialist_agents()
-    assert len(agents) == 10
+    assert len(agents) == 11
     agent_ids = [a.id for a in agents]
     for expected_id in EXPECTED_ROLES:
         assert expected_id in agent_ids
@@ -29,7 +30,7 @@ def test_specialist_agents_definition():
 def test_agent_registry_contains_all_10_specialists():
     register_all_specialists()
     registered = agent_registry.list_agents()
-    assert len(registered) >= 10
+    assert len(registered) >= 11
 
     for expected_id in EXPECTED_ROLES:
         agent = agent_registry.get_agent(expected_id)
@@ -56,7 +57,8 @@ def test_agent_registry_contains_all_10_specialists():
         "critic": "openrouter",
         "fact_checker": "gemini",
         "strategist": "nvidia",
-        "synthesizer": "gemini"
+        "synthesizer": "gemini",
+        "trading_analyst": "openrouter"
     }
     assert provider_map == expected_providers
 
@@ -120,7 +122,7 @@ def test_agent_structured_response_validation():
 def test_all_10_specialist_model_lists_configured():
     register_all_specialists()
     agents = get_all_specialist_agents()
-    assert len(agents) == 10
+    assert len(agents) == 11
 
     for agent in agents:
         assert len(agent.models) >= 3, f"Agent {agent.id} does not have at least 3 configured models."

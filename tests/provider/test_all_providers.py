@@ -19,7 +19,7 @@ from app.providers.nvidia import NvidiaProvider
     ("openrouter", OpenRouterProvider, "nvidia/nemotron-3.5-lightning:free"),
     ("cohere", CohereProvider, "command-r7b-12-2024"),
     ("huggingface", HuggingFaceProvider, "meta-llama/llama-3.1-8b-instruct"),
-    ("nvidia", NvidiaProvider, "meta/llama-3.1-70b-instruct"),
+    ("nvidia", NvidiaProvider, "nvidia/nemotron-3-ultra-550b-a55b"),
 ])
 def test_provider_factory_and_capabilities(provider_name, cls, default_model):
     provider = get_provider(provider_name, api_key="test_key_123")

@@ -79,6 +79,12 @@
 | **Fact Checker** | Separate claims from evidence | Claim verification, contradiction detection |
 | **Strategist** | Compare alternatives & tradeoffs | Prioritization, decision support |
 | **Synthesizer** | Produce final coherent answer | Integrates claims, reports uncertainty |
+| **Trading Analyst** | Analyze quantitative trading metrics & drawdown | Strategy parameter advice (SL/TP, leverage) |
+
+### 📈 Algorithmic Trading Bot Integration (Advisory Authority)
+- **Specialist Agent (`TradingAnalyst`)**: Evaluates performance telemetry (win rate, profit factor, drawdown, consecutive loss streaks) sent by FRIDAY.
+- **Debate & Consultation**: Engages in multi-agent deliberation with the **Strategist** and **Critic** to formulate calibrated recommendations (e.g. tightening stop loss, adjusting position sizes).
+- **Strict Safety Boundary**: AI Universe **NEVER** calls exchange APIs or executes trades directly; it returns structured `AIUniverseDecision` recommendations for FRIDAY to record and present to the user.
 
 ---
 

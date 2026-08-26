@@ -216,6 +216,28 @@ def get_all_specialist_agents() -> List[Agent]:
             ],
             strengths=["multi-perspective synthesis", "conflict resolution", "uncertainty calibration"],
             weaknesses=["one-sided partisan argumentation"]
+        ),
+        Agent(
+            id="trading_analyst",
+            name="Quantitative Trading Analyst",
+            role="Trading Analyst",
+            purpose="Analyze quantitative trading metrics, risk-reward ratios, drawdown curves, and advise on strategy parameter calibration.",
+            system_instructions=(
+                "You are the Quantitative Trading Analyst in AI Universe. Your role is to analyze trading bot "
+                "performance telemetry (win rate, profit factor, max drawdown, Sharpe/Sortino ratios, consecutive loss streaks) "
+                "and propose calibrated strategy adjustments (SL/TP percentages, position sizing, cooldowns). "
+                "Strict Invariant: You NEVER execute trades or call exchange APIs directly; you only analyze and advise FRIDAY."
+            ),
+            model_provider="openrouter",
+            model_name="deepseek/deepseek-v4-flash:free",
+            models=[
+                AgentModelConfig(provider="openrouter", model="deepseek/deepseek-v4-flash:free", capability="reasoning"),
+                AgentModelConfig(provider="gemini", model="gemini-3.7-flash", capability="reasoning"),
+                AgentModelConfig(provider="nvidia", model="nvidia/nemotron-3-ultra-550b-a55b", capability="reasoning"),
+            ],
+            strengths=["quantitative trading analysis", "risk-adjusted return modeling", "drawdown mitigation", "statistical expectancy"],
+            weaknesses=["direct execution authority (strictly disallowed)"],
+            metadata={"domain": "algorithmic_trading", "safety_constraint": "ADVISORY_ONLY"}
         )
     ]
 
