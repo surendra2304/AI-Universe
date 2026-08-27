@@ -23,6 +23,7 @@ from app.routers.forge_health import forge_health_router
 from app.routers.forge_services import forge_router
 from app.routers.live_intelligence import live_router
 from app.routers.multi_market import multi_market_router
+from app.routers.nexus import nexus_router
 from app.routers.predictions import predictions_router
 from app.routers.providers import providers_router
 from app.routers.trading import router as trading_router
@@ -100,6 +101,7 @@ app.include_router(forge_router)
 app.include_router(batch_router)
 app.include_router(forge_health_router)
 app.include_router(analytics_router)
+app.include_router(nexus_router)
 
 
 @app.get("/")

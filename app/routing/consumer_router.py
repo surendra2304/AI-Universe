@@ -4,7 +4,7 @@ import time
 from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, Field
 
-ConsumerType = Literal["trading_bot", "forge", "friday", "human"]
+ConsumerType = Literal["trading_bot", "forge", "friday", "human", "nexus"]
 
 
 class ConsumerProfile(BaseModel):
@@ -27,6 +27,13 @@ class MultiConsumerRouter:
     """Manages consumer identity, rate-limit policies, priority queues, and usage accounting."""
 
     PROFILES: Dict[ConsumerType, ConsumerProfile] = {
+        "nexus": ConsumerProfile(
+            name="nexus",
+            rate_limit_per_hour=200,
+            priority=2,
+            mode="intelligence_routing",
+            description="Nexus high-throughput intelligence decision engine."
+        ),
         "forge": ConsumerProfile(
             name="forge",
             rate_limit_per_hour=200,
@@ -67,7 +74,9 @@ class MultiConsumerRouter:
         if not api_key_or_header:
             return "forge"  # Default for forge service paths
         val = api_key_or_header.lower()
-        if "forge" in val:
+        if "nexus" in val:
+            return "nexus"
+        elif "forge" in val:
             return "forge"
         elif "trading" in val or "bot" in val:
             return "trading_bot"
