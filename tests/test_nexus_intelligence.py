@@ -152,3 +152,43 @@ def test_multi_tenant_governance_and_deduplication():
     resp_prom = client.get("/v1/governance/prometheus-metrics")
     assert resp_prom.status_code == 200
     assert "ai_universe_requests_total" in resp_prom.json()["metrics"]
+
+
+def test_multimodal_intelligence_and_temporal_reasoning():
+    """Tests POST /v1/intelligence/multimodal across text, code, structured tables, temporal series, and counterfactuals."""
+    payload = {
+        "request_id": "multi-test-001",
+        "task_type": "strategic_decision",
+        "goal": "Optimize pipeline throughput and conversion",
+        "attached_contents": [
+            {"content_type": "text", "payload": "Enterprise pipeline report for Q3"},
+            {"content_type": "code", "payload": "def process(): return True", "language_or_mime": "python"},
+            {"content_type": "structured_data", "payload": '[{"day": 1, "leads": 40}, {"day": 2, "leads": 55}]'},
+            {"content_type": "url", "payload": "https://internal.telemetry/metrics"},
+            {"content_type": "image", "payload": "data:image/png;base64,iVBORw0KGgoAAA...", "language_or_mime": "image/png"}
+        ],
+        "temporal_context": "Pattern began 3 days ago following release v2.4",
+        "time_series_data": [
+            {"timestamp": 1724000000, "value": 100.0, "metric_name": "leads"},
+            {"timestamp": 1724086400, "value": 115.0, "metric_name": "leads"},
+            {"timestamp": 1724172800, "value": 130.0, "metric_name": "leads"}
+        ],
+        "what_if_scenario": {
+            "scenario_name": "Variant B Experiment",
+            "proposed_intervention": "Switch to Variant B pricing modal",
+            "baseline_variable": "Variant A",
+            "counterfactual_variable": "Variant B"
+        },
+        "audience": "detailed"
+    }
+    resp = client.post("/v1/intelligence/multimodal", json=payload)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["request_id"] == "multi-test-001"
+    assert "OPTIMIZE_STRATEGY" in data["decision"]
+    assert "95% CI:" in data["point_estimate_with_ci"]
+    assert len(data["content_analysis_summaries"]) == 5
+    assert data["temporal_insights"]["trend"] == "UPWARD"
+    assert data["counterfactual_analysis"]["is_counterfactual"] is True
+    assert data["counterfactual_analysis"]["confidence_interval_95"]["ci_upper"] > 0
+    assert len(data["explanation"]["detailed"]) > 0

@@ -25,6 +25,7 @@ from app.routers.forge_services import forge_router
 from app.routers.governance import governance_router
 from app.routers.live_intelligence import live_router
 from app.routers.multi_market import multi_market_router
+from app.routers.multimodal import multimodal_router
 from app.routers.nexus import nexus_router
 from app.routers.predictions import predictions_router
 from app.routers.providers import providers_router
@@ -106,6 +107,7 @@ app.include_router(analytics_router)
 app.include_router(nexus_router)
 app.include_router(debate_router)
 app.include_router(governance_router)
+app.include_router(multimodal_router)
 
 
 @app.get("/")
