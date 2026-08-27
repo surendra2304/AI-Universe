@@ -12,6 +12,7 @@ from app.config_production import production_config
 from app.core.config import settings
 from app.core.orchestrator import orchestrator
 from app.health import health_router
+from app.routers.ecosystem import ecosystem_router
 from app.routers.enhanced_trading import enhanced_router
 from app.routers.evolution_intel import evolution_router
 from app.routers.live_intelligence import live_router
@@ -81,6 +82,7 @@ app.include_router(live_router)
 app.include_router(multi_market_router)
 app.include_router(evolution_router)
 app.include_router(predictions_router)
+app.include_router(ecosystem_router)
 
 
 @app.get("/")
