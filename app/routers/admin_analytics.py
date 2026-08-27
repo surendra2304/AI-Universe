@@ -1,0 +1,84 @@
+"""FastAPI Router for Usage Analytics, Provider Intelligence, Self-Optimization, and Admin Dashboards."""
+
+from typing import Any, Dict, List, Optional
+from fastapi import APIRouter, HTTPException, Path, Query, status
+
+from app.alerts import alert_system
+from app.analytics.outcomes import OutcomeReportRequest, consumer_outcome_tracker
+from app.analytics.predictive import predictive_provider_manager
+from app.analytics.provider_intel import provider_intel
+from app.analytics.usage_analytics import usage_analytics
+from app.routing.self_optimizer import self_optimizing_router
+from app.services.quality_assurance import quality_assurance_service
+
+analytics_router = APIRouter(prefix="/v1", tags=["Analytics, Optimization & Admin"])
+
+
+# Analytics endpoints
+@analytics_router.get("/analytics/overview", status_code=status.HTTP_200_OK)
+async def get_analytics_overview():
+    """Returns total calls, tokens, latency, cost, and budget ceiling status."""
+    return usage_analytics.get_overview()
+
+
+@analytics_router.get("/analytics/consumer/{id}", status_code=status.HTTP_200_OK)
+async def get_consumer_analytics(id: str = Path(..., description="Consumer identifier, e.g. forge, trading_bot")):
+    """Returns analytics breakdown for a specific consumer."""
+    return usage_analytics.get_consumer_breakdown(id)
+
+
+@analytics_router.get("/analytics/service/{name}", status_code=status.HTTP_200_OK)
+async def get_service_analytics(name: str = Path(..., description="Service name, e.g. generate-code, trading_consult")):
+    """Returns performance and token usage for a specific service."""
+    return usage_analytics.get_service_breakdown(name)
+
+
+@analytics_router.get("/analytics/providers", status_code=status.HTTP_200_OK)
+async def get_providers_comparison():
+    """Returns token and latency comparison across all cloud providers."""
+    return usage_analytics.get_providers_comparison()
+
+
+@analytics_router.get("/analytics/provider-intel", status_code=status.HTTP_200_OK)
+async def get_provider_intelligence():
+    """Returns deep performance matrices, failure patterns, and routing recommendations."""
+    return provider_intel.get_performance_matrix()
+
+
+@analytics_router.get("/analytics/quality", status_code=status.HTTP_200_OK)
+async def get_quality_report():
+    """Returns response quality trends, confidence calibration curves, and agent rankings."""
+    return quality_assurance_service.get_quality_report()
+
+
+@analytics_router.post("/analytics/outcome", status_code=status.HTTP_200_OK)
+async def report_consumer_outcome(req: OutcomeReportRequest):
+    """Consumer (FORGE / Trading Bot) reports downstream verification or trading outcome."""
+    res = consumer_outcome_tracker.record_outcome(req)
+    self_optimizing_router.adapt_weights_from_outcomes()
+    return res
+
+
+# Admin endpoints
+@analytics_router.get("/admin/dashboard", status_code=status.HTTP_200_OK)
+async def get_admin_dashboard():
+    """Consolidated admin overview spanning costs, usage, providers, predictive alerts, and health."""
+    return {
+        "usage_overview": usage_analytics.get_overview(),
+        "provider_comparison": usage_analytics.get_providers_comparison(),
+        "predictive_forecast": predictive_provider_manager.generate_forecasts(),
+        "downstream_outcomes": consumer_outcome_tracker.get_outcome_summary(),
+        "active_alerts": [a.model_dump() for a in alert_system.get_alerts(unacknowledged_only=True)]
+    }
+
+
+@analytics_router.get("/admin/optimization/status", status_code=status.HTTP_200_OK)
+async def get_optimization_status():
+    """Returns current self-optimizing router weights and rebalance audit logs."""
+    return self_optimizing_router.get_routing_status()
+
+
+@analytics_router.get("/admin/alerts", status_code=status.HTTP_200_OK)
+async def get_admin_alerts(unacknowledged_only: bool = Query(default=False)):
+    """Returns list of active system alerts."""
+    return [a.model_dump() for a in alert_system.get_alerts(unacknowledged_only=unacknowledged_only)]

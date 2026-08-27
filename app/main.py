@@ -13,6 +13,7 @@ from app.config_production import production_config
 from app.core.config import settings
 from app.core.orchestrator import orchestrator
 from app.health import health_router
+from app.routers.admin_analytics import analytics_router
 from app.routers.batch import batch_router
 from app.routers.ecosystem import ecosystem_router
 from app.routers.enhanced_trading import enhanced_router
@@ -94,6 +95,7 @@ app.include_router(providers_router)
 app.include_router(forge_router)
 app.include_router(batch_router)
 app.include_router(forge_health_router)
+app.include_router(analytics_router)
 
 
 @app.get("/")
