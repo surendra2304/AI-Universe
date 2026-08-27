@@ -13,9 +13,12 @@ from app.config_production import production_config
 from app.core.config import settings
 from app.core.orchestrator import orchestrator
 from app.health import health_router
+from app.routers.batch import batch_router
 from app.routers.ecosystem import ecosystem_router
 from app.routers.enhanced_trading import enhanced_router
 from app.routers.evolution_intel import evolution_router
+from app.routers.forge_health import forge_health_router
+from app.routers.forge_services import forge_router
 from app.routers.live_intelligence import live_router
 from app.routers.multi_market import multi_market_router
 from app.routers.predictions import predictions_router
@@ -88,6 +91,9 @@ app.include_router(evolution_router)
 app.include_router(predictions_router)
 app.include_router(ecosystem_router)
 app.include_router(providers_router)
+app.include_router(forge_router)
+app.include_router(batch_router)
+app.include_router(forge_health_router)
 
 
 @app.get("/")
