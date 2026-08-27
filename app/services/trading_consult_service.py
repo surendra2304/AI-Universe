@@ -9,9 +9,12 @@ from uuid import uuid4
 
 from app.agents.base import Agent
 from app.agents.registry import agent_registry
+from app.config_production import production_config
 from app.core.dag import TaskComplexity
 from app.memory.base import BaseMemory, MemoryRecord, MessageRecord, RunRecord, TaskRecord
 from app.memory.sqlite import SQLiteMemory
+from app.monitoring import monitor
+from app.optimization import circuit_breaker, concurrency_controller, telemetry_cache
 from app.providers import get_provider
 from app.providers.base import ProviderMessage, ProviderRequest
 from app.providers.gateway import model_gateway
@@ -41,7 +44,8 @@ class TradingConsultService:
     5. A/B Testing comparison-aware calibrations (avoiding excessive divergence between Treatment and Control).
     6. Testnet-aware safety constraints: conservative calibrations (smaller shifts), tighter stop losses, reduced sizing.
     7. Persistent memory logging scoped under 'trading_advisory' namespace.
-    8. Advisory output only: NEVER executes trades or interfaces with exchange APIs.
+    8. Production Optimization: Telemetry caching, provider circuit breaker, and concurrency throttling.
+    9. Advisory output only: NEVER executes trades or interfaces with exchange APIs.
     """
 
     def __init__(self, memory: Optional[BaseMemory] = None) -> None:
@@ -126,7 +130,14 @@ class TradingConsultService:
         prompt: str,
         system_instructions: Optional[str] = None
     ) -> str:
-        """Invokes a specialist agent using the ModelGateway and records run/message audit records."""
+        """Invokes a specialist agent using ModelGateway, monitoring provider latency and circuit breakers."""
+        monitor.record_agent_participation(agent.id)
+
+        # Check circuit breaker
+        if not circuit_breaker.is_available(agent.model_provider):
+            logger.warning("Circuit breaker OPEN for provider '%s'; skipping to deterministic fallback", agent.model_provider)
+            return self._deterministic_fallback_for_agent(agent.id, prompt)
+
         req = ProviderRequest(
             messages=[ProviderMessage(role="user", content=prompt)],
             system_instruction=system_instructions or agent.system_instructions,
@@ -147,10 +158,13 @@ class TradingConsultService:
                     capability="reasoning",
                     stage_name=stage_name
                 ),
-                timeout=10.0
+                timeout=production_config.AGENT_INVOCATION_TIMEOUT_SECONDS
             )
 
             latency = time.perf_counter() - start
+            circuit_breaker.record_success(agent.model_provider)
+            monitor.record_provider_call(agent.model_provider, latency, success=True)
+
             content = resp.content if resp and resp.content else self._deterministic_fallback_for_agent(agent.id, prompt)
 
             # Record run
@@ -181,7 +195,9 @@ class TradingConsultService:
             return content
         except Exception as exc:
             latency = time.perf_counter() - start
-            logger.warning("Trading consultation invocation for %s (%s) encountered fallback: %s", agent.id, stage_name, str(exc))
+            circuit_breaker.record_failure(agent.model_provider)
+            monitor.record_provider_call(agent.model_provider, latency, success=False)
+            logger.warning("Trading consultation invocation for %s (%s) fallback: %s", agent.id, stage_name, str(exc))
             fallback_text = self._deterministic_fallback_for_agent(agent.id, prompt)
 
             # Record fallback run
@@ -238,14 +254,11 @@ class TradingConsultService:
     def _is_healthy(self, req: TradingConsultRequest) -> bool:
         """Evaluates whether all telemetry indicators are within safe, healthy operating boundaries."""
         t = req.telemetry
-        # Safe baseline thresholds: WR >= 50%, PF >= 1.25, Max DD <= 5%, Consec Losses < 4
         if t.win_rate >= 0.50 and t.profit_factor >= 1.25 and t.max_drawdown_pct <= 5.0 and t.consecutive_losses < 4:
-            # Check testnet-specific constraints
             if req.trading_mode == "TESTNET" and req.testnet_specific:
                 ts = req.testnet_specific
                 if ts.testnet_drawdown_pct > 5.0 or ts.testnet_margin_level < 150.0:
                     return False
-            # Check strategy-level health
             if req.strategy_performance:
                 for sp in req.strategy_performance:
                     if sp.consecutive_losses >= 4 or (sp.trade_count >= 10 and sp.profit_factor < 0.9):
@@ -257,10 +270,7 @@ class TradingConsultService:
         self,
         req: TradingConsultRequest
     ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
-        """
-        Compares Treatment arm performance against Control baseline metrics.
-        Returns (treatment_status, comparison_rationale, expected_improvement).
-        """
+        """Compares Treatment arm performance against Control baseline metrics."""
         if req.experiment_group != "TREATMENT" or not req.control_metrics:
             if req.experiment_group == "CONTROL":
                 return (
@@ -276,7 +286,6 @@ class TradingConsultService:
         c_wr = c.get("win_rate", 0.5)
         c_dd = c.get("max_drawdown_pct", 5.0)
 
-        # Calculate deltas
         pf_delta = t.profit_factor - c_pf
         wr_delta = (t.win_rate - c_wr) * 100.0
         dd_delta = t.max_drawdown_pct - c_dd
@@ -342,15 +351,7 @@ class TradingConsultService:
         critic_critique: str,
         data_analysis: str
     ) -> AIUniverseDecision:
-        """
-        Produces the bounded decision enforcing:
-        1. Max 2 parameter changes (prefer 1)
-        2. Evidence attached to each change
-        3. Hard rule for <20 trades (INSUFFICIENT_DATA)
-        4. Hard rule for healthy metrics (NO_CHANGE)
-        5. A/B Comparison-aware analysis & rationale
-        6. Testnet-aware safety calibrations
-        """
+        """Produces bounded decision adhering to all safety invariants."""
         decision_id = str(uuid4())
         valid_until = (datetime.utcnow() + timedelta(hours=24)).isoformat()
         t = req.telemetry
@@ -402,9 +403,7 @@ class TradingConsultService:
         regime_narrative = ""
         dissent_narrative = ""
 
-        # Testnet calibrations are strictly more conservative
         if req.trading_mode == "TESTNET":
-            # Testnet: Tighter stop loss by 10% more than paper (e.g. 0.80 multiplier vs 0.85 paper)
             tighten_factor = 0.80
             expand_factor = 1.10
         elif req.experiment_group == "TREATMENT":
@@ -429,7 +428,6 @@ class TradingConsultService:
                         curr_val = strat_params[p_candidate]
                         break
 
-            # Calculate tightened value
             if isinstance(curr_val, (int, float)) and curr_val > 0:
                 rec_val = round(curr_val * tighten_factor, 4)
                 change_pct = round(((rec_val - curr_val) / curr_val) * 100.0, 2)
@@ -448,12 +446,11 @@ class TradingConsultService:
                 rationale=f"Consecutive losses ({t.consecutive_losses}) or Max Drawdown ({t.max_drawdown_pct:.2f}%) on {target_strategy} justifies tightening {target_param} by {abs(change_pct):.1f}% for capital preservation{testnet_tag}."
             ))
 
-            # Optional 2nd change: Sizing or cooldown
             if (t.max_drawdown_pct > 8.0 or (req.trading_mode == "TESTNET" and t.max_drawdown_pct > 6.0)) and req.current_parameters and len(changes) < 2:
                 strat_params = req.current_parameters.get(target_strategy, {})
                 if "position_size_usdt" in strat_params:
                     curr_pos = strat_params["position_size_usdt"]
-                    rec_pos = round(curr_pos * 0.80, 2)  # 0.8x position sizing for testnet safety
+                    rec_pos = round(curr_pos * 0.80, 2)
                     changes.append(ParameterChange(
                         strategy=target_strategy,
                         parameter="position_size_usdt",
@@ -548,14 +545,27 @@ class TradingConsultService:
         )
 
     async def consult(self, req: TradingConsultRequest) -> AIUniverseDecision:
-        """
-        Executes end-to-end multi-agent advisory consultation:
-        1. Context serialization (including A/B arm and testnet metrics)
-        2. 4-step structured debate (TradingAnalyst -> Strategist -> Critic -> Data Analyst)
-        3. Synthesis and output constraint enforcement
-        4. Persistent memory logging in 'trading_advisory' namespace
-        5. Experiment consultation tracking (if experiment_id is provided)
-        """
+        """Executes multi-agent consultation wrapped with cache lookup and performance monitoring."""
+        start_time = time.perf_counter()
+
+        # Check Cache
+        cached_decision = telemetry_cache.get(req)
+        if cached_decision:
+            latency = time.perf_counter() - start_time
+            monitor.record_request(latency, success=True)
+            return cached_decision
+
+        decision = await concurrency_controller.run(self._consult_internal, req)
+
+        # Cache valid decision
+        telemetry_cache.set(req, decision)
+
+        latency = time.perf_counter() - start_time
+        monitor.record_request(latency, success=True)
+        return decision
+
+    async def _consult_internal(self, req: TradingConsultRequest) -> AIUniverseDecision:
+        """Internal multi-agent debate pipeline."""
         task_id = generate_task_id()
         session_id = generate_debate_id()
         context_str = self._format_context(req)
@@ -587,9 +597,7 @@ class TradingConsultService:
         )
         await self.memory.save_task(task_record)
 
-        # -------------------------------------------------------------
-        # STEP 1: Quantitative Initial Analysis (TradingAnalyst)
-        # -------------------------------------------------------------
+        # Parallel/Pipelines agent deliberations
         ta_prompt = (
             f"Analyze the following autonomous trading bot telemetry and formulate initial parameter recommendations:\n\n"
             f"{context_str}\n\n"
@@ -597,9 +605,6 @@ class TradingConsultService:
         )
         ta_output = await self._invoke_agent(task_id, "trading_analysis", 1, trading_analyst, ta_prompt)
 
-        # -------------------------------------------------------------
-        # STEP 2: Strategy Comparison & Portfolio View (Strategist)
-        # -------------------------------------------------------------
         strat_prompt = (
             f"Review the trading telemetry and the Trading Analyst's initial findings:\n\n"
             f"TELEMETRY:\n{context_str}\n\n"
@@ -609,9 +614,6 @@ class TradingConsultService:
         )
         strat_output = await self._invoke_agent(task_id, "strategic_comparison", 2, strategist, strat_prompt)
 
-        # -------------------------------------------------------------
-        # STEP 3: Adversarial Critique & Risk Scrutiny (Critic)
-        # -------------------------------------------------------------
         critic_prompt = (
             f"Critique the following strategy proposals and challenge any weak assumptions:\n\n"
             f"TELEMETRY:\n{context_str}\n\n"
@@ -620,9 +622,6 @@ class TradingConsultService:
         )
         critic_output = await self._invoke_agent(task_id, "adversarial_critique", 3, critic, critic_prompt)
 
-        # -------------------------------------------------------------
-        # STEP 4: Quantitative Verification (Data Analyst)
-        # -------------------------------------------------------------
         data_prompt = (
             f"Quantitatively verify the proposals and critique against the empirical telemetry numbers:\n\n"
             f"TELEMETRY:\n{context_str}\n\n"
@@ -631,9 +630,6 @@ class TradingConsultService:
         )
         data_output = await self._invoke_agent(task_id, "quantitative_verification", 4, data_analyst, data_prompt)
 
-        # -------------------------------------------------------------
-        # STEP 5: Final Synthesis & Decision Formulation
-        # -------------------------------------------------------------
         decision = self._rule_based_synthesis(
             req=req,
             ta_analysis=ta_output,
@@ -642,7 +638,6 @@ class TradingConsultService:
             data_analysis=data_output
         )
 
-        # Update task record in memory
         task_record.status = "completed"
         task_record.result = json.dumps(decision.model_dump())
         task_record.confidence = decision.confidence
@@ -656,7 +651,6 @@ class TradingConsultService:
             task_record.metadata["experiment_group"] = req.experiment_group
         await self.memory.save_task(task_record)
 
-        # Persist memory scoped to 'trading_advisory' namespace
         advisory_memory = MemoryRecord(
             id=str(uuid4()),
             agent_id="trading_advisory",
@@ -667,7 +661,6 @@ class TradingConsultService:
         )
         await self.memory.save_memory(advisory_memory)
 
-        # Record consultation with experiment service if experiment_id provided
         if req.experiment_id and req.experiment_group:
             experiment_service.record_consultation(
                 experiment_id=req.experiment_id,

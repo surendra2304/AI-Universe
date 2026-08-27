@@ -3,40 +3,45 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
 from app.api.friday_routes import friday_router
 from app.api.routes import router as api_router
-from app.routers.trading import router as trading_router
+from app.config_production import production_config
 from app.core.config import settings
 from app.core.orchestrator import orchestrator
+from app.health import health_router
+from app.routers.trading import router as trading_router
 from app.utils.logger import logger, setup_logger
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifecycle events: startup and shutdown."""
-    # Initialize application logger on startup
-    setup_logger(name="ai_universe", log_level=settings.LOG_LEVEL)
+    setup_logger(name="ai_universe", log_level=production_config.LOG_LEVEL)
     logger.info(
         "Starting %s in %s environment on %s:%d",
-        settings.APP_NAME,
-        settings.APP_ENV,
-        settings.HOST,
-        settings.PORT
+        production_config.APP_NAME,
+        production_config.APP_ENV,
+        production_config.HOST,
+        production_config.PORT
     )
     # Initialize persistent SQLite memory database
     await orchestrator.memory.initialize()
     yield
-    logger.info("Shutting down %s", settings.APP_NAME)
+    logger.info("Shutting down %s", production_config.APP_NAME)
 
 
 app = FastAPI(
-    title=settings.APP_NAME,
+    title=production_config.APP_NAME,
     description="Local-first, provider-agnostic multi-agent intelligence platform with structured adversarial debate.",
     version="1.0.0",
     lifespan=lifespan
 )
+
+# GZip response compression middleware for production efficiency
+app.add_middleware(GZipMiddleware, minimum_size=500)
 
 # CORS middleware for local frontend and developer UI tools
 app.add_middleware(
@@ -47,7 +52,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Global error handler
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logger.error("Unhandled global exception on %s %s: %s", request.method, request.url, str(exc))
@@ -56,7 +61,9 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={"detail": "Internal server error occurred.", "error_type": type(exc).__name__}
     )
 
+
 # Mount API routes
+app.include_router(health_router)
 app.include_router(api_router)
 app.include_router(friday_router)
 app.include_router(trading_router)
@@ -66,14 +73,9 @@ app.include_router(trading_router)
 async def root():
     """Root metadata endpoint."""
     return {
-        "name": settings.APP_NAME,
+        "name": production_config.APP_NAME,
         "status": "online",
         "version": "1.0.0",
+        "env": production_config.APP_ENV,
         "description": "Provider-agnostic multi-agent intelligence platform"
     }
-
-
-@app.get("/health")
-async def health_check():
-    """Health check endpoint."""
-    return {"status": "healthy"}
