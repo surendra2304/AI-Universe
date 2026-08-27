@@ -129,5 +129,6 @@ uvicorn app.main:app --reload --port 8000
 - [Architecture & Design](docs/architecture.md)
 - [Specialist Agents](docs/agents.md)
 - [REST API Specifications](docs/api.md)
+- [Trading Consultation API](docs/TRADING_CONSULT_API.md)
 - [Memory & Persistence](docs/memory.md)
 - [Experiments & Benchmarks](docs/experiments.md)

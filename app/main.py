@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 
 from app.api.friday_routes import friday_router
 from app.api.routes import router as api_router
+from app.routers.trading import router as trading_router
 from app.core.config import settings
 from app.core.orchestrator import orchestrator
 from app.utils.logger import logger, setup_logger
@@ -58,6 +59,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 # Mount API routes
 app.include_router(api_router)
 app.include_router(friday_router)
+app.include_router(trading_router)
 
 
 @app.get("/")

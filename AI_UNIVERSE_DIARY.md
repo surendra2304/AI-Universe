@@ -13,6 +13,7 @@ A local-first, multi-agent intelligence platform where 10 specialist AI agents c
 | Day 1 — 2026-08-24 | Foundation, 7-Provider Gateway & 10 Specialist Agents | ✅ Verified | [2026-08-24](diary/2026-08-24.md) |
 | Day 2 — 2026-08-25 | Real-Time Collaboration Engine, FRIDAY API & Failover Hardening | ✅ Verified | [2026-08-25](diary/2026-08-25.md) |
 | Day 3 — 2026-08-26 | Unified CollaborationEngine on All API Paths — No More Single-Agent Fast Path | ✅ Verified | [2026-08-26](diary/2026-08-26.md) |
+| Day 4 — 2026-08-27 | Trading Consultation Subsystem & Autonomous Advisory Intelligence | ✅ Verified | [2026-08-27](diary/2026-08-27.md) |
 
 ---
 
@@ -73,3 +74,23 @@ A local-first, multi-agent intelligence platform where 10 specialist AI agents c
   - Resolved OpenRouter free tier slug deprecations and handled provider failthrough to healthy alternatives.
 
 - 📊 **Test Results**: **82 passed** in 11.85s across all unit, debate, gateway, and integration test suites.
+
+---
+
+### 📈 Day 4 — 2026-08-27: Trading Consultation Subsystem & Advisory Engine
+
+- 🎯 **Focus**: Building the Trading Consultation Subsystem as an advisory layer for autonomous trading bots.
+
+- 💡 **What I Accomplished**:
+  - Implemented `TradingConsultRequest` and `AIUniverseDecision` Pydantic schemas enforcing strict non-live operational modes (`PAPER`, `TESTNET`).
+  - Created `TradingConsultService` orchestrating a specialized 4-agent debate panel (`TradingAnalyst`, `Strategist`, `Critic`, `Data Analyst`, and `Synthesizer`).
+  - Enforced critical synthesis constraints: maximum 2 parameter changes (preferring 1), mandatory quantitative evidence from telemetry, sub-20 trade gating (`INSUFFICIENT_DATA`), and healthy metric retention (`NO_CHANGE`).
+  - Built FastAPI router endpoints: `POST /v1/trading/consult`, `GET /v1/trading/consult/health`, and `GET /v1/trading/decisions/{decision_id}` with persistent SQLite logging under `trading_advisory` namespace.
+  - Implemented abuse protection: sliding-window rate limiting (20 req/bot/hour), 1MB payload limits, 180s server timeout fallback, and recursive zero-credential inspection rejecting `api_key`/`secret` fields with HTTP 400.
+
+- 🔧 **Fixes & Hardening**:
+  - Added per-agent 10s invocation timeouts and resilient deterministic fallback reasoning for trading debate stages.
+  - Authored comprehensive documentation in `docs/TRADING_CONSULT_API.md`.
+
+- 📊 **Test Results**: **93 passed** in 3.65s across all test suites including trading consultation contracts, rate limiting, and security boundaries.
+
