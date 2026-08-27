@@ -13,6 +13,7 @@ from app.config_production import production_config
 from app.core.config import settings
 from app.core.orchestrator import orchestrator
 from app.health import health_router
+from app.middleware.rate_limiter import EnhancedRateLimiterMiddleware
 from app.routers.admin_analytics import analytics_router
 from app.routers.batch import batch_router
 from app.routers.ecosystem import ecosystem_router
@@ -54,6 +55,9 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+# Multi-consumer dynamic rate limiter with burst allowance and retry-after headers
+app.add_middleware(EnhancedRateLimiterMiddleware)
 
 # Production security middleware (headers, rate limiting, payload bounding)
 app.add_middleware(ProductionSecurityMiddleware)
