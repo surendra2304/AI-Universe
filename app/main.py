@@ -22,6 +22,7 @@ from app.routers.enhanced_trading import enhanced_router
 from app.routers.evolution_intel import evolution_router
 from app.routers.forge_health import forge_health_router
 from app.routers.forge_services import forge_router
+from app.routers.governance import governance_router
 from app.routers.live_intelligence import live_router
 from app.routers.multi_market import multi_market_router
 from app.routers.nexus import nexus_router
@@ -104,6 +105,7 @@ app.include_router(forge_health_router)
 app.include_router(analytics_router)
 app.include_router(nexus_router)
 app.include_router(debate_router)
+app.include_router(governance_router)
 
 
 @app.get("/")

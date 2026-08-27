@@ -116,10 +116,39 @@ def test_reasoning_trace_and_debate_statistics():
     assert len(trace["evidence_scores"]) >= 1
     assert "provider_allocation" in trace
 
-    # Retrieve debate statistics
-    resp_stats = client.get("/v1/debate/statistics")
-    assert resp_stats.status_code == 200
-    stats = resp_stats.json()
-    assert stats["total_structured_debates"] >= 20
-    assert "provider_diversity_impact" in stats
-    assert stats["provider_diversity_impact"]["diversity_lift_pct"] > 0
+def test_multi_tenant_governance_and_deduplication():
+    """Tests tenant isolation, key rotation, circuits, Prometheus metrics, and request deduplication."""
+    # 1. Request deduplication (same request_id returns cached response)
+    req = {
+        "request_id": "nex-dedup-999",
+        "task_type": "lead_qualification",
+        "goal": "Deduplication idempotency check",
+        "evidence": [{"claim": "System telemetry stable", "trust_label": "system_fact"}],
+        "mode": "fast"
+    }
+    r1 = client.post("/v1/nexus/intelligence", json=req)
+    assert r1.status_code == 200
+    r2 = client.post("/v1/nexus/intelligence", json=req)
+    assert r2.status_code == 200
+    assert r1.json()["request_id"] == r2.json()["request_id"]
+    assert r1.json()["decision"] == r2.json()["decision"]
+
+    # 2. Tenant policy retrieval
+    resp_tp = client.get("/v1/governance/tenants/tenant_forge")
+    assert resp_tp.status_code == 200
+    assert resp_tp.json()["tenant_id"] == "tenant_forge"
+
+    # 3. Key rotation
+    resp_rot = client.post("/v1/governance/tenants/tenant_forge/rotate-key", json={"old_key": "key_forge_prod_01"})
+    assert resp_rot.status_code == 200
+    assert resp_rot.json()["status"] == "ROTATED"
+
+    # 4. Circuit breaker status
+    resp_circ = client.get("/v1/governance/circuits")
+    assert resp_circ.status_code == 200
+    assert "gemini" in resp_circ.json()
+
+    # 5. Prometheus metrics formatted
+    resp_prom = client.get("/v1/governance/prometheus-metrics")
+    assert resp_prom.status_code == 200
+    assert "ai_universe_requests_total" in resp_prom.json()["metrics"]

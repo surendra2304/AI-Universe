@@ -122,6 +122,12 @@ class NexusIntelligenceService:
         return total_w / len(evidence)
 
     async def process_request(self, req: IntelligenceRequest) -> IntelligenceResponse:
+        # Request deduplication (5-minute idempotency window)
+        from app.governance.tenant_manager import tenant_manager
+        cached_resp = tenant_manager.check_deduplication(req.request_id)
+        if cached_resp:
+            return IntelligenceResponse(**cached_resp)
+
         start_time = time.perf_counter()
         specialists = self.TASK_AGENT_MAPPING.get(req.task_type, ["strategist", "critic"])
         mode = req.mode.lower()
@@ -234,6 +240,10 @@ class NexusIntelligenceService:
             "request": req.model_dump(),
             "response": response.model_dump()
         }
+
+        # Store in deduplication cache
+        from app.governance.tenant_manager import tenant_manager
+        tenant_manager.store_deduplication(req.request_id, response.model_dump())
 
         # Track usage
         consumer_router.record_usage("nexus", tokens=650, latency_sec=latency_ms / 1000.0)
