@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
+from app.agents.software_specialists import register_software_specialists
 from app.api.friday_routes import friday_router
 from app.api.routes import router as api_router
 from app.config_production import production_config
@@ -18,6 +19,7 @@ from app.routers.evolution_intel import evolution_router
 from app.routers.live_intelligence import live_router
 from app.routers.multi_market import multi_market_router
 from app.routers.predictions import predictions_router
+from app.routers.providers import providers_router
 from app.routers.trading import router as trading_router
 from app.security.api_security import ProductionSecurityMiddleware
 from app.utils.logger import logger, setup_logger
@@ -34,6 +36,8 @@ async def lifespan(app: FastAPI):
         production_config.HOST,
         production_config.PORT
     )
+    # Register software engineering specialists for FORGE
+    register_software_specialists()
     # Initialize persistent SQLite memory database
     await orchestrator.memory.initialize()
     yield
@@ -83,6 +87,7 @@ app.include_router(multi_market_router)
 app.include_router(evolution_router)
 app.include_router(predictions_router)
 app.include_router(ecosystem_router)
+app.include_router(providers_router)
 
 
 @app.get("/")
