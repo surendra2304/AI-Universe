@@ -100,11 +100,29 @@ def test_analytics_and_admin_api_endpoints():
         "consumer": "forge",
         "request_id": "test-endpoint-outcome",
         "outcome": "success",
-        "detail": "verification_passed"
+        "detail": "verification_passed",
+        "measured_metrics": {"build_time_s": 2.1},
+        "task_type": "code_generation",
+        "provider_used": "gemini"
     }
     resp_out = client.post("/v1/analytics/outcome", json=payload)
     assert resp_out.status_code == 200
     assert resp_out.json()["status"] == "RECORDED"
+
+    # Calibration endpoint
+    resp_cal = client.get("/v1/analytics/calibration")
+    assert resp_cal.status_code == 200
+    assert "calibration_curve" in resp_cal.json()
+
+    # Cross consumer insights endpoint
+    resp_ins = client.get("/v1/analytics/insights")
+    assert resp_ins.status_code == 200
+    assert "cross_consumer_patterns" in resp_ins.json()
+
+    # Strategy bank endpoint
+    resp_sb = client.get("/v1/analytics/strategy-bank?task_type=lead_qualification")
+    assert resp_sb.status_code == 200
+    assert len(resp_sb.json()) >= 1
 
     # Optimization status endpoint
     resp_opt = client.get("/v1/admin/optimization/status")

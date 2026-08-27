@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException, Path, Query, status
 
 from app.alerts import alert_system
+from app.analytics.outcome_learning import DetailedOutcomeReport, outcome_learning_engine
 from app.analytics.outcomes import OutcomeReportRequest, consumer_outcome_tracker
 from app.analytics.predictive import predictive_provider_manager
 from app.analytics.provider_intel import provider_intel
@@ -52,11 +53,40 @@ async def get_quality_report():
 
 
 @analytics_router.post("/analytics/outcome", status_code=status.HTTP_200_OK)
-async def report_consumer_outcome(req: OutcomeReportRequest):
-    """Consumer (FORGE / Trading Bot) reports downstream verification or trading outcome."""
-    res = consumer_outcome_tracker.record_outcome(req)
+async def report_consumer_outcome(req: DetailedOutcomeReport):
+    """Universal outcome reporting endpoint for all consumers (trading_bot, forge, nexus, friday)."""
+    # Record in learning engine
+    res = outcome_learning_engine.record_outcome(req)
+    # Also log to consumer_outcome_tracker for compatibility
+    legacy_req = OutcomeReportRequest(
+        consumer="forge" if req.consumer not in ("forge", "trading_bot", "friday", "human") else req.consumer,
+        request_id=req.request_id,
+        outcome=req.outcome,
+        detail=req.detail,
+        provider_used=req.provider_used or "gemini",
+        service=req.task_type or "code_generation"
+    )
+    consumer_outcome_tracker.record_outcome(legacy_req)
     self_optimizing_router.adapt_weights_from_outcomes()
     return res
+
+
+@analytics_router.get("/analytics/calibration", status_code=status.HTTP_200_OK)
+async def get_confidence_calibration_curve():
+    """Returns honest calibration curve comparing stated confidence vs empirical outcomes."""
+    return outcome_learning_engine.get_confidence_calibration()
+
+
+@analytics_router.get("/analytics/insights", status_code=status.HTTP_200_OK)
+async def get_cross_consumer_insights():
+    """Returns cross-consumer learning patterns, weekly quality trends, and agent composition stats."""
+    return outcome_learning_engine.get_cross_consumer_insights()
+
+
+@analytics_router.get("/analytics/strategy-bank", status_code=status.HTTP_200_OK)
+async def query_strategy_bank_patterns(task_type: str = Query(default="lead_qualification"), query: str = Query(default="")):
+    """Queries persistent StrategyBank for relevant past successful situation patterns."""
+    return outcome_learning_engine.query_strategy_bank(task_type, query)
 
 
 # Admin endpoints

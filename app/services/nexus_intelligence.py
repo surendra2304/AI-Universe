@@ -128,6 +128,14 @@ class NexusIntelligenceService:
 
         evidence_trust = self._evaluate_trust_weight(req.evidence)
         key_evidence = [f"[{e.trust_label.upper()}] {e.claim}" for e in req.evidence[:5]]
+
+        # Query StrategyBank for relevant past proven outcomes
+        from app.analytics.outcome_learning import outcome_learning_engine
+        bank_matches = outcome_learning_engine.query_strategy_bank(req.task_type, req.goal)
+        if bank_matches:
+            best = bank_matches[0]
+            key_evidence.append(f"[STRATEGY_BANK] Similar past situation for {req.task_type}: {best.get('recommendation', '')} resulted in {best.get('outcome_summary', '')} ({int(best.get('success_rate', 0.9)*100)}% success)")
+
         if not key_evidence:
             key_evidence = ["Telemetry verified against active baseline."]
 
