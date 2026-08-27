@@ -13,6 +13,7 @@ from app.core.config import settings
 from app.core.orchestrator import orchestrator
 from app.health import health_router
 from app.routers.enhanced_trading import enhanced_router
+from app.routers.evolution_intel import evolution_router
 from app.routers.live_intelligence import live_router
 from app.routers.multi_market import multi_market_router
 from app.routers.trading import router as trading_router
@@ -77,6 +78,7 @@ app.include_router(trading_router)
 app.include_router(enhanced_router)
 app.include_router(live_router)
 app.include_router(multi_market_router)
+app.include_router(evolution_router)
 
 
 @app.get("/")
