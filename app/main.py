@@ -14,6 +14,7 @@ from app.core.orchestrator import orchestrator
 from app.health import health_router
 from app.routers.enhanced_trading import enhanced_router
 from app.routers.trading import router as trading_router
+from app.security.api_security import ProductionSecurityMiddleware
 from app.utils.logger import logger, setup_logger
 
 
@@ -40,6 +41,9 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+# Production security middleware (headers, rate limiting, payload bounding)
+app.add_middleware(ProductionSecurityMiddleware)
 
 # GZip response compression middleware for production efficiency
 app.add_middleware(GZipMiddleware, minimum_size=500)
