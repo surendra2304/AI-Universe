@@ -110,16 +110,30 @@ async def get_optimization_status():
 
 @analytics_router.get("/admin/costs", status_code=status.HTTP_200_OK)
 async def get_admin_costs():
-    """Returns detailed cost breakdowns, ceilings, and provider cost metrics."""
+    """Returns detailed cost breakdowns, cost per successful recommendation, and provider efficiency leaderboards."""
+    from app.analytics.cost_tracking import provider_cost_tracker
+    from app.routing.cost_router import cost_aware_router
     overview = usage_analytics.get_overview()
     prov_comp = usage_analytics.get_providers_comparison()
+    cost_report = provider_cost_tracker.get_cost_report()
     return {
         "daily_budget_usd": overview["daily_budget_usd"],
         "total_cost_usd": overview["total_cost_usd"],
         "budget_used_pct": overview["budget_used_pct"],
         "ceiling_alert_active": overview["ceiling_alert_active"],
+        "cost_per_successful_outcome_usd": cost_report["cost_per_successful_outcome_usd"],
+        "projected_monthly_spend_usd": cost_report["projected_monthly_spend_usd"],
+        "provider_leaderboard": cost_report["provider_leaderboard"],
+        "consumer_budgets": cost_aware_router.get_budget_dashboard(),
         "provider_costs": {p: data["cost_usd"] for p, data in prov_comp.items()}
     }
+
+
+@analytics_router.get("/admin/budgets", status_code=status.HTTP_200_OK)
+async def get_consumer_budgets_dashboard():
+    """Returns per-consumer monthly budget allocations, soft/hard limits, and spend trends."""
+    from app.routing.cost_router import cost_aware_router
+    return cost_aware_router.get_budget_dashboard()
 
 
 @analytics_router.get("/admin/reliability", status_code=status.HTTP_200_OK)

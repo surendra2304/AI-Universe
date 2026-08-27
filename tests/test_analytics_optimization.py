@@ -128,3 +128,44 @@ def test_analytics_and_admin_api_endpoints():
     resp_opt = client.get("/v1/admin/optimization/status")
     assert resp_opt.status_code == 200
     assert "active_weights" in resp_opt.json()
+
+
+def test_cost_aware_routing_and_token_optimization():
+    """Tests CostAwareRouter, TokenOptimizationEngine, and ProviderCostTracker."""
+    from app.token_optimizer import token_optimizer
+    from app.routing.cost_router import cost_aware_router
+    from app.analytics.cost_tracking import provider_cost_tracker
+
+    # 1. Cost-aware routing
+    route_dec = cost_aware_router.route_request("nexus", "lead_qualification", estimated_tokens=1200)
+    assert route_dec.selected_provider in ("groq", "gemini", "nvidia", "mistral", "openrouter")
+    assert route_dec.cost_efficiency_score > 0
+
+    # 2. Token compression
+    comp_res = token_optimizer.compress_context(
+        context={"goal": "Evaluate ARR lead", "meta": "Additional details that can be compressed"},
+        evidence_list=[
+            {"claim": "Verified telemetry", "trust_label": "verified_telemetry"},
+            {"claim": "User unverified text", "trust_label": "untrusted_user_input"}
+        ],
+        max_evidence=2
+    )
+    assert comp_res.compression_ratio_pct >= 40.0
+    assert len(comp_res.selected_evidence) <= 2
+
+    # 3. Semantic caching
+    token_optimizer.store_cached_response("trading", "BTC volatile market query", {"advice": "DECREASE_LEVERAGE"})
+    hit = token_optimizer.get_cached_response("trading", "BTC volatile market query")
+    assert hit is not None
+    assert hit["advice"] == "DECREASE_LEVERAGE"
+
+    # 4. Admin costs & budget dashboard
+    resp_cost = client.get("/v1/admin/costs")
+    assert resp_cost.status_code == 200
+    data = resp_cost.json()
+    assert "cost_per_successful_outcome_usd" in data
+    assert "consumer_budgets" in data
+
+    resp_bud = client.get("/v1/admin/budgets")
+    assert resp_bud.status_code == 200
+    assert "trading_bot" in resp_bud.json()
