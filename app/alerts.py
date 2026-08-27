@@ -31,6 +31,23 @@ class AlertSystem:
         ]
         self.webhook_urls: List[str] = []
 
+    def register_webhook(self, url: str) -> None:
+        if url not in self.webhook_urls:
+            self.webhook_urls.append(url)
+
+    async def notify_webhooks(self, alert: AlertItem) -> int:
+        delivered = 0
+        import httpx
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            for url in self.webhook_urls:
+                try:
+                    resp = await client.post(url, json=alert.model_dump())
+                    if resp.status_code in (200, 201, 202, 204):
+                        delivered += 1
+                except Exception as exc:
+                    logger.warning("Webhook dispatch failed to %s: %s", url, str(exc))
+        return delivered
+
     def trigger_alert(self, category: Literal["cost", "provider", "quality", "consumer"], severity: Literal["critical", "warning", "info"], title: str, description: str) -> AlertItem:
         alert = AlertItem(
             alert_id=f"ALT-{int(time.time())}",

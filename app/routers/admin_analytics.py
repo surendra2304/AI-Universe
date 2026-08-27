@@ -78,7 +78,46 @@ async def get_optimization_status():
     return self_optimizing_router.get_routing_status()
 
 
+@analytics_router.get("/admin/costs", status_code=status.HTTP_200_OK)
+async def get_admin_costs():
+    """Returns detailed cost breakdowns, ceilings, and provider cost metrics."""
+    overview = usage_analytics.get_overview()
+    prov_comp = usage_analytics.get_providers_comparison()
+    return {
+        "daily_budget_usd": overview["daily_budget_usd"],
+        "total_cost_usd": overview["total_cost_usd"],
+        "budget_used_pct": overview["budget_used_pct"],
+        "ceiling_alert_active": overview["ceiling_alert_active"],
+        "provider_costs": {p: data["cost_usd"] for p, data in prov_comp.items()}
+    }
+
+
+@analytics_router.get("/admin/reliability", status_code=status.HTTP_200_OK)
+async def get_admin_reliability():
+    """Returns reliability metrics and provider failure rates."""
+    outcomes = consumer_outcome_tracker.get_outcome_summary()
+    perf = provider_intel.get_performance_matrix()
+    return {
+        "downstream_pass_rates": outcomes["provider_verification_pass_rates"],
+        "overall_success_rate_pct": outcomes["overall_downstream_success_rate_pct"],
+        "failure_patterns": perf["failure_pattern_analysis"]
+    }
+
+
 @analytics_router.get("/admin/alerts", status_code=status.HTTP_200_OK)
 async def get_admin_alerts(unacknowledged_only: bool = Query(default=False)):
     """Returns list of active system alerts."""
     return [a.model_dump() for a in alert_system.get_alerts(unacknowledged_only=unacknowledged_only)]
+
+
+@analytics_router.get("/admin/export", status_code=status.HTTP_200_OK)
+async def export_analytics_data(format: str = Query(default="json", description="json or csv")):
+    """Exports all telemetry and usage analytics in JSON or CSV format."""
+    overview = usage_analytics.get_overview()
+    provs = usage_analytics.get_providers_comparison()
+    if format.lower() == "csv":
+        csv_lines = ["provider,calls,tokens,cost_usd,avg_latency_ms"]
+        for p, d in provs.items():
+            csv_lines.append(f"{p},{d['calls']},{d['tokens']},{d['cost_usd']},{d['avg_latency_ms']}")
+        return {"content_type": "text/csv", "data": "\n".join(csv_lines)}
+    return {"overview": overview, "providers": provs}
