@@ -1,4 +1,4 @@
-"""FastAPI Router for Trading Bot Advisory Consultation."""
+"""FastAPI Router for Trading Bot Advisory Consultation and A/B Testing."""
 
 import asyncio
 import json
@@ -13,8 +13,13 @@ from fastapi import APIRouter, HTTPException, Request, Response, status
 from app.agents.registry import agent_registry
 from app.schemas.trading_consult import (
     AIUniverseDecision,
+    ExperimentConfigResponse,
+    ExperimentResultsResponse,
+    ExperimentStartRequest,
+    ExperimentStatusResponse,
     TradingConsultRequest,
 )
+from app.services.experiment_service import experiment_service
 from app.services.trading_consult_service import trading_consult_service
 from app.utils.logger import logger
 
@@ -72,6 +77,7 @@ async def consult_trading_bot(request: Request) -> AIUniverseDecision:
     """
     Submits performance telemetry for multi-agent trading consultation.
     Enforces rate limiting, payload size validation, credential scanning, and a 180s server timeout.
+    Supports A/B testing with experiment context and control baseline comparison.
     """
     # 1. Payload size validation (max 1MB)
     body_bytes = await request.body()
@@ -124,7 +130,8 @@ async def consult_trading_bot(request: Request) -> AIUniverseDecision:
             regime_analysis="Analysis incomplete due to deliberation timeout.",
             dissent_notes="Timeout encountered during multi-agent debate stages.",
             debate_summary="Consultation orchestration reached the 180-second timeout threshold. Defaulting to NO_CHANGE safe holding pattern.",
-            valid_until=(datetime.utcnow()).isoformat()
+            valid_until=(datetime.utcnow()).isoformat(),
+            comparison_rationale="Consultation timed out before completing A/B comparative synthesis."
         )
     except Exception as exc:
         logger.error("Error executing trading consultation: %s", str(exc))
@@ -144,7 +151,8 @@ async def trading_consult_health():
         "service": "trading_consultation",
         "agents_available": available_agent_roles,
         "advisory_only": True,
-        "exchange_execution": False
+        "exchange_execution": False,
+        "ab_testing_supported": True
     }
 
 
@@ -158,3 +166,41 @@ async def get_trading_decision(decision_id: str) -> AIUniverseDecision:
             detail=f"Trading consultation decision '{decision_id}' not found in persistent memory."
         )
     return decision
+
+
+# --- A/B Experiment Tracking Endpoints ---
+
+@router.post("/experiment/start", response_model=ExperimentConfigResponse, status_code=status.HTTP_201_CREATED)
+async def start_ab_experiment(req: ExperimentStartRequest) -> ExperimentConfigResponse:
+    """
+    Registers and launches a new A/B trading experiment with CONTROL and TREATMENT arms.
+    """
+    return experiment_service.start_experiment(req)
+
+
+@router.get("/experiment/{experiment_id}/status", response_model=ExperimentStatusResponse, status_code=status.HTTP_200_OK)
+async def get_ab_experiment_status(experiment_id: str) -> ExperimentStatusResponse:
+    """
+    Returns current experiment status, duration, active arms, and consultation counts.
+    """
+    exp_status = experiment_service.get_status(experiment_id)
+    if not exp_status:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"A/B Experiment '{experiment_id}' not found."
+        )
+    return exp_status
+
+
+@router.get("/experiment/{experiment_id}/results", response_model=ExperimentResultsResponse, status_code=status.HTTP_200_OK)
+async def get_ab_experiment_results(experiment_id: str) -> ExperimentResultsResponse:
+    """
+    Returns aggregated comparative results and conclusion between CONTROL and TREATMENT arms.
+    """
+    exp_results = experiment_service.get_results(experiment_id)
+    if not exp_results:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"A/B Experiment '{experiment_id}' not found."
+        )
+    return exp_results

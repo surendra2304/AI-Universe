@@ -1,6 +1,6 @@
-# Trading Consultation API Reference
+# Trading Consultation & A/B Testing API Reference
 
-The **Trading Consultation API** exposes AI Universe as an asynchronous advisory intelligence layer for autonomous trading bots. It provides multi-agent deliberation over quantitative performance metrics, parameter adjustments, and drawdown risk assessments.
+The **Trading Consultation API** exposes AI Universe as an asynchronous advisory intelligence layer for autonomous trading bots. It provides multi-agent deliberation over quantitative performance metrics, parameter adjustments, drawdown risk assessments, and **A/B experimental arm evaluations (Control vs. Treatment)**.
 
 > [!IMPORTANT]
 > **Safety Rule & Invariant**: AI Universe is strictly an **advisory system**. It never interacts with exchange endpoints, never holds or signs private keys, and never executes trades. Trading bots independently validate all returned parameter recommendations against hard deterministic safety bounds.
@@ -11,9 +11,9 @@ The **Trading Consultation API** exposes AI Universe as an asynchronous advisory
 
 When a trading bot submits performance telemetry, AI Universe convenes a dedicated multi-agent specialist panel:
 1. **Trading Analyst (`trading_analyst`)**: Analyzes win rate, profit factor, drawdown curves, and consecutive loss streaks to propose initial parameter calibrations.
-2. **Strategist (`strategist`)**: Evaluates trade-offs between capital preservation and trade frequency across active strategies.
+2. **Strategist (`strategist`)**: Evaluates trade-offs between capital preservation and trade frequency across active strategies and ensures A/B treatment arms do not diverge excessively from control baselines.
 3. **Adversarial Critic (`critic`)**: Challenges curve-fitting risks, small-sample overfitting, and regime shifts.
-4. **Data Analyst (`data_analyst`)**: Quantitatively verifies empirical distributions and mathematical significance thresholds.
+4. **Data Analyst (`data_analyst`)**: Quantitatively verifies empirical distributions, mathematical significance thresholds, and cross-arm delta statistics.
 5. **Synthesizer (`synthesizer`)**: Emits a bounded `AIUniverseDecision` respecting hard constraints.
 
 ### Synthesis Decision Rules
@@ -21,82 +21,167 @@ When a trading bot submits performance telemetry, AI Universe convenes a dedicat
 - **Mandatory Quantitative Evidence**: Every adjustment must cite specific telemetry metrics (e.g. *"consecutive_losses=6 justifies tightening stop_loss_pct by 15%"*).
 - **Sample Size Gate**: If total closed trades $N < 20$, the system strictly returns `status = "INSUFFICIENT_DATA"`.
 - **Healthy Gate**: If win rate $\ge 50\%$, profit factor $\ge 1.25$, and max drawdown $\le 5\%$, the system returns `status = "NO_CHANGE"`.
+- **A/B Testing Control Bound**: When consulting for a `TREATMENT` arm with `control_metrics`, adjustments are bounded conservatively ($\le \pm 15\%$) to preserve comparative experimental validity while generating a `comparison_rationale` and `expected_improvement`.
 
 ---
 
-## Synthetic Telemetry Scenarios
+## A/B Testing Endpoints
 
-Standardized synthetic test fixtures are generated via `scripts/generate_synthetic_telemetry.py` and saved under `tests/fixtures/`:
+### 1. Register & Start A/B Experiment
+`POST /v1/trading/experiment/start`
 
-| Scenario Fixture | Profile Summary | Expected Outcome |
-| :--- | :--- | :--- |
-| `telemetry_healthy.json` | Win Rate 68%, Profit Factor 1.85, Drawdown 2.1%, Trades 85 | `NO_CHANGE` (Confidence $\ge 0.80$) |
-| `telemetry_struggling.json` | Win Rate 35%, Profit Factor 0.72, Drawdown 9.8%, ConsecLosses 6 | `RECOMMENDATION` (Tighten Stop Loss) |
-| `telemetry_insufficient_data.json` | Trades 12 ($N < 20$) | `INSUFFICIENT_DATA` (0 changes) |
-| `telemetry_mixed_strategies.json` | 3 strategies (1 profitable, 1 failing with loss streak, 1 neutral) | `RECOMMENDATION` (Targeted calibration) |
+Initializes a new A/B experiment comparing a CONTROL baseline arm against a TREATMENT calibration arm.
+
+#### Request Payload (`ExperimentStartRequest`)
+```json
+{
+  "experiment_id": "exp_volatility_v2",
+  "hypothesis": "Tighter trailing stop losses reduce drawdown in choppy volatility without degrading profit factor.",
+  "duration_hours": 48.0,
+  "success_metrics": ["profit_factor", "max_drawdown_pct", "win_rate"],
+  "control_bot_id": "bot_ctrl_01",
+  "treatment_bot_id": "bot_treat_01",
+  "initial_parameters": {
+    "Supertrend_5m": {
+      "stop_loss_pct": 0.02,
+      "take_profit_pct": 0.03
+    }
+  }
+}
+```
+
+#### Response Payload (`ExperimentConfigResponse`)
+```json
+{
+  "experiment_id": "exp_volatility_v2",
+  "status": "ACTIVE",
+  "start_time": "2026-08-27T16:00:00.000000",
+  "duration_hours": 48.0,
+  "control_config": {
+    "bot_id": "bot_ctrl_01",
+    "arm": "CONTROL",
+    "parameters": {"Supertrend_5m": {"stop_loss_pct": 0.02, "take_profit_pct": 0.03}}
+  },
+  "treatment_config": {
+    "bot_id": "bot_treat_01",
+    "arm": "TREATMENT",
+    "parameters": {"Supertrend_5m": {"stop_loss_pct": 0.02, "take_profit_pct": 0.03}}
+  },
+  "success_metrics": ["profit_factor", "max_drawdown_pct", "win_rate"],
+  "message": "A/B Experiment successfully initialized."
+}
+```
 
 ---
 
-## Endpoints
+### 2. Check Experiment Status
+`GET /v1/trading/experiment/{experiment_id}/status`
 
-### 1. Request Consultation
+#### Response Payload (`ExperimentStatusResponse`)
+```json
+{
+  "experiment_id": "exp_volatility_v2",
+  "status": "ACTIVE",
+  "start_time": "2026-08-27T16:00:00.000000",
+  "elapsed_hours": 12.5,
+  "duration_hours": 48.0,
+  "active_arms": ["bot_ctrl_01", "bot_treat_01"],
+  "consultations_count": {
+    "CONTROL": 3,
+    "TREATMENT": 3
+  },
+  "latest_telemetry": { ... }
+}
+```
+
+---
+
+### 3. Retrieve Experiment Comparative Results
+`GET /v1/trading/experiment/{experiment_id}/results`
+
+#### Response Payload (`ExperimentResultsResponse`)
+```json
+{
+  "experiment_id": "exp_volatility_v2",
+  "status": "COMPLETED",
+  "winner": "TREATMENT",
+  "duration_hours": 48.0,
+  "control_summary": {
+    "bot_id": "bot_ctrl_01",
+    "total_trades": 52,
+    "win_rate": 0.52,
+    "profit_factor": 1.30,
+    "max_drawdown_pct": 4.8,
+    "consultations_count": 6
+  },
+  "treatment_summary": {
+    "bot_id": "bot_treat_01",
+    "total_trades": 48,
+    "win_rate": 0.61,
+    "profit_factor": 1.75,
+    "max_drawdown_pct": 2.4,
+    "consultations_count": 6
+  },
+  "comparison_analysis": {
+    "profit_factor_delta": 0.45,
+    "win_rate_delta_pct": 9.0,
+    "drawdown_delta_pct": -2.4,
+    "sample_significance": true
+  },
+  "conclusion": "Treatment arm outperformed Control (PF: 1.75 vs 1.30, WinRate: 61.0% vs 52.0%, MaxDD: 2.40% vs 4.80%). Recommend promoting Treatment calibrations to production."
+}
+```
+
+---
+
+## Consultation Endpoint with Experiment Context
+
 `POST /v1/trading/consult`
 
-Submits trading bot telemetry for multi-agent advisory review.
-
-#### Headers
-- `Content-Type: application/json`
+Submits telemetry for consultation. Can include `experiment_id`, `experiment_group` (`"CONTROL"` or `"TREATMENT"`), and `control_metrics`.
 
 #### Request Payload (`TradingConsultRequest`)
 ```json
 {
-  "bot_id": "crypto_scalper_01",
+  "bot_id": "bot_treat_01",
   "trading_mode": "PAPER",
-  "experiment_id": "exp_v2_volatility_test",
+  "experiment_id": "exp_volatility_v2",
+  "experiment_group": "TREATMENT",
+  "control_metrics": {
+    "profit_factor": 1.45,
+    "win_rate": 0.58,
+    "max_drawdown_pct": 3.2,
+    "total_trades": 45
+  },
   "telemetry": {
-    "equity": 9450.0,
-    "unrealized_pnl": -50.0,
-    "realized_pnl": -550.0,
-    "win_rate": 0.41,
-    "profit_factor": 0.82,
-    "max_drawdown_pct": 7.4,
+    "equity": 9200.0,
+    "unrealized_pnl": -80.0,
+    "realized_pnl": -800.0,
+    "win_rate": 0.36,
+    "profit_factor": 0.72,
+    "max_drawdown_pct": 8.5,
     "consecutive_losses": 5,
-    "total_trades": 48,
-    "sharpe_ratio": 0.65
+    "total_trades": 42,
+    "sharpe_ratio": 0.45
   },
   "strategy_performance": [
     {
       "strategy_name": "Supertrend_5m",
-      "trade_count": 32,
-      "win_rate": 0.38,
-      "profit_factor": 0.75,
-      "net_pnl": -420.0,
-      "avg_win": 28.0,
-      "avg_loss": 32.0,
-      "consecutive_losses": 4
+      "trade_count": 42,
+      "win_rate": 0.36,
+      "profit_factor": 0.72,
+      "net_pnl": -800.0,
+      "avg_win": 25.0,
+      "avg_loss": 35.0,
+      "consecutive_losses": 5
     }
   ],
   "current_parameters": {
     "Supertrend_5m": {
       "stop_loss_pct": 0.02,
-      "take_profit_pct": 0.03,
-      "atr_multiplier": 2.5
+      "take_profit_pct": 0.03
     }
   },
-  "regime_data": {
-    "volatility_regime": "high_chop",
-    "trend_strength": "weak"
-  },
-  "recent_trades": [
-    {
-      "id": "trade_101",
-      "side": "BUY",
-      "entry_price": 64200.0,
-      "exit_price": 63800.0,
-      "pnl": -40.0,
-      "duration_sec": 420
-    }
-  ],
   "consultation_reason": "DRAWDOWN_EVENT"
 }
 ```
@@ -105,7 +190,7 @@ Submits trading bot telemetry for multi-agent advisory review.
 ```json
 {
   "decision_id": "e9b23fa0-82a1-4ce8-b570-0ea5cbb81b23",
-  "timestamp": "2026-08-27T13:30:00.000000",
+  "timestamp": "2026-08-27T16:30:00.000000",
   "status": "RECOMMENDATION",
   "confidence": 0.88,
   "parameter_changes": [
@@ -113,59 +198,35 @@ Submits trading bot telemetry for multi-agent advisory review.
       "strategy": "Supertrend_5m",
       "parameter": "stop_loss_pct",
       "current_value": 0.02,
-      "recommended_value": 0.017,
-      "change_pct": -15.0,
-      "rationale": "Consecutive losses (5) or Max Drawdown (7.40%) on Supertrend_5m justifies tightening stop_loss_pct by 15.0% for capital preservation."
+      "recommended_value": 0.0176,
+      "change_pct": -12.0,
+      "rationale": "Consecutive losses (5) or Max Drawdown (8.50%) on Supertrend_5m justifies tightening stop_loss_pct by 12.0% for capital preservation."
     }
   ],
-  "risk_assessment": "ELEVATED RISK: Account max drawdown reached 7.40% with 5 consecutive losses. Capital preservation protocol activated.",
+  "risk_assessment": "ELEVATED RISK: Account max drawdown reached 8.50% with 5 consecutive losses. Capital preservation protocol activated.",
   "regime_analysis": "Market regime indicates chop or unfavorable volatility for current breakout/trend parameters.",
   "dissent_notes": "Critic noted that wider stop losses in this regime increase tail-risk exposure; tightening stop loss is strictly indicated.",
   "debate_summary": "Multi-Agent Deliberation:\n- TradingAnalyst: Quantitative Analysis: Evaluated win rate...\n- Strategist: Strategic Assessment: Prioritizing capital preservation...\n- Critic: Adversarial Review: Scrutinized sample size reliability...",
-  "valid_until": "2026-08-28T13:30:00.000000"
+  "valid_until": "2026-08-28T16:30:00.000000",
+  "treatment_status": "UNDERPERFORMING_CONTROL",
+  "comparison_rationale": "TREATMENT arm is underperforming CONTROL baseline (Profit Factor: 0.72 vs 1.45, Drawdown: 8.50% vs 3.20%). Recommended adjustments conservatively tighten risk bounds to prevent excessive arm divergence while preserving valid test comparison.",
+  "expected_improvement": "Targeting +0.73 PF recovery to regain parity with Control baseline."
 }
 ```
 
 ---
 
-### 2. Consultation Subsystem Health
-`GET /v1/trading/consult/health`
+## Best Practices for A/B Testing with AI Advisory
 
-#### Response
-```json
-{
-  "status": "ok",
-  "service": "trading_consultation",
-  "agents_available": [
-    "Researcher",
-    "Architect",
-    "Coder",
-    "Debugger",
-    "Security Analyst",
-    "Data Analyst",
-    "Critic",
-    "Fact Checker",
-    "Strategist",
-    "Synthesizer",
-    "Trading Analyst"
-  ],
-  "advisory_only": true,
-  "exchange_execution": false
-}
-```
+1. **Keep Initial Parameters Identical**: Ensure both CONTROL and TREATMENT arms start with the same underlying strategy logic and base parameters.
+2. **Synchronized Telemetry Schedules**: Have both arms consult AI Universe on the same intervals (e.g. every 4 hours or after each batch of 10 closed trades).
+3. **Bounded Adjustments in Treatment Arm**: AI Universe applies conservative parameter shifts ($\le 15\%$) to Treatment bots to isolate the causal impact of parameter tuning against baseline drift.
+4. **Minimum Sample Size**: Allow both arms to reach at least $N \ge 20$ trades before drawing statistical conclusions or declaring an arm winner.
+5. **Simultaneous Concurrency**: Both arms can consult AI Universe simultaneously without rate limit cross-contamination because rate limits are strictly isolated by unique `bot_id`.
 
 ---
 
-### 3. Retrieve Historical Decision
-`GET /v1/trading/decisions/{decision_id}`
-
-Retrieves an advisory decision previously generated and persisted in SQLite memory.
-
----
-
-## Quality Audit & Validation Results
-
-The automated recommendation quality audit tool (`scripts/audit_consultation_quality.py`) audits response coherence, statistical evidence, bound compliance ($\le \pm 50\%$), and forbidden parameter checks:
+## Quality Audit & Latency Benchmarks
 
 ```
 ================================================================================
@@ -173,42 +234,16 @@ The automated recommendation quality audit tool (`scripts/audit_consultation_qua
 ================================================================================
 
 [PASS] Scenario 'telemetry_healthy.json' - Quality Score: 100/100
-     [+] All coherence, evidence, bounds, and gating constraints satisfied.
-
 [PASS] Scenario 'telemetry_struggling.json' - Quality Score: 100/100
-     [+] All coherence, evidence, bounds, and gating constraints satisfied.
-
 [PASS] Scenario 'telemetry_insufficient_data.json' - Quality Score: 100/100
-     [+] All coherence, evidence, bounds, and gating constraints satisfied.
-
 [PASS] Scenario 'telemetry_mixed_strategies.json' - Quality Score: 100/100
-     [+] All coherence, evidence, bounds, and gating constraints satisfied.
 
 ================================================================================
 OVERALL ADVISORY QUALITY SCORE: 100/100 (4/4 scenarios perfect)
 ================================================================================
 ```
 
----
-
-## Load Testing & Latency Benchmarks
-
-Validated via `tests/test_consult_load.py` under 100 concurrent requests across distinct bot IDs:
-
-- **Total Requests**: 100
+Dual-Arm Concurrency Benchmark (`tests/test_consult_ab_load.py`):
+- **Concurrent Requests**: 30 (15 simultaneous Control/Treatment pairs)
 - **Success Rate**: 100.0%
-- **Average Latency**: ~40.36s
-- **P50 Latency**: ~40.57s
-- **P95 Latency**: ~41.63s (Strictly within 180s timeout SLA)
-- **P99 Latency**: ~41.71s
-- **Max Latency**: ~41.71s
-- **False-Positive 429 Errors**: 0% (Clean isolation across distinct bots)
-
----
-
-## Rate Limiting & Abuse Prevention
-
-1. **Sliding-Window Rate Limiting**: Maximum of **20 consultations per `bot_id` per hour**. Returns `HTTP 429 Too Many Requests` on breach.
-2. **Payload Size Guard**: Maximum payload size of **1MB** (`HTTP 413 Payload Too Large`).
-3. **Zero Credential Guard**: Any incoming payload containing sensitive credential keys (`api_key`, `secret`, `private_key`, `credential`, etc.) is rejected immediately with `HTTP 400 Bad Request`.
-4. **Server Timeout**: 180-second timeout on multi-agent debate orchestration; gracefully returns a safe holding pattern (`status = "NO_CHANGE"`) if timeout is reached.
+- **Zero Rate Limit Interference**: Clean independent tracking per `bot_id`.

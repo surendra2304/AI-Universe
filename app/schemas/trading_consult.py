@@ -1,4 +1,4 @@
-"""Pydantic schemas for Trading Consultation Subsystem."""
+"""Pydantic schemas for Trading Consultation Subsystem and A/B Testing."""
 
 from datetime import datetime
 from typing import Any, Dict, List, Literal, Optional
@@ -36,6 +36,14 @@ class TradingConsultRequest(BaseModel):
     bot_id: str = Field(description="Unique identifier of the consulting bot instance")
     trading_mode: Literal["PAPER", "TESTNET"] = Field(description="Operational mode (only non-live modes allowed)")
     experiment_id: Optional[str] = Field(default=None, description="Optional experiment tracking identifier")
+    experiment_group: Optional[Literal["CONTROL", "TREATMENT"]] = Field(
+        default=None,
+        description="A/B testing arm identifier (CONTROL or TREATMENT)"
+    )
+    control_metrics: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Baseline metrics from the control arm for comparison analysis"
+    )
     telemetry: TradingTelemetry = Field(description="High-level account and performance telemetry")
     strategy_performance: List[StrategyPerformance] = Field(default_factory=list, description="Per-strategy performance telemetry")
     current_parameters: Dict[str, Dict[str, Any]] = Field(
@@ -82,3 +90,74 @@ class AIUniverseDecision(BaseModel):
     dissent_notes: str = Field(description="Critiques, dissent, or counter-risks raised by the Critic agent")
     debate_summary: str = Field(description="Condensed multi-agent deliberation trail across specialists")
     valid_until: str = Field(description="ISO 8601 expiration timestamp for this advisory decision (default 24h)")
+    # A/B testing fields
+    comparison_rationale: Optional[str] = Field(
+        default=None,
+        description="Detailed comparative rationale explaining how this recommendation differs from or relates to the control baseline"
+    )
+    expected_improvement: Optional[str] = Field(
+        default=None,
+        description="Quantitative estimate of expected performance improvement based on historical telemetry"
+    )
+    treatment_status: Optional[str] = Field(
+        default=None,
+        description="Performance status relative to control (e.g., OUTPERFORMING_CONTROL, PARITY, UNDERPERFORMING_CONTROL)"
+    )
+
+
+# --- A/B Experiment Tracking Schemas ---
+
+class ExperimentStartRequest(BaseModel):
+    """Payload to register and launch a new A/B trading experiment."""
+    experiment_id: str = Field(description="Unique experiment identifier")
+    hypothesis: Optional[str] = Field(default=None, description="Hypothesis being evaluated in the experiment")
+    duration_hours: float = Field(default=72.0, ge=1.0, description="Scheduled duration of the experiment in hours")
+    success_metrics: List[str] = Field(
+        default_factory=lambda: ["profit_factor", "win_rate", "max_drawdown_pct", "sharpe_ratio"],
+        description="Key metrics used to determine the winning arm"
+    )
+    control_bot_id: str = Field(description="Bot instance identifier assigned to the CONTROL arm")
+    treatment_bot_id: str = Field(description="Bot instance identifier assigned to the TREATMENT arm")
+    initial_parameters: Optional[Dict[str, Any]] = Field(
+        default_factory=dict,
+        description="Baseline parameter configuration for both arms at experiment start"
+    )
+
+
+class ExperimentConfigResponse(BaseModel):
+    """Response returned when an A/B experiment is successfully registered."""
+    experiment_id: str
+    status: Literal["ACTIVE", "COMPLETED", "TERMINATED"] = "ACTIVE"
+    start_time: str
+    duration_hours: float
+    control_config: Dict[str, Any]
+    treatment_config: Dict[str, Any]
+    success_metrics: List[str]
+    message: str = "A/B Experiment successfully initialized."
+
+
+class ExperimentStatusResponse(BaseModel):
+    """Current live progress and health status of an active A/B experiment."""
+    experiment_id: str
+    status: Literal["ACTIVE", "COMPLETED", "TERMINATED"]
+    start_time: str
+    elapsed_hours: float
+    duration_hours: float
+    active_arms: List[str]
+    consultations_count: Dict[str, int] = Field(
+        default_factory=lambda: {"CONTROL": 0, "TREATMENT": 0},
+        description="Count of consultations logged per arm"
+    )
+    latest_telemetry: Optional[Dict[str, Any]] = None
+
+
+class ExperimentResultsResponse(BaseModel):
+    """Aggregated results and performance analysis upon experiment completion."""
+    experiment_id: str
+    status: Literal["ACTIVE", "COMPLETED", "TERMINATED"]
+    winner: Optional[Literal["CONTROL", "TREATMENT", "INCONCLUSIVE"]] = None
+    duration_hours: float
+    control_summary: Dict[str, Any]
+    treatment_summary: Dict[str, Any]
+    comparison_analysis: Dict[str, Any]
+    conclusion: str

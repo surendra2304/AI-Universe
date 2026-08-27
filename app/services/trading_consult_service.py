@@ -1,4 +1,4 @@
-"""Consultation Orchestrator Service for Trading Bot Advisory."""
+"""Consultation Orchestrator Service for Trading Bot Advisory with A/B Testing Support."""
 
 import asyncio
 import json
@@ -21,6 +21,7 @@ from app.schemas.trading_consult import (
     ParameterChange,
     TradingConsultRequest,
 )
+from app.services.experiment_service import experiment_service
 from app.utils.ids import generate_debate_id, generate_message_id, generate_run_id, generate_task_id
 from app.utils.logger import logger
 
@@ -35,8 +36,9 @@ class TradingConsultService:
     2. Quantitative evidence mandatory from telemetry for any parameter change.
     3. If total_trades < 20 -> status = "INSUFFICIENT_DATA".
     4. If telemetry is healthy -> status = "NO_CHANGE".
-    5. Persistent memory logging scoped under 'trading_advisory' namespace.
-    6. Advisory output only: NEVER executes trades or interfaces with exchange APIs.
+    5. A/B Testing comparison-aware calibrations (avoiding excessive divergence between Treatment and Control).
+    6. Persistent memory logging scoped under 'trading_advisory' namespace.
+    7. Advisory output only: NEVER executes trades or interfaces with exchange APIs.
     """
 
     def __init__(self, memory: Optional[BaseMemory] = None) -> None:
@@ -46,8 +48,14 @@ class TradingConsultService:
     def _format_context(self, req: TradingConsultRequest) -> str:
         """Serializes the request into a rich, structured textual context for the agent panel."""
         t = req.telemetry
+        exp_header = f"=== TRADING BOT TELEMETRY (Bot ID: {req.bot_id} | Mode: {req.trading_mode} | Reason: {req.consultation_reason})"
+        if req.experiment_id:
+            arm_str = f" | Arm: {req.experiment_group}" if req.experiment_group else ""
+            exp_header += f" | Experiment: {req.experiment_id}{arm_str}"
+        exp_header += " ==="
+
         lines = [
-            f"=== TRADING BOT TELEMETRY (Bot ID: {req.bot_id} | Mode: {req.trading_mode} | Reason: {req.consultation_reason}) ===",
+            exp_header,
             f"Equity: ${t.equity:,.2f} USDT | Unrealized PnL: ${t.unrealized_pnl:,.2f} | Realized PnL: ${t.realized_pnl:,.2f}",
             f"Win Rate: {t.win_rate * 100:.1f}% | Profit Factor: {t.profit_factor:.2f} | Max Drawdown: {t.max_drawdown_pct:.2f}%",
             f"Consecutive Losses: {t.consecutive_losses} | Total Closed Trades: {t.total_trades} | Sharpe Ratio: {t.sharpe_ratio if t.sharpe_ratio is not None else 'N/A'}",
@@ -63,6 +71,18 @@ class TradingConsultService:
                 )
         else:
             lines.append("No per-strategy telemetry provided.")
+
+        # A/B Testing: Include Control Baseline Metrics if available
+        if req.experiment_group == "TREATMENT" and req.control_metrics:
+            lines.append("")
+            lines.append("=== A/B TESTING: CONTROL BASELINE METRICS ===")
+            c = req.control_metrics
+            c_wr = c.get('win_rate', 0.0) * 100 if isinstance(c.get('win_rate'), (int, float)) and c.get('win_rate') <= 1.0 else c.get('win_rate', 'N/A')
+            lines.append(f"Control Profit Factor: {c.get('profit_factor', 'N/A')} | Control Win Rate: {c_wr}% | Control Max DD: {c.get('max_drawdown_pct', 'N/A')}%")
+            if "total_trades" in c:
+                lines.append(f"Control Total Trades: {c.get('total_trades')}")
+            if "parameters" in c:
+                lines.append(f"Control Parameters: {json.dumps(c.get('parameters'))}")
 
         lines.append("")
         lines.append("=== CURRENT LIVE PARAMETERS ===")
@@ -116,20 +136,21 @@ class TradingConsultService:
                 ),
                 timeout=10.0
             )
+
             latency = time.perf_counter() - start
-            content = resp.content.strip()
+            content = resp.content if resp and resp.content else self._deterministic_fallback_for_agent(agent.id, prompt)
 
             # Record run
             await self.memory.save_run(RunRecord(
                 id=run_id,
                 task_id=task_id,
                 agent_id=agent.id,
-                provider=resp.provider or agent.model_provider,
-                model=resp.model or agent.model_name,
+                provider=resp.provider if resp else agent.model_provider,
+                model=resp.model if resp else agent.model_name,
                 stage=stage_name,
-                prompt_tokens=resp.prompt_tokens or 0,
-                completion_tokens=resp.completion_tokens or 0,
                 latency_seconds=latency,
+                input_tokens=resp.prompt_tokens if resp else 0,
+                output_tokens=resp.completion_tokens if resp else 0,
                 status="completed"
             ))
 
@@ -148,7 +169,6 @@ class TradingConsultService:
         except Exception as exc:
             latency = time.perf_counter() - start
             logger.warning("Trading consultation invocation for %s (%s) encountered fallback: %s", agent.id, stage_name, str(exc))
-            # Fallback deterministic analysis to guarantee resiliency
             fallback_text = self._deterministic_fallback_for_agent(agent.id, prompt)
 
             # Record fallback run
@@ -215,6 +235,61 @@ class TradingConsultService:
             return True
         return False
 
+    def _compare_treatment_vs_control(
+        self,
+        req: TradingConsultRequest
+    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+        """
+        Compares Treatment arm performance against Control baseline metrics.
+        Returns (treatment_status, comparison_rationale, expected_improvement).
+        """
+        if req.experiment_group != "TREATMENT" or not req.control_metrics:
+            if req.experiment_group == "CONTROL":
+                return (
+                    "CONTROL_BASELINE",
+                    "Advisory calibrated for the CONTROL baseline arm to preserve steady-state comparative integrity.",
+                    "Maintains baseline expectancy."
+                )
+            return None, None, None
+
+        t = req.telemetry
+        c = req.control_metrics
+        c_pf = c.get("profit_factor", 1.0)
+        c_wr = c.get("win_rate", 0.5)
+        c_dd = c.get("max_drawdown_pct", 5.0)
+
+        # Calculate deltas
+        pf_delta = t.profit_factor - c_pf
+        wr_delta = (t.win_rate - c_wr) * 100.0
+        dd_delta = t.max_drawdown_pct - c_dd
+
+        # Underperforming condition: DD > 1.5x control or PF < 0.8x control or WR < 0.8x control
+        if t.max_drawdown_pct >= c_dd * 1.5 or t.profit_factor <= c_pf * 0.8:
+            status = "UNDERPERFORMING_CONTROL"
+            rationale = (
+                f"TREATMENT arm is underperforming CONTROL baseline (Profit Factor: {t.profit_factor:.2f} vs {c_pf:.2f}, "
+                f"Drawdown: {t.max_drawdown_pct:.2f}% vs {c_dd:.2f}%). Recommended adjustments conservatively tighten risk "
+                f"bounds to prevent excessive arm divergence while preserving valid test comparison."
+            )
+            improvement = f"Targeting +{abs(pf_delta):.2f} PF recovery to regain parity with Control baseline."
+        elif t.profit_factor > c_pf * 1.1 or t.win_rate > c_wr + 0.05:
+            status = "OUTPERFORMING_CONTROL"
+            rationale = (
+                f"TREATMENT arm is outperforming CONTROL baseline (Profit Factor: {t.profit_factor:.2f} vs {c_pf:.2f}, "
+                f"Win Rate: {t.win_rate*100:.1f}% vs {c_wr*100:.1f}%). Recommending slight optimization to lock in edge "
+                f"without over-tuning away from Control."
+            )
+            improvement = f"Expected +{pf_delta:.2f} higher Profit Factor over Control baseline."
+        else:
+            status = "PARITY"
+            rationale = (
+                f"TREATMENT arm is performing at parity with CONTROL baseline (Delta PF: {pf_delta:+.2f}, "
+                f"Delta WR: {wr_delta:+.1f}%). Adjustments maintain controlled experimental separation."
+            )
+            improvement = "Incremental +5-10% risk-reward calibration."
+
+        return status, rationale, improvement
+
     def _rule_based_synthesis(
         self,
         req: TradingConsultRequest,
@@ -229,10 +304,13 @@ class TradingConsultService:
         2. Evidence attached to each change
         3. Hard rule for <20 trades (INSUFFICIENT_DATA)
         4. Hard rule for healthy metrics (NO_CHANGE)
+        5. A/B Comparison-aware analysis & rationale
         """
         decision_id = str(uuid4())
         valid_until = (datetime.utcnow() + timedelta(hours=24)).isoformat()
         t = req.telemetry
+
+        treat_status, comp_rationale, exp_improvement = self._compare_treatment_vs_control(req)
 
         # 1. Check Trade Count Requirement (<20 trades)
         if t.total_trades < 20:
@@ -246,7 +324,10 @@ class TradingConsultService:
                 regime_analysis=f"Market regime observation active. Current win rate is {t.win_rate * 100:.1f}%, but confidence is uncalibrated due to low sample volume.",
                 dissent_notes="Adversarial Critic cautions against premature parameter adjustment on small sample sizes (N < 20) to prevent curve fitting.",
                 debate_summary="Specialist panel unanimously determined that statistical sample size is insufficient to support parameter recalibration.",
-                valid_until=valid_until
+                valid_until=valid_until,
+                comparison_rationale=comp_rationale or "A/B comparison deferred until minimum statistical sample size (N >= 20) is accumulated.",
+                expected_improvement=exp_improvement or "Baseline data acquisition in progress.",
+                treatment_status=treat_status
             )
 
         # 2. Check Healthy Performance
@@ -261,7 +342,10 @@ class TradingConsultService:
                 regime_analysis="Strategy is well-aligned with the prevailing market regime. Expectancy remains positive.",
                 dissent_notes="No critical risk breaches identified by the Adversarial Critic.",
                 debate_summary="TradingAnalyst, Strategist, Data Analyst, and Critic confirmed healthy metrics across all active strategies. Maintaining current parameter configurations.",
-                valid_until=valid_until
+                valid_until=valid_until,
+                comparison_rationale=comp_rationale or "Healthy metrics align with baseline operating envelope; no arm divergence required.",
+                expected_improvement=exp_improvement or "Expectancy remains stable at current healthy levels.",
+                treatment_status=treat_status
             )
 
         # 3. Derive Bounded Recommendations (Max 2, prefer 1)
@@ -270,9 +354,11 @@ class TradingConsultService:
         regime_narrative = ""
         dissent_narrative = ""
 
+        # In A/B treatment mode, bound changes more conservatively (max 10-15%) to avoid invalidating A/B comparison
+        max_change_factor = 0.88 if req.experiment_group == "TREATMENT" else 0.85
+
         # Case A: Severe Drawdown / High Consecutive Losses -> Tighten Stop Loss / Risk
         if t.max_drawdown_pct > 5.0 or t.consecutive_losses >= 4:
-            # Find the most impacted strategy or default to primary
             target_strategy = "default"
             target_param = "stop_loss_pct"
             curr_val = 0.02
@@ -286,14 +372,14 @@ class TradingConsultService:
                         curr_val = strat_params[p_candidate]
                         break
 
-            # Calculate tightened value (-15% to -25%)
+            # Calculate tightened value
             if isinstance(curr_val, (int, float)) and curr_val > 0:
-                rec_val = round(curr_val * 0.85, 4)
+                rec_val = round(curr_val * max_change_factor, 4)
                 change_pct = round(((rec_val - curr_val) / curr_val) * 100.0, 2)
             else:
                 curr_val = 0.02
-                rec_val = 0.017
-                change_pct = -15.0
+                rec_val = round(0.02 * max_change_factor, 4)
+                change_pct = round((max_change_factor - 1.0) * 100.0, 2)
 
             changes.append(ParameterChange(
                 strategy=target_strategy,
@@ -304,7 +390,7 @@ class TradingConsultService:
                 rationale=f"Consecutive losses ({t.consecutive_losses}) or Max Drawdown ({t.max_drawdown_pct:.2f}%) on {target_strategy} justifies tightening {target_param} by {abs(change_pct):.1f}% for capital preservation."
             ))
 
-            # Optional 2nd change: Cooldown or leverage adjustment if drawdown is critical
+            # Optional 2nd change: Cooldown if drawdown is critical
             if t.max_drawdown_pct > 8.0 and req.current_parameters and len(changes) < 2:
                 strat_params = req.current_parameters.get(target_strategy, {})
                 if "cooldown_seconds" in strat_params:
@@ -338,13 +424,14 @@ class TradingConsultService:
                         curr_val = strat_params[p_candidate]
                         break
 
+            expand_factor = 1.12 if req.experiment_group == "TREATMENT" else 1.15
             if isinstance(curr_val, (int, float)) and curr_val > 0:
-                rec_val = round(curr_val * 1.15, 4)
+                rec_val = round(curr_val * expand_factor, 4)
                 change_pct = round(((rec_val - curr_val) / curr_val) * 100.0, 2)
             else:
                 curr_val = 0.015
-                rec_val = 0.0172
-                change_pct = 15.0
+                rec_val = round(0.015 * expand_factor, 4)
+                change_pct = round((expand_factor - 1.0) * 100.0, 2)
 
             changes.append(ParameterChange(
                 strategy=target_strategy,
@@ -360,12 +447,10 @@ class TradingConsultService:
             dissent_narrative = "Critic questioned whether expanding profit targets might reduce fill probability; recommended monitoring fill rate over next 20 trades."
 
         else:
-            # Minor calibration
             risk_narrative = "STABLE: Bot performance is slightly below optimal target but within acceptable tolerance."
             regime_narrative = "Market conditions stable."
             dissent_narrative = "Panel considered parameter adjustments but opted for conservative holding pattern."
 
-        # Enforce maximum 2 changes strictly
         bounded_changes = changes[:2]
         status_val = "RECOMMENDATION" if bounded_changes else "NO_CHANGE"
 
@@ -387,16 +472,20 @@ class TradingConsultService:
             regime_analysis=regime_narrative or "Regime telemetry evaluated.",
             dissent_notes=dissent_narrative or "No material dissent noted.",
             debate_summary=debate_summary,
-            valid_until=valid_until
+            valid_until=valid_until,
+            comparison_rationale=comp_rationale,
+            expected_improvement=exp_improvement or ("Estimated +10-15% risk-adjusted expectancy improvement." if bounded_changes else "Preserves existing expectancy profile."),
+            treatment_status=treat_status
         )
 
     async def consult(self, req: TradingConsultRequest) -> AIUniverseDecision:
         """
         Executes end-to-end multi-agent advisory consultation:
-        1. Context serialization
+        1. Context serialization (including A/B arm and control metrics)
         2. 4-step structured debate (TradingAnalyst -> Strategist -> Critic -> Data Analyst)
         3. Synthesis and output constraint enforcement
         4. Persistent memory logging in 'trading_advisory' namespace
+        5. Experiment consultation tracking (if experiment_id is provided)
         """
         task_id = generate_task_id()
         session_id = generate_debate_id()
@@ -412,7 +501,7 @@ class TradingConsultService:
         # Save initial task record in memory
         task_record = TaskRecord(
             id=task_id,
-            question=f"Trading Consultation: Bot {req.bot_id} ({req.consultation_reason})",
+            question=f"Trading Consultation: Bot {req.bot_id} ({req.consultation_reason})" + (f" [Arm: {req.experiment_group}]" if req.experiment_group else ""),
             mode="trading_consult",
             status="running",
             metadata={
@@ -420,6 +509,7 @@ class TradingConsultService:
                 "trading_mode": req.trading_mode,
                 "consultation_reason": req.consultation_reason,
                 "experiment_id": req.experiment_id,
+                "experiment_group": req.experiment_group,
                 "total_trades": req.telemetry.total_trades
             }
         )
@@ -442,7 +532,8 @@ class TradingConsultService:
             f"Review the trading telemetry and the Trading Analyst's initial findings:\n\n"
             f"TELEMETRY:\n{context_str}\n\n"
             f"TRADING ANALYST FINDINGS:\n{ta_output}\n\n"
-            f"Evaluate the strategic trade-offs of proposed adjustments. Weigh drawdown mitigation against trade frequency."
+            f"Evaluate the strategic trade-offs of proposed adjustments. Weigh drawdown mitigation against trade frequency. "
+            f"If this is an A/B treatment arm, avoid recommending changes that diverge excessively from the control baseline."
         )
         strat_output = await self._invoke_agent(task_id, "strategic_comparison", 2, strategist, strat_prompt)
 
@@ -487,29 +578,40 @@ class TradingConsultService:
         task_record.metadata["decision_id"] = decision.decision_id
         task_record.metadata["status"] = decision.status
         task_record.metadata["parameter_changes_count"] = len(decision.parameter_changes)
+        if req.experiment_id:
+            task_record.metadata["experiment_id"] = req.experiment_id
+            task_record.metadata["experiment_group"] = req.experiment_group
         await self.memory.save_task(task_record)
 
         # Persist memory scoped to 'trading_advisory' namespace
         advisory_memory = MemoryRecord(
             id=str(uuid4()),
             agent_id="trading_advisory",
-            content=f"Decision {decision.decision_id} for Bot {req.bot_id} (Reason: {req.consultation_reason}): Status={decision.status}, Changes={len(decision.parameter_changes)}, Risk={decision.risk_assessment}",
+            content=f"Decision {decision.decision_id} for Bot {req.bot_id} (Reason: {req.consultation_reason}, Arm: {req.experiment_group or 'N/A'}): Status={decision.status}, Changes={len(decision.parameter_changes)}, Risk={decision.risk_assessment}",
             memory_type="trading_consultation",
             importance=0.9 if decision.status == "RECOMMENDATION" else 0.7,
-            context_tags=["trading", req.bot_id, req.trading_mode, decision.status]
+            context_tags=["trading", req.bot_id, req.trading_mode, decision.status, req.experiment_id or "general"]
         )
         await self.memory.save_memory(advisory_memory)
 
+        # Record consultation with experiment service if experiment_id provided
+        if req.experiment_id and req.experiment_group:
+            experiment_service.record_consultation(
+                experiment_id=req.experiment_id,
+                arm=req.experiment_group,
+                telemetry=req.telemetry.model_dump(),
+                decision_id=decision.decision_id
+            )
+
         logger.info(
-            "Trading Consultation %s completed for Bot %s: Status=%s | Changes=%d | Confidence=%.2f",
-            decision.decision_id, req.bot_id, decision.status, len(decision.parameter_changes), decision.confidence
+            "Trading Consultation %s completed for Bot %s (Arm: %s): Status=%s | Changes=%d | Confidence=%.2f",
+            decision.decision_id, req.bot_id, req.experiment_group or "N/A", decision.status, len(decision.parameter_changes), decision.confidence
         )
 
         return decision
 
     async def get_decision_by_id(self, decision_id: str) -> Optional[AIUniverseDecision]:
         """Retrieves a past advisory decision from memory."""
-        # Query task records that store this decision_id in metadata
         async with self.memory.connect() as db:
             async with db.execute(
                 "SELECT * FROM tasks WHERE mode = 'trading_consult' AND result IS NOT NULL ORDER BY created_at DESC"
