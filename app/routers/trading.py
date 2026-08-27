@@ -1,4 +1,4 @@
-"""FastAPI Router for Trading Bot Advisory Consultation and A/B Testing."""
+"""FastAPI Router for Trading Bot Advisory Consultation, A/B Testing, and Testnet Tracking."""
 
 import asyncio
 import json
@@ -17,6 +17,8 @@ from app.schemas.trading_consult import (
     ExperimentResultsResponse,
     ExperimentStartRequest,
     ExperimentStatusResponse,
+    TestnetComparisonResponse,
+    TestnetPerformanceResponse,
     TradingConsultRequest,
 )
 from app.services.experiment_service import experiment_service
@@ -77,7 +79,7 @@ async def consult_trading_bot(request: Request) -> AIUniverseDecision:
     """
     Submits performance telemetry for multi-agent trading consultation.
     Enforces rate limiting, payload size validation, credential scanning, and a 180s server timeout.
-    Supports A/B testing with experiment context and control baseline comparison.
+    Supports A/B testing with experiment context and testnet-specific risk evaluation.
     """
     # 1. Payload size validation (max 1MB)
     body_bytes = await request.body()
@@ -152,7 +154,8 @@ async def trading_consult_health():
         "agents_available": available_agent_roles,
         "advisory_only": True,
         "exchange_execution": False,
-        "ab_testing_supported": True
+        "ab_testing_supported": True,
+        "testnet_supported": True
     }
 
 
@@ -204,3 +207,22 @@ async def get_ab_experiment_results(experiment_id: str) -> ExperimentResultsResp
             detail=f"A/B Experiment '{experiment_id}' not found."
         )
     return exp_results
+
+
+# --- Testnet Tracking & Comparison Endpoints ---
+
+@router.get("/testnet/performance", response_model=TestnetPerformanceResponse, status_code=status.HTTP_200_OK)
+async def get_testnet_performance() -> TestnetPerformanceResponse:
+    """
+    Returns aggregated testnet performance metrics across historical consultations,
+    comparing average win rate, profit factor, and drawdown distributions between testnet and paper modes.
+    """
+    return await trading_consult_service.get_testnet_performance()
+
+
+@router.get("/testnet/comparison", response_model=TestnetComparisonResponse, status_code=status.HTTP_200_OK)
+async def get_testnet_comparison() -> TestnetComparisonResponse:
+    """
+    Compares testnet execution dynamics against paper simulations and highlights strategy divergences.
+    """
+    return await trading_consult_service.get_testnet_comparison()

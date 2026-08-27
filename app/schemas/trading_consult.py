@@ -1,4 +1,4 @@
-"""Pydantic schemas for Trading Consultation Subsystem and A/B Testing."""
+"""Pydantic schemas for Trading Consultation Subsystem, A/B Testing, and Testnet Support."""
 
 from datetime import datetime
 from typing import Any, Dict, List, Literal, Optional
@@ -31,10 +31,23 @@ class StrategyPerformance(BaseModel):
     consecutive_losses: int = Field(ge=0, description="Current consecutive losses for this strategy")
 
 
+class TestnetContext(BaseModel):
+    """Testnet-specific exchange environment telemetry and live risk state."""
+    testnet_equity: float = Field(description="Current testnet wallet balance / equity in USDT")
+    testnet_drawdown_pct: float = Field(description="Current drawdown percentage on testnet")
+    testnet_daily_loss: float = Field(default=0.0, description="Realized loss accrued during current 24h cycle")
+    testnet_open_positions: int = Field(ge=0, default=0, description="Number of currently active testnet positions")
+    testnet_margin_level: float = Field(default=100.0, description="Current account margin level percentage")
+
+
 class TradingConsultRequest(BaseModel):
     """Advisory request submitted by an autonomous trading bot instance."""
     bot_id: str = Field(description="Unique identifier of the consulting bot instance")
     trading_mode: Literal["PAPER", "TESTNET"] = Field(description="Operational mode (only non-live modes allowed)")
+    testnet_specific: Optional[TestnetContext] = Field(
+        default=None,
+        description="Testnet-specific live exchange state when operating on testnet"
+    )
     experiment_id: Optional[str] = Field(default=None, description="Optional experiment tracking identifier")
     experiment_group: Optional[Literal["CONTROL", "TREATMENT"]] = Field(
         default=None,
@@ -103,6 +116,11 @@ class AIUniverseDecision(BaseModel):
         default=None,
         description="Performance status relative to control (e.g., OUTPERFORMING_CONTROL, PARITY, UNDERPERFORMING_CONTROL)"
     )
+    # Testnet-specific fields
+    testnet_risk_assessment: Optional[str] = Field(
+        default=None,
+        description="Testnet-specific capital preservation analysis, margin level evaluation, and position sizing guidelines"
+    )
 
 
 # --- A/B Experiment Tracking Schemas ---
@@ -161,3 +179,24 @@ class ExperimentResultsResponse(BaseModel):
     treatment_summary: Dict[str, Any]
     comparison_analysis: Dict[str, Any]
     conclusion: str
+
+
+# --- Testnet Performance & Comparison Schemas ---
+
+class TestnetPerformanceResponse(BaseModel):
+    """Aggregated performance metrics comparing TESTNET consultations against PAPER trading."""
+    total_consultations: int
+    testnet_consultations: int
+    paper_consultations: int
+    testnet_metrics: Dict[str, Any]
+    paper_metrics: Dict[str, Any]
+    drawdown_distribution: Dict[str, Any]
+
+
+class TestnetComparisonResponse(BaseModel):
+    """Detailed side-by-side performance and strategy divergence analysis."""
+    comparison_timestamp: str
+    testnet_summary: Dict[str, Any]
+    paper_summary: Dict[str, Any]
+    strategy_divergence: List[Dict[str, Any]]
+    recommendations_summary: str
