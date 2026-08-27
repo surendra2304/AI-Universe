@@ -37,9 +37,20 @@ class GeminiProvider(BaseLLMProvider):
         default_model: Optional[str] = None,
         timeout: float = 60.0
     ) -> None:
-        self.api_key = api_key or settings.GEMINI_API_KEY
+        self.api_keys = settings.get_provider_keys("gemini")
+        if api_key:
+            self.api_keys = [k.strip() for k in api_key.split(",") if k.strip()]
+        self._key_index = 0
         self.default_model = default_model or self.DEFAULT_MODEL
         self.timeout = timeout
+
+    @property
+    def api_key(self) -> Optional[str]:
+        if not self.api_keys:
+            return None
+        key = self.api_keys[self._key_index % len(self.api_keys)]
+        self._key_index += 1
+        return key
 
     @property
     def provider_name(self) -> str:

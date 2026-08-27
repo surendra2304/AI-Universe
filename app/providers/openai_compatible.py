@@ -32,11 +32,27 @@ class OpenAICompatibleProvider(BaseLLMProvider):
     ) -> None:
         self._provider_name = provider_name
         self.base_url = base_url.rstrip("/")
-        self.api_key = api_key
+        self.api_keys = [k.strip() for k in (api_key or "").split(",") if k.strip()]
+        self._key_index = 0
         self.default_model = default_model
         self.supported_models = supported_models
         self.timeout = timeout
         self.extra_headers = extra_headers or {}
+
+    @property
+    def api_key(self) -> Optional[str]:
+        if not self.api_keys:
+            return None
+        key = self.api_keys[self._key_index % len(self.api_keys)]
+        self._key_index += 1
+        return key
+
+    @api_key.setter
+    def api_key(self, val: Optional[str]) -> None:
+        if val:
+            self.api_keys = [k.strip() for k in val.split(",") if k.strip()]
+        else:
+            self.api_keys = []
 
     @property
     def provider_name(self) -> str:
@@ -102,11 +118,16 @@ class OpenAICompatibleProvider(BaseLLMProvider):
         return headers
 
     async def generate(self, request: ProviderRequest) -> ProviderResponse:
-        if not self.api_key:
+        active_key = self.api_key
+        if not active_key:
             raise ValueError(f"{self._provider_name.upper()}_API_KEY is not configured.")
 
         url = f"{self.base_url}/chat/completions"
-        headers = self._get_headers()
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {active_key}"
+        }
+        headers.update(self.extra_headers)
         payload = self._build_payload(request)
         model = payload["model"]
 
