@@ -16,6 +16,7 @@ from app.health import health_router
 from app.middleware.rate_limiter import EnhancedRateLimiterMiddleware
 from app.routers.admin_analytics import analytics_router
 from app.routers.batch import batch_router
+from app.routers.debate_trace import debate_router
 from app.routers.ecosystem import ecosystem_router
 from app.routers.enhanced_trading import enhanced_router
 from app.routers.evolution_intel import evolution_router
@@ -102,6 +103,7 @@ app.include_router(batch_router)
 app.include_router(forge_health_router)
 app.include_router(analytics_router)
 app.include_router(nexus_router)
+app.include_router(debate_router)
 
 
 @app.get("/")

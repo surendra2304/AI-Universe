@@ -168,16 +168,19 @@ class NexusIntelligenceService:
 
         else:  # debate mode
             agents_consulted = specialists if len(specialists) >= 3 else list(set(specialists + ["critic", "fact_checker"]))
-            rounds = min(req.budget.max_rounds if req.budget else 3, 6)
-            rounds_conducted = max(2, rounds)
+            from app.debate.enhanced_debate_protocol import enhanced_debate_engine
+            trace = await enhanced_debate_engine.execute_structured_debate(
+                request_id=req.request_id,
+                task_type=req.task_type,
+                goal=req.goal,
+                evidence=[e.model_dump() for e in req.evidence],
+                agents=agents_consulted
+            )
+            rounds_conducted = len(trace.rounds)
             decision = f"CONSENSUS_{req.task_type.upper()}"
-            summary = f"Multi-round adversarial deliberation across {', '.join(agents_consulted)} ({rounds_conducted} rounds)."
-
-            disagreements = [
-                "Critic challenged long-term stability assumption under adverse external volatility."
-            ]
-            # Disagreement penalty on confidence
-            confidence = round(max(0.60, min(0.90, (0.88 * evidence_trust) - (0.05 * len(disagreements)))), 2)
+            summary = f"Multi-round structured adversarial deliberation across {', '.join(agents_consulted)} (4 rounds executed)."
+            disagreements = trace.unresolved_objections
+            confidence = trace.confidence_evolution[-1] if trace.confidence_evolution else 0.86
 
         recommended_actions = [
             RecommendedAction(

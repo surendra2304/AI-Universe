@@ -102,3 +102,24 @@ def test_nexus_provenance_retrieval():
     # Non-existent record returns 404
     resp_404 = client.get("/v1/nexus/intelligence/non_existent_id")
     assert resp_404.status_code == 404
+
+
+def test_reasoning_trace_and_debate_statistics():
+    """Tests GET /v1/intelligence/{request_id}/trace and GET /v1/debate/statistics."""
+    # Retrieve trace for the debate conducted in test_nexus_intelligence_debate_mode
+    resp_trace = client.get("/v1/intelligence/nex-test-003/trace")
+    assert resp_trace.status_code == 200
+    trace = resp_trace.json()
+    assert trace["request_id"] == "nex-test-003"
+    assert len(trace["rounds"]) == 4
+    assert len(trace["stated_assumptions"]) >= 1
+    assert len(trace["evidence_scores"]) >= 1
+    assert "provider_allocation" in trace
+
+    # Retrieve debate statistics
+    resp_stats = client.get("/v1/debate/statistics")
+    assert resp_stats.status_code == 200
+    stats = resp_stats.json()
+    assert stats["total_structured_debates"] >= 20
+    assert "provider_diversity_impact" in stats
+    assert stats["provider_diversity_impact"]["diversity_lift_pct"] > 0
