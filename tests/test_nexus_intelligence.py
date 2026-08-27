@@ -192,3 +192,41 @@ def test_multimodal_intelligence_and_temporal_reasoning():
     assert data["counterfactual_analysis"]["is_counterfactual"] is True
     assert data["counterfactual_analysis"]["confidence_interval_95"]["ci_upper"] > 0
     assert len(data["explanation"]["detailed"]) > 0
+
+
+def test_experimentation_and_strategy_evolution():
+    """Tests A/B ExperimentRunner, StrategyEvolutionEngine, and KnowledgeDistillationEngine."""
+    # 1. List experiments
+    resp_exp = client.get("/v1/experiments")
+    assert resp_exp.status_code == 200
+    experiments = resp_exp.json()
+    assert len(experiments) >= 2
+    assert any(e["experiment_id"] == "exp-001" for e in experiments)
+
+    # 2. Strategy population
+    resp_strat = client.get("/v1/experiments/strategies")
+    assert resp_strat.status_code == 200
+    population = resp_strat.json()
+    assert len(population) == 20
+
+    # 3. Strategy evolution trigger
+    resp_evo = client.post("/v1/experiments/strategies/evolve")
+    assert resp_evo.status_code == 200
+    assert resp_evo.json()["elite_variants_preserved"] == 3
+
+    # 4. Knowledge distillation rules query
+    resp_rules = client.get("/v1/experiments/distilled-rules?consumer=nexus&task_type=lead_qualification")
+    assert resp_rules.status_code == 200
+    assert len(resp_rules.json()) >= 1
+
+    # 5. Distill new rule
+    new_rule_payload = {
+        "consumer": "nexus",
+        "task_type": "churn_analysis",
+        "condition_trigger": "usage_drop_pct > 40.0",
+        "prescribed_strategy": "Trigger high-touch customer success intervention within 24 hours.",
+        "empirical_confidence": 0.91
+    }
+    resp_create_rule = client.post("/v1/experiments/distilled-rules", json=new_rule_payload)
+    assert resp_create_rule.status_code == 201
+    assert resp_create_rule.json()["task_type"] == "churn_analysis"

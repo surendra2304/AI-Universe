@@ -20,6 +20,7 @@ from app.routers.debate_trace import debate_router
 from app.routers.ecosystem import ecosystem_router
 from app.routers.enhanced_trading import enhanced_router
 from app.routers.evolution_intel import evolution_router
+from app.routers.experiment_routes import experiment_router
 from app.routers.forge_health import forge_health_router
 from app.routers.forge_services import forge_router
 from app.routers.governance import governance_router
@@ -108,6 +109,7 @@ app.include_router(nexus_router)
 app.include_router(debate_router)
 app.include_router(governance_router)
 app.include_router(multimodal_router)
+app.include_router(experiment_router)
 
 
 @app.get("/")
