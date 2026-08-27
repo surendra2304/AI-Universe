@@ -53,12 +53,12 @@ def test_agent_registry_contains_all_10_specialists():
         "coder": "mistral",
         "debugger": "openrouter",
         "security_analyst": "nvidia",
-        "data_analyst": "openrouter",
-        "critic": "openrouter",
+        "data_analyst": "groq",
+        "critic": "groq",
         "fact_checker": "gemini",
-        "strategist": "nvidia",
+        "strategist": "groq",
         "synthesizer": "gemini",
-        "trading_analyst": "openrouter"
+        "trading_analyst": "groq"
     }
     assert provider_map == expected_providers
 

@@ -1,7 +1,8 @@
-"""Tests for the Trading Consultation Subsystem."""
+"""Comprehensive Test Suite for the Trading Consultation Subsystem using Synthetic Telemetry."""
 
 import asyncio
 import json
+import os
 import pytest
 from fastapi.testclient import TestClient
 
@@ -15,6 +16,8 @@ from app.schemas.trading_consult import (
 )
 from app.services.trading_consult_service import TradingConsultService
 
+FIXTURES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures")
+
 
 @pytest.fixture
 def client():
@@ -22,54 +25,21 @@ def client():
     return TestClient(app)
 
 
+def _load_fixture(filename: str) -> dict:
+    """Helper to load a JSON test fixture."""
+    path = os.path.join(FIXTURES_DIR, filename)
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
 def test_schema_valid_request():
     """Test serializing and deserializing a valid TradingConsultRequest."""
-    payload = {
-        "bot_id": "crypto_scalper_01",
-        "trading_mode": "PAPER",
-        "experiment_id": "exp_v2_atr_test",
-        "telemetry": {
-            "equity": 10500.0,
-            "unrealized_pnl": 50.0,
-            "realized_pnl": 500.0,
-            "win_rate": 0.58,
-            "profit_factor": 1.45,
-            "max_drawdown_pct": 3.2,
-            "consecutive_losses": 2,
-            "total_trades": 45,
-            "sharpe_ratio": 1.85
-        },
-        "strategy_performance": [
-            {
-                "strategy_name": "Supertrend_5m",
-                "trade_count": 30,
-                "win_rate": 0.60,
-                "profit_factor": 1.55,
-                "net_pnl": 400.0,
-                "avg_win": 35.0,
-                "avg_loss": 20.0,
-                "consecutive_losses": 1
-            }
-        ],
-        "current_parameters": {
-            "Supertrend_5m": {
-                "stop_loss_pct": 0.02,
-                "take_profit_pct": 0.03,
-                "atr_multiplier": 2.5
-            }
-        },
-        "regime_data": {"volatility": "normal", "trend": "bullish"},
-        "recent_trades": [
-            {"id": "t1", "pnl": 25.0, "side": "BUY", "duration_sec": 300}
-        ],
-        "consultation_reason": "SCHEDULED"
-    }
-
+    payload = _load_fixture("telemetry_healthy.json")
     req = TradingConsultRequest.model_validate(payload)
-    assert req.bot_id == "crypto_scalper_01"
+    assert req.bot_id == "bot_healthy_alpha"
     assert req.trading_mode == "PAPER"
-    assert req.telemetry.total_trades == 45
-    assert len(req.strategy_performance) == 1
+    assert req.telemetry.total_trades == 85
+    assert len(req.strategy_performance) == 2
 
 
 def test_schema_invalid_trading_mode():
@@ -148,108 +118,61 @@ def test_nested_credential_detection(client):
     assert "forbidden credential field" in resp.json()["detail"]
 
 
-@pytest.mark.asyncio
-async def test_insufficient_data_under_20_trades():
-    """Test that requests with <20 total trades return INSUFFICIENT_DATA status."""
-    service = TradingConsultService()
-    req = TradingConsultRequest(
-        bot_id="bot_new_launch",
-        trading_mode="PAPER",
-        telemetry=TradingTelemetry(
-            equity=10000.0,
-            unrealized_pnl=0.0,
-            realized_pnl=-50.0,
-            win_rate=0.33,
-            profit_factor=0.65,
-            max_drawdown_pct=2.0,
-            consecutive_losses=3,
-            total_trades=12  # < 20 trades
-        ),
-        current_parameters={"EMA": {"stop_loss_pct": 0.02}},
-        consultation_reason="SCHEDULED"
+def test_malformed_json_request_rejected(client):
+    """Test that malformed JSON strings or broken structures receive HTTP 400."""
+    resp = client.post(
+        "/v1/trading/consult",
+        content="This is not valid JSON",
+        headers={"Content-Type": "application/json"}
     )
+    assert resp.status_code == 400
+    assert "Invalid JSON payload" in resp.json()["detail"]
 
-    decision = await service.consult(req)
+
+def test_healthy_telemetry_fixture_endpoint(client):
+    """Test healthy telemetry fixture produces NO_CHANGE with high confidence (>0.80)."""
+    payload = _load_fixture("telemetry_healthy.json")
+    resp = client.post("/v1/trading/consult", json=payload)
+    assert resp.status_code == 200
+    decision = AIUniverseDecision.model_validate(resp.json())
+    assert decision.status == "NO_CHANGE"
+    assert decision.confidence >= 0.80
+    assert len(decision.parameter_changes) == 0
+    assert "Healthy performance profile" in decision.risk_assessment
+
+
+def test_struggling_telemetry_fixture_endpoint(client):
+    """Test struggling telemetry fixture produces RECOMMENDATION with bounded changes."""
+    payload = _load_fixture("telemetry_struggling.json")
+    resp = client.post("/v1/trading/consult", json=payload)
+    assert resp.status_code == 200
+    decision = AIUniverseDecision.model_validate(resp.json())
+    assert decision.status == "RECOMMENDATION"
+    assert 1 <= len(decision.parameter_changes) <= 2
+    for change in decision.parameter_changes:
+        assert len(change.rationale) > 10
+        assert change.change_pct != 0.0
+
+
+def test_insufficient_data_fixture_endpoint(client):
+    """Test insufficient data telemetry fixture produces INSUFFICIENT_DATA with 0 changes."""
+    payload = _load_fixture("telemetry_insufficient_data.json")
+    resp = client.post("/v1/trading/consult", json=payload)
+    assert resp.status_code == 200
+    decision = AIUniverseDecision.model_validate(resp.json())
     assert decision.status == "INSUFFICIENT_DATA"
     assert len(decision.parameter_changes) == 0
     assert "statistical significance threshold" in decision.risk_assessment
 
 
-@pytest.mark.asyncio
-async def test_healthy_metrics_return_no_change():
-    """Test that healthy trading metrics (WR>50%, PF>1.25, DD<5%) return NO_CHANGE."""
-    service = TradingConsultService()
-    req = TradingConsultRequest(
-        bot_id="bot_healthy",
-        trading_mode="TESTNET",
-        telemetry=TradingTelemetry(
-            equity=12000.0,
-            unrealized_pnl=120.0,
-            realized_pnl=2000.0,
-            win_rate=0.62,
-            profit_factor=1.65,
-            max_drawdown_pct=2.8,
-            consecutive_losses=1,
-            total_trades=50,
-            sharpe_ratio=2.1
-        ),
-        strategy_performance=[
-            StrategyPerformance(
-                strategy_name="Scalper",
-                trade_count=50,
-                win_rate=0.62,
-                profit_factor=1.65,
-                net_pnl=2000.0,
-                avg_win=50.0,
-                avg_loss=30.0,
-                consecutive_losses=1
-            )
-        ],
-        current_parameters={"Scalper": {"stop_loss_pct": 0.015, "take_profit_pct": 0.03}},
-        consultation_reason="SCHEDULED"
-    )
-
-    decision = await service.consult(req)
-    assert decision.status == "NO_CHANGE"
-    assert len(decision.parameter_changes) == 0
-    assert "Healthy performance profile" in decision.risk_assessment
-
-
-@pytest.mark.asyncio
-async def test_max_two_parameter_changes_enforced():
-    """Test that recommendations never return more than 2 parameter changes."""
-    service = TradingConsultService()
-    req = TradingConsultRequest(
-        bot_id="bot_drawdown_event",
-        trading_mode="PAPER",
-        telemetry=TradingTelemetry(
-            equity=9100.0,
-            unrealized_pnl=-150.0,
-            realized_pnl=-900.0,
-            win_rate=0.38,
-            profit_factor=0.72,
-            max_drawdown_pct=9.5,  # High drawdown
-            consecutive_losses=6,   # High loss streak
-            total_trades=60
-        ),
-        current_parameters={
-            "Breakout": {
-                "stop_loss_pct": 0.03,
-                "cooldown_seconds": 120,
-                "leverage": 10,
-                "position_size": 0.05
-            }
-        },
-        consultation_reason="DRAWDOWN_EVENT"
-    )
-
-    decision = await service.consult(req)
+def test_mixed_strategies_fixture_endpoint(client):
+    """Test mixed strategies telemetry fixture handles multi-strategy performance."""
+    payload = _load_fixture("telemetry_mixed_strategies.json")
+    resp = client.post("/v1/trading/consult", json=payload)
+    assert resp.status_code == 200
+    decision = AIUniverseDecision.model_validate(resp.json())
     assert decision.status == "RECOMMENDATION"
     assert 1 <= len(decision.parameter_changes) <= 2
-    # Verify quantitative evidence in rationale
-    for change in decision.parameter_changes:
-        assert len(change.rationale) > 10
-        assert change.change_pct != 0.0
 
 
 def test_endpoint_consult_health(client):
@@ -294,7 +217,7 @@ async def test_get_past_decision_endpoint(client):
 
 def test_rate_limiting_enforcement(client):
     """Test that sending >20 requests for the same bot_id triggers HTTP 429."""
-    bot_id = "bot_spammer_test"
+    bot_id = "bot_spammer_test_suite"
     valid_payload = {
         "bot_id": bot_id,
         "trading_mode": "PAPER",

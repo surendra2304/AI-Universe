@@ -127,12 +127,12 @@ def get_all_specialist_agents() -> List[Agent]:
                 "mathematical formulations, evaluate benchmark metrics, and interpret structured schemas. Demand "
                 "statistical rigor and clear metric definitions."
             ),
-            model_provider="openrouter",
-            model_name="deepseek/deepseek-v4-flash:free",
+            model_provider="groq",
+            model_name="openai/gpt-oss-120b",
             models=[
-                AgentModelConfig(provider="openrouter", model="deepseek/deepseek-v4-flash:free", capability="reasoning"),
-                AgentModelConfig(provider="gemini", model="gemini-3.7-flash", capability="reasoning"),
                 AgentModelConfig(provider="groq", model="openai/gpt-oss-120b", capability="reasoning"),
+                AgentModelConfig(provider="openrouter", model="nvidia/nemotron-3.5-lightning:free", capability="reasoning"),
+                AgentModelConfig(provider="gemini", model="gemini-3.7-flash", capability="reasoning"),
             ],
             strengths=["quantitative analysis", "SQL/schema reasoning", "statistical evaluation", "metrics calculation"],
             weaknesses=["abstract narrative generation"]
@@ -141,17 +141,17 @@ def get_all_specialist_agents() -> List[Agent]:
             id="critic",
             name="Adversarial Critic",
             role="Critic",
-            purpose="Attack weak assumptions, identify logical fallacies, and stress-test proposals.",
+            purpose="Rigorously stress-test claims, challenge assumptions, and identify failure modes.",
             system_instructions=(
-                "You are the Adversarial Critic in AI Universe. Your role is red-team reasoning. Relentlessly "
-                "challenge assumptions, expose hidden flaws, identify single points of failure, and provide "
-                "counterexamples. Be constructive but uncompromising in your scrutiny."
+                "You are the Adversarial Critic in AI Universe. Your goal is to find edge cases, logical "
+                "fallacies, hidden risks, and unstated assumptions. Be relentless, constructive, and precise. "
+                "Challenge the consensus and protect the user against overconfidence."
             ),
-            model_provider="openrouter",
-            model_name="deepseek/deepseek-v4-flash:free",
+            model_provider="groq",
+            model_name="openai/gpt-oss-120b",
             models=[
-                AgentModelConfig(provider="openrouter", model="deepseek/deepseek-v4-flash:free", capability="reasoning"),
                 AgentModelConfig(provider="groq", model="openai/gpt-oss-120b", capability="reasoning"),
+                AgentModelConfig(provider="openrouter", model="nvidia/nemotron-3.5-lightning:free", capability="reasoning"),
                 AgentModelConfig(provider="cohere", model="command-a-plus-05-2026", capability="research"),
             ],
             strengths=["red teaming", "counterexamples", "fallacy detection", "failure mode prediction"],
@@ -187,11 +187,11 @@ def get_all_specialist_agents() -> List[Agent]:
                 "and prioritizing architectural or operational alternatives. Weigh complexity against value, "
                 "latency against quality, and immediate cost against long-term maintenance."
             ),
-            model_provider="nvidia",
-            model_name="nvidia/nemotron-3-ultra-550b-a55b",
+            model_provider="groq",
+            model_name="openai/gpt-oss-120b",
             models=[
+                AgentModelConfig(provider="groq", model="openai/gpt-oss-120b", capability="reasoning"),
                 AgentModelConfig(provider="nvidia", model="nvidia/nemotron-3-ultra-550b-a55b", capability="reasoning"),
-                AgentModelConfig(provider="openrouter", model="deepseek/deepseek-v4-flash:free", capability="reasoning"),
                 AgentModelConfig(provider="gemini", model="gemini-3.7-flash", capability="reasoning"),
             ],
             strengths=["multi-criteria decision analysis", "cost-benefit evaluation", "roadmap prioritization"],
@@ -228,12 +228,12 @@ def get_all_specialist_agents() -> List[Agent]:
                 "and propose calibrated strategy adjustments (SL/TP percentages, position sizing, cooldowns). "
                 "Strict Invariant: You NEVER execute trades or call exchange APIs directly; you only analyze and advise FRIDAY."
             ),
-            model_provider="openrouter",
-            model_name="deepseek/deepseek-v4-flash:free",
+            model_provider="groq",
+            model_name="openai/gpt-oss-120b",
             models=[
-                AgentModelConfig(provider="openrouter", model="deepseek/deepseek-v4-flash:free", capability="reasoning"),
+                AgentModelConfig(provider="groq", model="openai/gpt-oss-120b", capability="reasoning"),
+                AgentModelConfig(provider="openrouter", model="nvidia/nemotron-3.5-lightning:free", capability="reasoning"),
                 AgentModelConfig(provider="gemini", model="gemini-3.7-flash", capability="reasoning"),
-                AgentModelConfig(provider="nvidia", model="nvidia/nemotron-3-ultra-550b-a55b", capability="reasoning"),
             ],
             strengths=["quantitative trading analysis", "risk-adjusted return modeling", "drawdown mitigation", "statistical expectancy"],
             weaknesses=["direct execution authority (strictly disallowed)"],

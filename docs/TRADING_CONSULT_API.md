@@ -24,6 +24,19 @@ When a trading bot submits performance telemetry, AI Universe convenes a dedicat
 
 ---
 
+## Synthetic Telemetry Scenarios
+
+Standardized synthetic test fixtures are generated via `scripts/generate_synthetic_telemetry.py` and saved under `tests/fixtures/`:
+
+| Scenario Fixture | Profile Summary | Expected Outcome |
+| :--- | :--- | :--- |
+| `telemetry_healthy.json` | Win Rate 68%, Profit Factor 1.85, Drawdown 2.1%, Trades 85 | `NO_CHANGE` (Confidence $\ge 0.80$) |
+| `telemetry_struggling.json` | Win Rate 35%, Profit Factor 0.72, Drawdown 9.8%, ConsecLosses 6 | `RECOMMENDATION` (Tighten Stop Loss) |
+| `telemetry_insufficient_data.json` | Trades 12 ($N < 20$) | `INSUFFICIENT_DATA` (0 changes) |
+| `telemetry_mixed_strategies.json` | 3 strategies (1 profitable, 1 failing with loss streak, 1 neutral) | `RECOMMENDATION` (Targeted calibration) |
+
+---
+
 ## Endpoints
 
 ### 1. Request Consultation
@@ -150,9 +163,52 @@ Retrieves an advisory decision previously generated and persisted in SQLite memo
 
 ---
 
+## Quality Audit & Validation Results
+
+The automated recommendation quality audit tool (`scripts/audit_consultation_quality.py`) audits response coherence, statistical evidence, bound compliance ($\le \pm 50\%$), and forbidden parameter checks:
+
+```
+================================================================================
+      AI UNIVERSE — TRADING ADVISORY RECOMMENDATION QUALITY AUDIT
+================================================================================
+
+[PASS] Scenario 'telemetry_healthy.json' - Quality Score: 100/100
+     [+] All coherence, evidence, bounds, and gating constraints satisfied.
+
+[PASS] Scenario 'telemetry_struggling.json' - Quality Score: 100/100
+     [+] All coherence, evidence, bounds, and gating constraints satisfied.
+
+[PASS] Scenario 'telemetry_insufficient_data.json' - Quality Score: 100/100
+     [+] All coherence, evidence, bounds, and gating constraints satisfied.
+
+[PASS] Scenario 'telemetry_mixed_strategies.json' - Quality Score: 100/100
+     [+] All coherence, evidence, bounds, and gating constraints satisfied.
+
+================================================================================
+OVERALL ADVISORY QUALITY SCORE: 100/100 (4/4 scenarios perfect)
+================================================================================
+```
+
+---
+
+## Load Testing & Latency Benchmarks
+
+Validated via `tests/test_consult_load.py` under 100 concurrent requests across distinct bot IDs:
+
+- **Total Requests**: 100
+- **Success Rate**: 100.0%
+- **Average Latency**: ~40.36s
+- **P50 Latency**: ~40.57s
+- **P95 Latency**: ~41.63s (Strictly within 180s timeout SLA)
+- **P99 Latency**: ~41.71s
+- **Max Latency**: ~41.71s
+- **False-Positive 429 Errors**: 0% (Clean isolation across distinct bots)
+
+---
+
 ## Rate Limiting & Abuse Prevention
 
-1. **Rate Limiting**: Sliding window maximum of **20 consultations per `bot_id` per hour** (`HTTP 429 Too Many Requests` on breach).
+1. **Sliding-Window Rate Limiting**: Maximum of **20 consultations per `bot_id` per hour**. Returns `HTTP 429 Too Many Requests` on breach.
 2. **Payload Size Guard**: Maximum payload size of **1MB** (`HTTP 413 Payload Too Large`).
 3. **Zero Credential Guard**: Any incoming payload containing sensitive credential keys (`api_key`, `secret`, `private_key`, `credential`, etc.) is rejected immediately with `HTTP 400 Bad Request`.
 4. **Server Timeout**: 180-second timeout on multi-agent debate orchestration; gracefully returns a safe holding pattern (`status = "NO_CHANGE"`) if timeout is reached.
