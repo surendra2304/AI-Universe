@@ -16,6 +16,7 @@ from app.routers.enhanced_trading import enhanced_router
 from app.routers.evolution_intel import evolution_router
 from app.routers.live_intelligence import live_router
 from app.routers.multi_market import multi_market_router
+from app.routers.predictions import predictions_router
 from app.routers.trading import router as trading_router
 from app.security.api_security import ProductionSecurityMiddleware
 from app.utils.logger import logger, setup_logger
@@ -79,6 +80,7 @@ app.include_router(enhanced_router)
 app.include_router(live_router)
 app.include_router(multi_market_router)
 app.include_router(evolution_router)
+app.include_router(predictions_router)
 
 
 @app.get("/")
