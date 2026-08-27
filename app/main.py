@@ -12,6 +12,7 @@ from app.config_production import production_config
 from app.core.config import settings
 from app.core.orchestrator import orchestrator
 from app.health import health_router
+from app.routers.enhanced_trading import enhanced_router
 from app.routers.trading import router as trading_router
 from app.utils.logger import logger, setup_logger
 
@@ -67,6 +68,7 @@ app.include_router(health_router)
 app.include_router(api_router)
 app.include_router(friday_router)
 app.include_router(trading_router)
+app.include_router(enhanced_router)
 
 
 @app.get("/")

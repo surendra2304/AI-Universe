@@ -14,7 +14,7 @@ health_router = APIRouter(tags=["Health & Monitoring"])
 @health_router.get("/health", status_code=status.HTTP_200_OK)
 async def basic_health():
     """Basic liveness health check."""
-    return {"status": "healthy", "timestamp": time.time()}
+    return {"status": "healthy"}
 
 
 @health_router.get("/health/detailed", status_code=status.HTTP_200_OK)
