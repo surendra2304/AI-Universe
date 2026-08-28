@@ -104,3 +104,44 @@ def test_sentinel_provenance_retrieval():
     # Non-existent ID returns 404
     resp_404 = client.get("/v1/sentinel/analyze/non_existent_sentinel_id")
     assert resp_404.status_code == 404
+
+
+def test_threat_context_and_remediation_reasoning():
+    """Tests ThreatContextEngine and RemediationReasoningEngine components."""
+    from app.intelligence.threat_context import threat_context_engine
+    from app.intelligence.remediation import remediation_reasoning_engine, SecurityOutcomeRecord
+
+    # 1. Threat context enrichment
+    enriched = threat_context_engine.enrich_context(
+        technologies=["FastAPI", "Python"],
+        exposure_level="public_internet",
+        cve_matches=["CVE-2026-AUTH-01"],
+        industry="fintech"
+    )
+    assert len(enriched.active_threat_campaigns) >= 1
+    assert "CVE-2026-AUTH-01" in enriched.cve_exploitation_trends
+    assert enriched.threat_elevation_factor >= 1.0
+
+    # 2. Dependency-aware remediation planning
+    plan = remediation_reasoning_engine.plan_remediations(
+        findings=[
+            {"finding_id": "F-01", "title": "Missing Security Headers", "severity": "HIGH"},
+            {"finding_id": "F-02", "title": "Server Banner Disclosure", "severity": "LOW"}
+        ],
+        exposure_level="public_internet"
+    )
+    assert len(plan) == 2
+    assert plan[0].quick_win is True
+
+    # 3. Security outcome tracking
+    remediation_reasoning_engine.record_security_outcome(
+        SecurityOutcomeRecord(
+            request_id="sent-test-001",
+            finding_id="F-01",
+            remediation_applied="Set Strict-Transport-Security in Nginx",
+            verified_resolved=True,
+            rescan_timestamp=1724880500.0
+        )
+    )
+    metrics = remediation_reasoning_engine.get_security_learning_metrics()
+    assert metrics["verified_resolution_rate_pct"] > 80.0

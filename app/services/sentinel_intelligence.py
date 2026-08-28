@@ -196,35 +196,39 @@ class SentinelIntelligenceService:
         for f in req.findings:
             evidence_refs[f.finding_id] = f.evidence_refs if f.evidence_refs else [f"finding_signature_{f.finding_id}"]
 
-        # Build prioritized remediations
-        prioritized_remediations: List[RemediationItem] = []
-        sorted_findings = sorted(
-            req.findings,
-            key=lambda x: (x.cvss_score if x.cvss_score is not None else (10.0 if x.severity == "CRITICAL" else 5.0)),
-            reverse=True
+        # Build prioritized remediations using RemediationReasoningEngine
+        from app.intelligence.remediation import remediation_reasoning_engine
+        remediation_plan = remediation_reasoning_engine.plan_remediations(
+            findings=[f.model_dump() for f in req.findings],
+            exposure_level=req.target_context.exposure_level
         )
 
-        for rank, f in enumerate(sorted_findings, start=1):
-            effort: Literal["QUICK_WIN", "MODERATE", "SIGNIFICANT_REFACTOR"] = "QUICK_WIN" if "config" in f.title.lower() or "header" in f.title.lower() else ("SIGNIFICANT_REFACTOR" if "architecture" in f.title.lower() or "auth" in f.title.lower() else "MODERATE")
-            risk_reduction = 45.0 if f.severity == "CRITICAL" else (25.0 if f.severity == "HIGH" else 10.0)
-            prioritized_remediations.append(
-                RemediationItem(
-                    priority_rank=rank,
-                    finding_id=f.finding_id,
-                    title=f"Remediate: {f.title}",
-                    recommended_fix=f"Apply vendor patch or configuration boundary to isolate {f.title}.",
-                    rationale=f"High risk reduction ({risk_reduction}%) against {req.target_context.exposure_level} exposure.",
-                    effort_estimate=effort,
-                    risk_reduction_pct=risk_reduction
-                )
+        prioritized_remediations: List[RemediationItem] = [
+            RemediationItem(
+                priority_rank=item.priority_order,
+                finding_id=item.primary_finding_id,
+                title=item.title,
+                recommended_fix=item.remediation_action,
+                rationale=f"Risk reduction {item.risk_reduction_pct}% (Blast radius: {item.blast_radius_findings_count} findings, Regression risk: {item.regression_risk}).",
+                effort_estimate=item.estimated_effort,
+                risk_reduction_pct=item.risk_reduction_pct
             )
+            for item in remediation_plan
+        ]
 
-        # Threat context
+        # Enriched Threat context via ThreatContextEngine
+        from app.intelligence.threat_context import threat_context_engine
         cve_matches = req.threat_intel.cve_matches if req.threat_intel else []
-        is_wild = req.threat_intel.exploit_availability in ("in_the_wild", "weaponized") if req.threat_intel else False
+        enriched_threat = threat_context_engine.enrich_context(
+            technologies=req.target_context.technologies_detected,
+            exposure_level=req.target_context.exposure_level,
+            cve_matches=cve_matches
+        )
+
+        is_wild = req.threat_intel.exploit_availability in ("in_the_wild", "weaponized") if req.threat_intel else bool(enriched_threat.active_threat_campaigns)
         threat_ctx = ThreatContextResult(
             active_in_the_wild=is_wild,
-            trending_cves_for_stack=cve_matches if cve_matches else [f"CVE-2026-{req.target_context.asset_type[:4].upper()}-01"],
+            trending_cves_for_stack=list(enriched_threat.cve_exploitation_trends.keys()) if enriched_threat.cve_exploitation_trends else (cve_matches or [f"CVE-2026-{req.target_context.asset_type[:4].upper()}-01"]),
             mitre_attack_tactics=["Initial Access", "Defense Evasion", "Lateral Movement"]
         )
 
