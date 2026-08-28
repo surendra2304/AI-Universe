@@ -32,7 +32,8 @@ class CostAwareRouter:
             "trading_bot": ConsumerBudgetPolicy(consumer="trading_bot", monthly_budget_usd=50.0),
             "forge": ConsumerBudgetPolicy(consumer="forge", monthly_budget_usd=200.0),
             "nexus": ConsumerBudgetPolicy(consumer="nexus", monthly_budget_usd=100.0),
-            "friday": ConsumerBudgetPolicy(consumer="friday", monthly_budget_usd=75.0),
+            "sentinel": ConsumerBudgetPolicy(consumer="sentinel", monthly_budget_usd=100.0),
+            "friday": ConsumerBudgetPolicy(consumer="friday", monthly_budget_usd=50.0),
             "human": ConsumerBudgetPolicy(consumer="human", monthly_budget_usd=50.0)
         }
         # Provider cost per 1k tokens proxy and historical success rate

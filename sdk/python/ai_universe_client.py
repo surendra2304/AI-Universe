@@ -43,6 +43,19 @@ class AIUniverseClient:
         resp.raise_for_status()
         return resp.json()
 
+    def query_sentinel_analysis(self, request_id: str, analysis_type: str, target_context: Dict[str, Any], findings: Optional[List[Dict[str, Any]]] = None, threat_intel: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Queries Sentinel cybersecurity intelligence endpoint."""
+        payload = {
+            "request_id": request_id,
+            "analysis_type": analysis_type,
+            "target_context": target_context,
+            "findings": findings or [],
+            "threat_intel": threat_intel or {}
+        }
+        resp = self.client.post("/v1/sentinel/analyze", json=payload)
+        resp.raise_for_status()
+        return resp.json()
+
     def report_outcome(self, consumer: str, request_id: str, outcome: str, detail: Optional[str] = None, metrics: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Reports downstream verification or execution outcome for self-optimization."""
         payload = {

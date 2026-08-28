@@ -55,6 +55,19 @@ export class AIUniverseClient {
     });
   }
 
+  public async querySentinelAnalysis(payload: {
+    request_id: string;
+    analysis_type: string;
+    target_context: Record<string, any>;
+    findings?: Array<Record<string, any>>;
+    threat_intel?: Record<string, any>;
+  }): Promise<Record<string, any>> {
+    return this.request('/v1/sentinel/analyze', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  }
+
   public async generateCode(payload: {
     file_type: string;
     filename: string;
