@@ -30,6 +30,7 @@ from app.routers.multimodal import multimodal_router
 from app.routers.nexus import nexus_router
 from app.routers.predictions import predictions_router
 from app.routers.providers import providers_router
+from app.routers.sentinel import sentinel_router
 from app.routers.trading import router as trading_router
 from app.security.api_security import ProductionSecurityMiddleware
 from app.utils.logger import logger, setup_logger
@@ -110,6 +111,7 @@ app.include_router(debate_router)
 app.include_router(governance_router)
 app.include_router(multimodal_router)
 app.include_router(experiment_router)
+app.include_router(sentinel_router)
 
 
 @app.get("/")
