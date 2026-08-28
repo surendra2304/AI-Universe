@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - api-1
+      - api-2
+      - api-3
+    restart: always
+
+  api-1:
+    build: .
+    environment:
+      - APP_ENV=production
+      - PORT=8000
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/ai_universe
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - postgres
+    restart: always
+
+  api-2:
+    build: .
+    environment:
+      - APP_ENV=production
+      - PORT=8000
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/ai_universe
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - postgres
+    restart: always
+
+  api-3:
+    build: .
+    environment:
+      - APP_ENV=production
+      - PORT=8000
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/ai_universe
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - postgres
+    restart: always
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    volumes:
+      - redis-data:/data
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=ai_universe
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    restart: always
+
+volumes:
+  redis-data:
+  pg-data:
