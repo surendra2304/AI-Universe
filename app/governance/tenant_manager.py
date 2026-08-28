@@ -52,6 +52,13 @@ class MultiTenantManager:
                 daily_budget_usd=30.0,
                 active_keys=["key_sentinel_prod_01"]
             ),
+            "tenant_intelx": TenantPolicy(
+                tenant_id="tenant_intelx",
+                name="IntelX Research Engine",
+                rate_limit_per_hour=200,
+                daily_budget_usd=35.0,
+                active_keys=["key_intelx_prod_01"]
+            ),
             "tenant_default": TenantPolicy(
                 tenant_id="tenant_default",
                 name="Default Sandbox Tenant",
@@ -77,6 +84,8 @@ class MultiTenantManager:
             return "tenant_nexus"
         elif "sentinel" in token.lower():
             return "tenant_sentinel"
+        elif "intelx" in token.lower():
+            return "tenant_intelx"
         return "tenant_default"
 
     def check_tenant_budget(self, tenant_id: str, estimated_cost_usd: float = 0.001) -> bool:

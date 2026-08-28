@@ -43,6 +43,19 @@ class AIUniverseClient:
         resp.raise_for_status()
         return resp.json()
 
+    def query_intelx_research(self, request_id: str, role: str, context: Dict[str, Any], evidence_with_spans: Optional[List[Dict[str, Any]]] = None, constraints: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Queries IntelX deep research intelligence endpoint."""
+        payload = {
+            "request_id": request_id,
+            "role": role,
+            "context": context,
+            "evidence_with_spans": evidence_with_spans or [],
+            "constraints": constraints or {}
+        }
+        resp = self.client.post("/v1/intelx/research", json=payload)
+        resp.raise_for_status()
+        return resp.json()
+
     def query_sentinel_analysis(self, request_id: str, analysis_type: str, target_context: Dict[str, Any], findings: Optional[List[Dict[str, Any]]] = None, threat_intel: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Queries Sentinel cybersecurity intelligence endpoint."""
         payload = {

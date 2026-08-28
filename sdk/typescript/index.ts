@@ -55,6 +55,19 @@ export class AIUniverseClient {
     });
   }
 
+  public async queryIntelXResearch(payload: {
+    request_id: string;
+    role: 'planner' | 'extractor' | 'verifier' | 'analyst' | 'critic' | 'synthesizer';
+    context: Record<string, any>;
+    evidence_with_spans?: Array<Record<string, any>>;
+    constraints?: Record<string, any>;
+  }): Promise<Record<string, any>> {
+    return this.request('/v1/intelx/research', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  }
+
   public async querySentinelAnalysis(payload: {
     request_id: string;
     analysis_type: string;

@@ -37,6 +37,37 @@ paths:
                   confidence: { type: number }
                   bounded_parameters: { type: object }
 
+  /v1/intelx/research:
+    post:
+      summary: IntelX Deep Research Intelligence
+      description: Process role-specific deep research, verbatim claim verification, and analysis.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [request_id, role, context]
+              properties:
+                request_id: { type: string, example: "intelx-req-001" }
+                role:
+                  type: string
+                  enum: [planner, extractor, verifier, analyst, critic, synthesizer]
+                context: { type: object }
+                evidence_with_spans: { type: array, items: { type: object } }
+      responses:
+        '200':
+          description: Research role response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  request_id: { type: string }
+                  role: { type: string }
+                  response: { type: object }
+                  confidence: { type: number }
+
   /v1/sentinel/analyze:
     post:
       summary: Sentinel Cybersecurity Posture Analysis
