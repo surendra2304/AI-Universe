@@ -43,6 +43,19 @@ class AIUniverseClient:
         resp.raise_for_status()
         return resp.json()
 
+    def enhance_statistical_forecast(self, request_id: str, statistical_forecast: Dict[str, Any], target_context: Optional[Dict[str, Any]] = None, contextual_factors: Optional[List[str]] = None, question: Optional[str] = None) -> Dict[str, Any]:
+        """Queries Futuris statistical forecast enhancement endpoint."""
+        payload = {
+            "request_id": request_id,
+            "statistical_forecast": statistical_forecast,
+            "target_context": target_context or {},
+            "contextual_factors": contextual_factors or [],
+            "question": question or "Given this forecast and context, what risks or drivers should be considered?"
+        }
+        resp = self.client.post("/v1/futuris/enhance", json=payload)
+        resp.raise_for_status()
+        return resp.json()
+
     def query_intelx_research(self, request_id: str, role: str, context: Dict[str, Any], evidence_with_spans: Optional[List[Dict[str, Any]]] = None, constraints: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Queries IntelX deep research intelligence endpoint."""
         payload = {

@@ -34,6 +34,7 @@ class CostAwareRouter:
             "nexus": ConsumerBudgetPolicy(consumer="nexus", monthly_budget_usd=100.0),
             "sentinel": ConsumerBudgetPolicy(consumer="sentinel", monthly_budget_usd=100.0),
             "intelx": ConsumerBudgetPolicy(consumer="intelx", monthly_budget_usd=150.0),
+            "futuris": ConsumerBudgetPolicy(consumer="futuris", monthly_budget_usd=100.0),
             "friday": ConsumerBudgetPolicy(consumer="friday", monthly_budget_usd=50.0),
             "human": ConsumerBudgetPolicy(consumer="human", monthly_budget_usd=50.0)
         }

@@ -1,6 +1,6 @@
 # AI Universe Multi-Consumer Integration Guide
 
-AI Universe serves six specialized autonomous consumers with dedicated rate limits, priority queues, and monthly budget allocations.
+AI Universe serves seven specialized autonomous consumers with dedicated rate limits, priority queues, and monthly budget allocations.
 
 ---
 
@@ -13,6 +13,7 @@ AI Universe serves six specialized autonomous consumers with dedicated rate limi
 | **Nexus** | High-throughput multi-mode decision engine | $200\text{ reqs/hr}$ | **Standard Interactive Queue** | $\$100.00$ | $\$80.00$ *(Warning)* | $\$100.00$ *(Rejected)* |
 | **Sentinel** | Cybersecurity posture & threat reasoning | $100\text{ reqs/hr}$ | **Dedicated Security Queue** | $\$100.00$ | $\$80.00$ *(Warning)* | $\$100.00$ *(Rejected)* |
 | **IntelX** | Deep research & claim verification | $200\text{ reqs/hr}$ | **Batched Research Queue** | $\$150.00$ | $\$120.00$ *(Warning)* | $\$150.00$ *(Rejected)* |
+| **Futuris** | Predictive forecasting & statistical grounding | $150\text{ reqs/hr}$ | **Analytical Priority Queue** | $\$100.00$ | $\$80.00$ *(Warning)* | $\$100.00$ *(Rejected)* |
 | **FRIDAY** | General assistant & workspace automation | $100\text{ reqs/hr}$ | **Interactive User Queue** | $\$50.00$ | $\$40.00$ *(Warning)* | $\$50.00$ *(Rejected)* |
 
 ---

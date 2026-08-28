@@ -4,7 +4,7 @@ import time
 from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, Field
 
-ConsumerType = Literal["trading_bot", "forge", "friday", "human", "nexus", "sentinel", "intelx"]
+ConsumerType = Literal["trading_bot", "forge", "friday", "human", "nexus", "sentinel", "intelx", "futuris"]
 
 
 class ConsumerProfile(BaseModel):
@@ -27,6 +27,13 @@ class MultiConsumerRouter:
     """Manages consumer identity, rate-limit policies, priority queues, and usage accounting."""
 
     PROFILES: Dict[ConsumerType, ConsumerProfile] = {
+        "futuris": ConsumerProfile(
+            name="futuris",
+            rate_limit_per_hour=150,
+            priority=2,
+            mode="statistical_grounding",
+            description="Futuris predictive forecasting and statistical grounding engine."
+        ),
         "intelx": ConsumerProfile(
             name="intelx",
             rate_limit_per_hour=200,

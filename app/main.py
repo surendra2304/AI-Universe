@@ -23,6 +23,7 @@ from app.routers.evolution_intel import evolution_router
 from app.routers.experiment_routes import experiment_router
 from app.routers.forge_health import forge_health_router
 from app.routers.forge_services import forge_router
+from app.routers.futuris import futuris_router
 from app.routers.governance import governance_router
 from app.routers.intelx import intelx_router
 from app.routers.live_intelligence import live_router
@@ -114,6 +115,7 @@ app.include_router(multimodal_router)
 app.include_router(experiment_router)
 app.include_router(sentinel_router)
 app.include_router(intelx_router)
+app.include_router(futuris_router)
 
 
 @app.get("/")

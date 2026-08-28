@@ -37,6 +37,43 @@ paths:
                   confidence: { type: number }
                   bounded_parameters: { type: object }
 
+  /v1/futuris/enhance:
+    post:
+      summary: Futuris Statistical Forecast Enhancement
+      description: Enhances raw statistical forecasts with qualitative intelligence, driver analysis, and confidence calibration.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [request_id, statistical_forecast]
+              properties:
+                request_id: { type: string, example: "futuris-req-001" }
+                statistical_forecast:
+                  type: object
+                  required: [point_estimate, confidence_interval, model_used]
+                  properties:
+                    metric_name: { type: string }
+                    point_estimate: { type: number }
+                    confidence_interval: { type: array, items: { type: number } }
+                    probability: { type: number }
+                    model_used: { type: string }
+                target_context: { type: object }
+                contextual_factors: { type: array, items: { type: string } }
+      responses:
+        '200':
+          description: Qualitatively enhanced forecast assessment
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  request_id: { type: string }
+                  enhanced_assessment: { type: object }
+                  confidence_adjustment: { type: number }
+                  grounded_forecast_summary: { type: string }
+
   /v1/intelx/research:
     post:
       summary: IntelX Deep Research Intelligence

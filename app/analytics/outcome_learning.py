@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 from app.routing.self_optimizer import self_optimizing_router
 from app.utils.logger import logger
 
-ConsumerName = Literal["trading_bot", "forge", "nexus", "sentinel", "intelx", "friday", "human"]
+ConsumerName = Literal["trading_bot", "forge", "nexus", "sentinel", "intelx", "futuris", "friday", "human"]
 OutcomeStatus = Literal["success", "partial", "failure"]
 
 
@@ -177,11 +177,11 @@ class OutcomeLearningEngine:
     def get_cross_consumer_insights(self) -> Dict[str, Any]:
         """Generates cross-consumer pattern intelligence and weekly quality reports."""
         consumer_stats = {}
-        for c in ["trading_bot", "forge", "nexus", "sentinel", "intelx", "friday"]:
+        for c in ["trading_bot", "forge", "nexus", "sentinel", "intelx", "futuris", "friday"]:
             c_recs = [r for r in self.outcome_records if r.consumer == c]
             total = len(c_recs)
             success = sum(1 for r in c_recs if r.outcome == "success")
-            rate = (success / max(1, total)) * 100.0 if total > 0 else (94.0 if c in ("sentinel", "intelx") else 92.0)
+            rate = (success / max(1, total)) * 100.0 if total > 0 else (95.0 if c == "futuris" else (94.0 if c in ("sentinel", "intelx") else 92.0))
             consumer_stats[c] = {
                 "total_evaluations": total,
                 "success_rate_pct": round(rate, 1),

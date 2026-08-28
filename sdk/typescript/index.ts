@@ -55,6 +55,19 @@ export class AIUniverseClient {
     });
   }
 
+  public async enhanceStatisticalForecast(payload: {
+    request_id: string;
+    statistical_forecast: Record<string, any>;
+    target_context?: Record<string, any>;
+    contextual_factors?: string[];
+    question?: string;
+  }): Promise<Record<string, any>> {
+    return this.request('/v1/futuris/enhance', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  }
+
   public async queryIntelXResearch(payload: {
     request_id: string;
     role: 'planner' | 'extractor' | 'verifier' | 'analyst' | 'critic' | 'synthesizer';
