@@ -54,8 +54,8 @@ class Settings(BaseSettings):
     def get_friday_api_key(self) -> Optional[str]:
         return self.FRIDAY_UNIVERSE_API_KEY or self.X_FRIDAY_API_KEY or self.FRIDAY_API_KEY
 
-    # Operational Budgets & Limits
-    MAX_BUDGET: float = Field(default=10.0, description="Maximum budget per request in USD or compute credits")
+    # Operational Budgets & Limits (Unlimited Token Flow Mode)
+    MAX_BUDGET: float = Field(default=999999.0, description="Unlimited budget - supplies all available tokens until provider quota exhausted")
     REQUEST_TIMEOUT: float = Field(default=60.0, description="Default timeout in seconds for provider calls")
 
     def get_provider_keys(self, provider_name: str) -> List[str]:

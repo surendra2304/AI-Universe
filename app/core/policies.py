@@ -106,7 +106,7 @@ class ProviderSwitchingPolicy:
 
 class SystemPolicies:
     """Execution bounds, budget thresholds, timeouts, and safety policies."""
-    DEFAULT_MAX_BUDGET_USD: float = 10.0
+    DEFAULT_MAX_BUDGET_USD: float = 999999.0
     DEFAULT_MAX_LATENCY_SECONDS: float = 60.0
     FAST_MODE_LATENCY_THRESHOLD_SECONDS: float = 3.0
     REVIEW_MODE_LATENCY_THRESHOLD_SECONDS: float = 10.0
