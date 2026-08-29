@@ -119,6 +119,7 @@ app.include_router(futuris_router)
 
 
 @app.get("/")
+@app.head("/")
 async def root():
     """Root metadata endpoint."""
     return {
