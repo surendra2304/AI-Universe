@@ -47,12 +47,13 @@ class Settings(BaseSettings):
     NVIDIA_API_KEYS: Optional[str] = Field(default=None)
 
     # Integration Keys
+    AI_UNIVERSE_API_KEY: Optional[str] = Field(default="ai_universe_api")
     FRIDAY_UNIVERSE_API_KEY: Optional[str] = Field(default=None)
     X_FRIDAY_API_KEY: Optional[str] = Field(default=None)
     FRIDAY_API_KEY: Optional[str] = Field(default=None)
 
     def get_friday_api_key(self) -> Optional[str]:
-        return self.FRIDAY_UNIVERSE_API_KEY or self.X_FRIDAY_API_KEY or self.FRIDAY_API_KEY
+        return self.AI_UNIVERSE_API_KEY or self.FRIDAY_UNIVERSE_API_KEY or self.X_FRIDAY_API_KEY or self.FRIDAY_API_KEY
 
     # Operational Budgets & Limits (Unlimited Token Flow Mode)
     MAX_BUDGET: float = Field(default=999999.0, description="Unlimited budget - supplies all available tokens until provider quota exhausted")

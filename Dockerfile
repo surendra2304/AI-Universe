@@ -1,4 +1,4 @@
-# Multi-stage production Dockerfile for AI Universe (Optimized for Hugging Face Spaces & Cloud)
+# Multi-stage production Dockerfile for AI Universe (Render & Cloud Ready)
 FROM python:3.11-slim as builder
 
 WORKDIR /app
@@ -10,7 +10,7 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Create non-root user with UID 1000 required by Hugging Face Spaces
+# Create non-root user
 RUN useradd -m -u 1000 user && \
     mkdir -p /app/data && \
     chown -R user:user /app
@@ -22,10 +22,10 @@ USER user
 ENV HOME=/home/user \
     PATH=/home/user/.local/bin:$PATH \
     PYTHONUNBUFFERED=1 \
-    PORT=7860
+    PORT=8000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:7860/health').read()" || exit 1
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()" || exit 1
 
-EXPOSE 7860
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "7860", "--workers", "4"]
+EXPOSE 8000
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 4"]
