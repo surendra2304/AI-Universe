@@ -28,12 +28,15 @@ class ProductionConfig(BaseSettings):
     RATE_LIMIT_MAX_REQUESTS_PER_BOT: int = 20
     MAX_REQUEST_SIZE_BYTES: int = 1024 * 1024  # 1MB
 
-    # Provider Fallback Chain Optimization
+    # Provider Fallback Chain Optimization (Free-Tier Prioritized)
     PROVIDER_PRIORITY: List[str] = [
-        "groq",
         "gemini",
-        "openai",
-        "anthropic",
+        "groq",
+        "mistral",
+        "openrouter",
+        "huggingface",
+        "nvidia",
+        "cohere",
         "ollama"
     ]
 
