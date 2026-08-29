@@ -1,5 +1,5 @@
 # Multi-stage production Dockerfile for AI Universe (Render & Cloud Ready)
-FROM python:3.11-slim as builder
+FROM python:3.11-slim AS builder
 
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends gcc python3-dev && rm -rf /var/lib/apt/lists/*
