@@ -1,4 +1,4 @@
-"""Benchmark harness and automated experiment runner for AI Universe."""
+"""Benchmark harness and automated experiment runner for Inference."""
 
 import asyncio
 import time
@@ -96,7 +96,7 @@ class BenchmarkHarness:
 
         exp_record = ExperimentRecord(
             id=exp_id,
-            hypothesis="Evaluate AI Universe multi-agent debate performance across the Golden Benchmark Suite",
+            hypothesis="Evaluate Inference multi-agent debate performance across the Golden Benchmark Suite",
             configuration={"benchmark_count": len(results), "selected_ids": benchmark_ids},
             status="completed",
             result={

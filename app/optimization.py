@@ -1,4 +1,4 @@
-"""Production Performance Optimizations for AI Universe."""
+"""Production Performance Optimizations for Inference."""
 
 import asyncio
 import hashlib

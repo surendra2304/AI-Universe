@@ -15,7 +15,7 @@ friday_router = APIRouter(
 
 
 class FridayRequest(BaseModel):
-    """Payload for requests submitted by FRIDAY to AI Universe."""
+    """Payload for requests submitted by FRIDAY to Inference."""
     question: str = Field(description="The complex query or task submitted by FRIDAY")
     context_data: Dict[str, Any] = Field(default_factory=dict, description="FRIDAY's active system/environment context")
     max_latency: Optional[float] = Field(default=30.0, description="Hard SLA ceiling in seconds")
@@ -74,7 +74,7 @@ async def friday_ask(request: FridayRequest) -> FridayResponse:
             total_tokens=result.total_tokens,
             provenance={
                 "caller_id": request.caller_id,
-                "platform": "AI Universe",
+                "platform": "Inference",
                 "version": "1.0.0"
             }
         )
@@ -120,7 +120,7 @@ async def friday_debate(request: FridayRequest) -> FridayResponse:
             provenance={
                 "caller_id": request.caller_id,
                 "debate_id": result.run_id,
-                "platform": "AI Universe",
+                "platform": "Inference",
                 "version": "1.0.0",
                 "mode_used": result.mode_used,
                 "rounds_completed": 6 if result.mode_used == "debate" else 2
@@ -134,7 +134,7 @@ async def friday_debate(request: FridayRequest) -> FridayResponse:
 
 
 class AgentMetadata(BaseModel):
-    """Detailed metadata for a specialist agent in AI Universe."""
+    """Detailed metadata for a specialist agent in Inference."""
     id: str
     name: str
     role: str
@@ -147,7 +147,7 @@ class AgentMetadata(BaseModel):
 
 class FridayInfoResponse(BaseModel):
     """System metadata and active agent list for discovery."""
-    platform: str = "AI Universe"
+    platform: str = "Inference"
     version: str = "1.0.0"
     total_specialists: int
     active_cloud_providers: List[str]

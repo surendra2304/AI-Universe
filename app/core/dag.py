@@ -1,4 +1,4 @@
-"""DAG Execution, Complexity Classifier, and Dependency Models for AI Universe."""
+"""DAG Execution, Complexity Classifier, and Dependency Models for Inference."""
 
 import re
 from enum import Enum

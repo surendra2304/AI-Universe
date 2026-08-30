@@ -1,4 +1,4 @@
-"""Provider Health Tracking Subsystem for AI Universe."""
+"""Provider Health Tracking Subsystem for Inference."""
 
 import time
 from typing import Any, Dict, List, Optional

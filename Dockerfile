@@ -1,4 +1,4 @@
-# Multi-stage production Dockerfile for AI Universe (Render & Cloud Ready)
+# Multi-stage production Dockerfile for Inference (Render & Cloud Ready)
 FROM python:3.11-slim AS builder
 
 WORKDIR /app

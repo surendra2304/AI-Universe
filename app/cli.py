@@ -1,4 +1,4 @@
-"""Interactive Command-Line Interface (CLI) for AI Universe.
+"""Interactive Command-Line Interface (CLI) for Inference.
 
 Executes directly in-process using the Orchestrator and SQLiteMemory without
 requiring a running uvicorn background server.
@@ -32,7 +32,7 @@ if sys.platform == "win32" and hasattr(sys.stdout, "reconfigure"):
     except Exception:
         pass
 
-cli_app = typer.Typer(help="AI Universe — Multi-Agent Intelligence CLI")
+cli_app = typer.Typer(help="Inference — Multi-Agent Intelligence CLI")
 console = Console(legacy_windows=False) if Console else None
 
 
@@ -151,7 +151,7 @@ async def _run_in_process_experiment(
         if exp_type == "benchmark_suite":
             rec = await harness.run_benchmark_suite()
         elif exp_type == "baseline_vs_debate":
-            q = question or "Should AI Universe use microservices or monolithic architecture?"
+            q = question or "Should Inference use microservices or monolithic architecture?"
             rec = await harness.run_baseline_vs_debate_comparison(q)
         else:
             rec = await harness.run_benchmark_suite()
@@ -172,7 +172,7 @@ async def _run_in_process_experiment(
 
 @cli_app.command()
 def ask(
-    question: str = typer.Argument(..., help="Question to ask AI Universe"),
+    question: str = typer.Argument(..., help="Question to ask Inference"),
     mode: str = typer.Option("auto", "--mode", "-m", help="Mode: auto, fast, review, debate"),
     max_agents: int = typer.Option(5, "--agents", "-a", help="Max agents to allocate"),
     budget: Optional[float] = typer.Option(None, "--budget", "-b", help="Max budget in USD"),

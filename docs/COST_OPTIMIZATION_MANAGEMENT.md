@@ -1,6 +1,6 @@
 # Cost Optimization & Intelligent Resource Management
 
-AI Universe implements cost-aware model routing, per-consumer budget ceilings, intelligent token compression ($40-60\%$ reduction), domain-specific semantic caching, and real-time cost-per-successful-outcome tracking.
+Inference implements cost-aware model routing, per-consumer budget ceilings, intelligent token compression ($40-60\%$ reduction), domain-specific semantic caching, and real-time cost-per-successful-outcome tracking.
 
 ---
 

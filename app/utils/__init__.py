@@ -1,4 +1,4 @@
-"""Utility modules for AI Universe."""
+"""Utility modules for Inference."""
 
 from app.utils.logger import logger, setup_logger
 

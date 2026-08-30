@@ -66,7 +66,7 @@ class UnifiedProviderManager:
         # Determine target provider and model
         target_provider = req.provider
         target_model = None
-        system_prompt = "You are a helpful AI specialist in AI Universe."
+        system_prompt = "You are a helpful AI specialist in Inference."
 
         if agent:
             system_prompt = agent.system_instructions

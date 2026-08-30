@@ -1,9 +1,9 @@
 # Ecosystem Intelligence & Continuous Learning Architecture
 
-AI Universe functions as the central intelligence backbone of the autonomous algorithmic trading ecosystem, consolidating multi-exchange states, episodic memory retrieval, outcome attribution, and meta-intelligence self-assessment.
+Inference functions as the central intelligence backbone of the autonomous algorithmic trading ecosystem, consolidating multi-exchange states, episodic memory retrieval, outcome attribution, and meta-intelligence self-assessment.
 
 > [!IMPORTANT]
-> **Advisory Invariant**: All learning, meta-intelligence, and ecosystem reports remain strictly advisory inputs. AI Universe NEVER executes orders or signs transactions.
+> **Advisory Invariant**: All learning, meta-intelligence, and ecosystem reports remain strictly advisory inputs. Inference NEVER executes orders or signs transactions.
 
 ---
 

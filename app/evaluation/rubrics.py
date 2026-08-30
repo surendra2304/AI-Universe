@@ -1,4 +1,4 @@
-"""Evaluation rubrics, scoring dimensions, and definitions for AI Universe."""
+"""Evaluation rubrics, scoring dimensions, and definitions for Inference."""
 
 from typing import Dict, List
 from pydantic import BaseModel, Field

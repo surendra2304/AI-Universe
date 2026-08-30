@@ -1,4 +1,4 @@
-"""Application configuration settings for AI Universe."""
+"""Application configuration settings for Inference."""
 
 from typing import Dict, List, Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -48,13 +48,13 @@ class Settings(BaseSettings):
 
     # Integration Keys
     INFERENCE_API_KEY: Optional[str] = Field(default="inference_api")
-    AI_UNIVERSE_API_KEY: Optional[str] = Field(default=None)
+    inference_api_KEY: Optional[str] = Field(default=None)
     FRIDAY_UNIVERSE_API_KEY: Optional[str] = Field(default=None)
     X_FRIDAY_API_KEY: Optional[str] = Field(default=None)
     FRIDAY_API_KEY: Optional[str] = Field(default=None)
 
     def get_friday_api_key(self) -> Optional[str]:
-        return self.INFERENCE_API_KEY or self.AI_UNIVERSE_API_KEY or self.FRIDAY_UNIVERSE_API_KEY or self.X_FRIDAY_API_KEY or self.FRIDAY_API_KEY or "inference_api"
+        return self.INFERENCE_API_KEY or self.inference_api_KEY or self.FRIDAY_UNIVERSE_API_KEY or self.X_FRIDAY_API_KEY or self.FRIDAY_API_KEY or "inference_api"
 
     # Operational Budgets & Limits (Unlimited Token Flow Mode)
     MAX_BUDGET: float = Field(default=999999.0, description="Unlimited budget - supplies all available tokens until provider quota exhausted")

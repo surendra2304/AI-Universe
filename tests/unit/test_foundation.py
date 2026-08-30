@@ -17,7 +17,7 @@ from app.utils.ids import (
 def test_settings_initialization():
     """Verify Settings class loads correct defaults and types."""
     test_settings = Settings()
-    assert test_settings.APP_NAME == "AI Universe"
+    assert test_settings.APP_NAME == "Inference"
     assert test_settings.DATABASE_URL == "sqlite:///data/universe.db"
     assert test_settings.MAX_BUDGET == 999999.0
     assert test_settings.REQUEST_TIMEOUT == 60.0

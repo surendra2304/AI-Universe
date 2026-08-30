@@ -44,8 +44,8 @@ def test_production_health_endpoints():
     # 5. Prometheus Metrics
     r = client.get("/metrics")
     assert r.status_code == 200
-    assert "ai_universe_requests_total" in r.text
-    assert "ai_universe_latency_p95_seconds" in r.text
+    assert "inference_requests_total" in r.text
+    assert "inference_latency_p95_seconds" in r.text
 
 
 def test_concurrent_load_and_p95_sla():

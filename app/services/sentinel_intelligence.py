@@ -299,7 +299,7 @@ class SentinelIntelligenceService:
         )
 
         safety_notes = [
-            "AI-Universe Sentinel Analysis is strictly defensive and advisory.",
+            "Inference Sentinel Analysis is strictly defensive and advisory.",
             "Never executes active exploits, intrusive probing, or unauthorized network disruption.",
             "All findings and attack chain models are theoretical security posture assessments for defensive hardening."
         ]

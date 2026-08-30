@@ -1,6 +1,6 @@
 # FORGE Supporting Intelligence Services
 
-AI Universe acts as the high-throughput reasoning and code generation backbone for **FORGE** (autonomous software engineering engine), while maintaining strict resource isolation for the Algorithmic Trading Bot and FRIDAY.
+Inference acts as the high-throughput reasoning and code generation backbone for **FORGE** (autonomous software engineering engine), while maintaining strict resource isolation for the Algorithmic Trading Bot and FRIDAY.
 
 ---
 

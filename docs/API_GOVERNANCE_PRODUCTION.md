@@ -1,6 +1,6 @@
 # API Governance, Multi-Tenancy & Production Operations
 
-AI Universe provides enterprise-grade API governance, strict multi-tenant isolation, automated key rotation, circuit breaking, request deduplication, Prometheus observability, and graceful degradation.
+Inference provides enterprise-grade API governance, strict multi-tenant isolation, automated key rotation, circuit breaking, request deduplication, Prometheus observability, and graceful degradation.
 
 ---
 
@@ -40,4 +40,4 @@ AI Universe provides enterprise-grade API governance, strict multi-tenant isolat
 - `GET /v1/governance/tenants/{tenant_id}`: Tenant policy and spend status.
 - `POST /v1/governance/tenants/{tenant_id}/rotate-key`: Key rotation.
 - `GET /v1/governance/circuits`: Live circuit breaker state across all 7 cloud providers.
-- `GET /v1/governance/prometheus-metrics`: Formatted Prometheus metrics (`ai_universe_requests_total`, `ai_universe_request_duration_seconds`, `ai_universe_provider_health`).
+- `GET /v1/governance/prometheus-metrics`: Formatted Prometheus metrics (`inference_requests_total`, `inference_request_duration_seconds`, `inference_provider_health`).

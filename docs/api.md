@@ -1,6 +1,6 @@
-# AI Universe REST API Reference
+# Inference REST API Reference
 
-AI Universe exposes clean, typed FastAPI REST endpoints for orchestration, structured multi-agent debates, evaluations, benchmarks, and dedicated FRIDAY peer integration.
+Inference exposes clean, typed FastAPI REST endpoints for orchestration, structured multi-agent debates, evaluations, benchmarks, and dedicated FRIDAY peer integration.
 
 ---
 
@@ -101,7 +101,7 @@ Content-Type: application/json
   "provenance": {
     "caller_id": "friday_security_core",
     "debate_id": "deb_1234567890cd",
-    "platform": "AI Universe",
+    "platform": "Inference",
     "version": "1.0.0",
     "rounds_completed": 6
   }

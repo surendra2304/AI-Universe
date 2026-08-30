@@ -1,7 +1,7 @@
 # Evaluation, Benchmarks & Experiments
 
 ## Core Philosophy
-AI Universe does not pretend that API calls retrain model weights. Learning occurs through:
+Inference does not pretend that API calls retrain model weights. Learning occurs through:
 - Empirical scoring of provider/model accuracy on specific domains.
 - Auditing debate configurations (e.g. 2-agent vs 5-agent).
 - Optimizing prompt rubrics and routing policies.

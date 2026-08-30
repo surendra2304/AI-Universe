@@ -1,4 +1,4 @@
-"""Base data models, schemas, and contracts for AI Universe agents."""
+"""Base data models, schemas, and contracts for Inference agents."""
 
 import json
 from abc import ABC, abstractmethod

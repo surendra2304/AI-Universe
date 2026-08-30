@@ -51,7 +51,7 @@ async def system_status():
     """System capabilities, active agents, and operational modes."""
     agents = agent_registry.list_agents()
     return {
-        "system": "AI-Universe",
+        "system": "Inference",
         "version": "1.0.0",
         "status": "operational",
         "advisory_only": True,
@@ -73,33 +73,33 @@ async def prometheus_metrics():
     cache_rate = telemetry_cache.get_hit_rate()
 
     lines = [
-        "# HELP ai_universe_requests_total Total number of consultation requests",
-        "# TYPE ai_universe_requests_total counter",
-        f"ai_universe_requests_total {metrics_data['total_requests']}",
+        "# HELP inference_requests_total Total number of consultation requests",
+        "# TYPE inference_requests_total counter",
+        f"inference_requests_total {metrics_data['total_requests']}",
         "",
-        "# HELP ai_universe_latency_p50_seconds P50 response latency in seconds",
-        "# TYPE ai_universe_latency_p50_seconds gauge",
-        f"ai_universe_latency_p50_seconds {metrics_data['p50_latency_sec']}",
+        "# HELP inference_latency_p50_seconds P50 response latency in seconds",
+        "# TYPE inference_latency_p50_seconds gauge",
+        f"inference_latency_p50_seconds {metrics_data['p50_latency_sec']}",
         "",
-        "# HELP ai_universe_latency_p95_seconds P95 response latency in seconds",
-        "# TYPE ai_universe_latency_p95_seconds gauge",
-        f"ai_universe_latency_p95_seconds {metrics_data['p95_latency_sec']}",
+        "# HELP inference_latency_p95_seconds P95 response latency in seconds",
+        "# TYPE inference_latency_p95_seconds gauge",
+        f"inference_latency_p95_seconds {metrics_data['p95_latency_sec']}",
         "",
-        "# HELP ai_universe_latency_p99_seconds P99 response latency in seconds",
-        "# TYPE ai_universe_latency_p99_seconds gauge",
-        f"ai_universe_latency_p99_seconds {metrics_data['p99_latency_sec']}",
+        "# HELP inference_latency_p99_seconds P99 response latency in seconds",
+        "# TYPE inference_latency_p99_seconds gauge",
+        f"inference_latency_p99_seconds {metrics_data['p99_latency_sec']}",
         "",
-        "# HELP ai_universe_error_rate_percent Percentage of failed requests",
-        "# TYPE ai_universe_error_rate_percent gauge",
-        f"ai_universe_error_rate_percent {metrics_data['error_rate_pct']}",
+        "# HELP inference_error_rate_percent Percentage of failed requests",
+        "# TYPE inference_error_rate_percent gauge",
+        f"inference_error_rate_percent {metrics_data['error_rate_pct']}",
         "",
-        "# HELP ai_universe_cache_hit_rate_percent Telemetry cache hit rate percentage",
-        "# TYPE ai_universe_cache_hit_rate_percent gauge",
-        f"ai_universe_cache_hit_rate_percent {cache_rate}",
+        "# HELP inference_cache_hit_rate_percent Telemetry cache hit rate percentage",
+        "# TYPE inference_cache_hit_rate_percent gauge",
+        f"inference_cache_hit_rate_percent {cache_rate}",
         "",
-        "# HELP ai_universe_active_requests Current in-flight consultations",
-        "# TYPE ai_universe_active_requests gauge",
-        f"ai_universe_active_requests {concurrency_controller.active_count}"
+        "# HELP inference_active_requests Current in-flight consultations",
+        "# TYPE inference_active_requests gauge",
+        f"inference_active_requests {concurrency_controller.active_count}"
     ]
 
     return Response(content="\n".join(lines), media_type="text/plain; version=0.0.4")

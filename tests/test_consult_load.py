@@ -1,4 +1,4 @@
-"""Load and Stress Testing for AI Universe Trading Consultation Endpoint."""
+"""Load and Stress Testing for Inference Trading Consultation Endpoint."""
 
 import asyncio
 import statistics

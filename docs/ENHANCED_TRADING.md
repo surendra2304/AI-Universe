@@ -1,9 +1,9 @@
 # Enhanced Trading Intelligence & Market Analysis
 
-AI Universe provides advanced quantitative market intelligence, multi-agent deliberation, sentiment extraction, on-chain flows, and machine learning price trajectory forecasting for algorithmic trading systems.
+Inference provides advanced quantitative market intelligence, multi-agent deliberation, sentiment extraction, on-chain flows, and machine learning price trajectory forecasting for algorithmic trading systems.
 
 > [!IMPORTANT]
-> **Advisory Invariant**: AI Universe produces intelligence, confidence scores, and structured parameter bounds. It NEVER executes trades directly or calls exchange endpoints with private keys.
+> **Advisory Invariant**: Inference produces intelligence, confidence scores, and structured parameter bounds. It NEVER executes trades directly or calls exchange endpoints with private keys.
 
 ---
 

@@ -1,4 +1,4 @@
-# AI Universe Production API Documentation & Integration Reference
+# Inference Production API Documentation & Integration Reference
 
 Version: `v1.0.0-PROD`  
 Protocol: `HTTPS / JSON`  
@@ -43,7 +43,7 @@ Authorization: Bearer aiu_live_sec_9948271049281726
 
 ## 3. High Availability & Failover Policy
 
-AI Universe operates an automated failover chain:
+Inference operates an automated failover chain:
 `Groq` $\rightarrow$ `Gemini` $\rightarrow$ `OpenAI` $\rightarrow$ `Anthropic` $\rightarrow$ `Ollama`.
 
 If a provider incurs 3 consecutive failures, the node transitions to `DEGRADED` status and requests automatically route to the next available provider in the chain.

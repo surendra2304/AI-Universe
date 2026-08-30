@@ -1,4 +1,4 @@
-"""Python SDK Client for AI Universe Multi-Agent Intelligence Platform."""
+"""Python SDK Client for Inference Multi-Agent Intelligence Platform."""
 
 import time
 from typing import Any, Dict, List, Optional
@@ -16,7 +16,7 @@ class IntelligenceRequest(BaseModel):
 
 
 class AIUniverseClient:
-    """Typed client for interacting with AI Universe intelligence endpoints."""
+    """Typed client for interacting with Inference intelligence endpoints."""
 
     def __init__(self, base_url: str = "http://localhost:8000", api_key: Optional[str] = None, timeout: float = 30.0) -> None:
         self.base_url = base_url.rstrip("/")

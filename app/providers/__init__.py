@@ -1,4 +1,4 @@
-"""Provider factory and registry for AI Universe (7 Verified Free Cloud Providers)."""
+"""Provider factory and registry for Inference (7 Verified Free Cloud Providers)."""
 
 from typing import Dict, Type
 from app.providers.base import BaseLLMProvider

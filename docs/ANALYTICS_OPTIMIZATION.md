@@ -1,6 +1,6 @@
 # Provider Analytics & Self-Optimizing Intelligence Architecture
 
-AI Universe implements comprehensive usage tracking, cost management, downstream outcome attribution, and self-optimizing provider rebalancing.
+Inference implements comprehensive usage tracking, cost management, downstream outcome attribution, and self-optimizing provider rebalancing.
 
 ---
 
@@ -15,7 +15,7 @@ AI Universe implements comprehensive usage tracking, cost management, downstream
 
 ```
 ┌─────────────────────────────────┐
-│     AI Universe Generation      │
+│     Inference Generation      │
 └────────────────┬────────────────┘
                  │
                  ▼

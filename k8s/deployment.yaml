@@ -1,9 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ai-universe-api
+  name: Inference-api
   labels:
-    app: ai-universe-api
+    app: Inference-api
 spec:
   replicas: 3
   strategy:
@@ -13,15 +13,15 @@ spec:
       maxUnavailable: 0
   selector:
     matchLabels:
-      app: ai-universe-api
+      app: Inference-api
   template:
     metadata:
       labels:
-        app: ai-universe-api
+        app: Inference-api
     spec:
       containers:
       - name: api
-        image: ai-universe:latest
+        image: Inference:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8000
@@ -48,12 +48,12 @@ spec:
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: ai-universe-hpa
+  name: Inference-hpa
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: ai-universe-api
+    name: Inference-api
   minReplicas: 3
   maxReplicas: 20
   metrics:
@@ -67,11 +67,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: ai-universe-service
+  name: Inference-service
 spec:
   type: ClusterIP
   selector:
-    app: ai-universe-api
+    app: Inference-api
   ports:
   - port: 80
     targetPort: 8000
@@ -79,7 +79,7 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: ai-universe-ingress
+  name: Inference-ingress
   annotations:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
@@ -87,16 +87,16 @@ spec:
   ingressClassName: nginx
   tls:
   - hosts:
-    - api.ai-universe.internal
-    secretName: ai-universe-tls-cert
+    - api.Inference.internal
+    secretName: Inference-tls-cert
   rules:
-  - host: api.ai-universe.internal
+  - host: api.Inference.internal
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: ai-universe-service
+            name: Inference-service
             port:
               number: 80

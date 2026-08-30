@@ -1,4 +1,4 @@
-"""Pytest fixtures and configuration for AI Universe test suite."""
+"""Pytest fixtures and configuration for Inference test suite."""
 
 import pytest
 from app.core.config import settings

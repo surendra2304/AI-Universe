@@ -1,4 +1,4 @@
-"""Structured logging utility for AI Universe."""
+"""Structured logging utility for Inference."""
 
 import logging
 import sys
@@ -16,7 +16,7 @@ class SensitiveDataFilter(logging.Filter):
 
 
 def setup_logger(
-    name: str = "ai_universe",
+    name: str = "inference",
     log_level: Optional[str] = None
 ) -> logging.Logger:
     """Configures and returns a structured application logger."""

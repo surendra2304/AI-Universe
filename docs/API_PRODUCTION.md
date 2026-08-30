@@ -1,6 +1,6 @@
-# AI Universe — Production API & Performance Deployment Reference
+# Inference — Production API & Performance Deployment Reference
 
-This guide details the production architecture, performance optimizations, monitoring setup, and deployment standards for the **AI Universe Advisory Consultation System**.
+This guide details the production architecture, performance optimizations, monitoring setup, and deployment standards for the **Inference Advisory Consultation System**.
 
 ---
 
@@ -34,13 +34,13 @@ This guide details the production architecture, performance optimizations, monit
 ### Key Prometheus Metrics
 | Metric Name | Type | Description |
 | :--- | :--- | :--- |
-| `ai_universe_requests_total` | Counter | Total completed consultation requests |
-| `ai_universe_latency_p50_seconds` | Gauge | Median response latency |
-| `ai_universe_latency_p95_seconds` | Gauge | 95th percentile response latency ($< 30$s SLA) |
-| `ai_universe_latency_p99_seconds` | Gauge | 99th percentile response latency |
-| `ai_universe_error_rate_percent` | Gauge | Ratio of failed consultations |
-| `ai_universe_cache_hit_rate_percent` | Gauge | Cache hit percentage |
-| `ai_universe_active_requests` | Gauge | In-flight active consultations |
+| `inference_requests_total` | Counter | Total completed consultation requests |
+| `inference_latency_p50_seconds` | Gauge | Median response latency |
+| `inference_latency_p95_seconds` | Gauge | 95th percentile response latency ($< 30$s SLA) |
+| `inference_latency_p99_seconds` | Gauge | 99th percentile response latency |
+| `inference_error_rate_percent` | Gauge | Ratio of failed consultations |
+| `inference_cache_hit_rate_percent` | Gauge | Cache hit percentage |
+| `inference_active_requests` | Gauge | In-flight active consultations |
 
 ---
 

@@ -84,7 +84,7 @@ class ParameterChange(BaseModel):
 
 
 class AIUniverseDecision(BaseModel):
-    """Final structured advisory decision produced by AI Universe."""
+    """Final structured advisory decision produced by Inference."""
     decision_id: str = Field(default_factory=lambda: str(uuid4()), description="Unique UUID for this advisory decision")
     timestamp: str = Field(
         default_factory=lambda: datetime.utcnow().isoformat(),

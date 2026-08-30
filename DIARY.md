@@ -1,13 +1,21 @@
-# 📔 AI Universe Diary
+# 📔 Inference Diary
 
-A personal development journal documenting how I built AI Universe — a local-first, multi-agent intelligence system. Read the daily entries below to see what I built each day and why.
+A personal development journal documenting how I built Inference — a local-first, multi-agent intelligence system. Read the daily entries below to see what I built each day and why.
 
 ---
 
-**[→ Master Chronicle](AI_UNIVERSE_DIARY.md)** — What AI Universe is and how it works.
+**[→ Master Chronicle](INFERENCE_DIARY.md)** — What Inference is and how it works.
 
 **[→ Day 1 — 2026-08-24](diary/2026-08-24.md)** — System inception, 7 cloud providers, 10 specialist agents, SQLite database, first debate engine.
 
 **[→ Day 2 — 2026-08-25](diary/2026-08-25.md)** — Real-time collaboration engine, FRIDAY API endpoints, provider failover fix, Cerebras purge.
 
 **[→ Day 3 — 2026-08-26](diary/2026-08-26.md)** — Unified CollaborationEngine on all API paths. Fast=2 agents, review=3 agents, debate=full panel. No more single-agent bypass.
+
+**[→ Day 4 — 2026-08-27](diary/2026-08-27.md)** — Enhanced Trading Intelligence Layer & Technical Analytics.
+
+**[→ Day 5 — 2026-08-28](diary/2026-08-28.md)** — Nexus, Sentinel, IntelX, Futuris & Unified 7-Consumer Governance.
+
+**[→ Day 6 — 2026-08-29](diary/2026-08-29.md)** — Cloud Containerization (HF Spaces & Render) & Free-Tier Resilience.
+
+**[→ Day 7 — 2026-08-30](diary/2026-08-30.md)** — Live Render Pipeline, Uptime Probes & Rebranding to Inference.

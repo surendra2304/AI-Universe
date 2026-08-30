@@ -1,15 +1,15 @@
 # Trading Consultation, A/B Testing & Testnet API Reference
 
-The **Trading Consultation API** exposes AI Universe as an asynchronous advisory intelligence layer for autonomous trading bots. It provides multi-agent deliberation over quantitative performance metrics, parameter adjustments, drawdown risk assessments, **A/B experimental arm evaluations (Control vs. Treatment)**, and **Testnet Live Environment Safety Safeguards**.
+The **Trading Consultation API** exposes Inference as an asynchronous advisory intelligence layer for autonomous trading bots. It provides multi-agent deliberation over quantitative performance metrics, parameter adjustments, drawdown risk assessments, **A/B experimental arm evaluations (Control vs. Treatment)**, and **Testnet Live Environment Safety Safeguards**.
 
 > [!IMPORTANT]
-> **Safety Rule & Invariant**: AI Universe is strictly an **advisory system**. It never interacts with exchange endpoints, never holds or signs private keys, and never executes trades. Trading bots independently validate all returned parameter recommendations against hard deterministic safety bounds.
+> **Safety Rule & Invariant**: Inference is strictly an **advisory system**. It never interacts with exchange endpoints, never holds or signs private keys, and never executes trades. Trading bots independently validate all returned parameter recommendations against hard deterministic safety bounds.
 
 ---
 
 ## Architecture Overview
 
-When a trading bot submits performance telemetry, AI Universe convenes a dedicated multi-agent specialist panel:
+When a trading bot submits performance telemetry, Inference convenes a dedicated multi-agent specialist panel:
 1. **Trading Analyst (`trading_analyst`)**: Analyzes win rate, profit factor, drawdown curves, and consecutive loss streaks to propose initial parameter calibrations.
 2. **Strategist (`strategist`)**: Evaluates trade-offs between capital preservation and trade frequency across active strategies and ensures A/B treatment arms do not diverge excessively from control baselines.
 3. **Adversarial Critic (`critic`)**: Challenges curve-fitting risks, small-sample overfitting, and regime shifts.

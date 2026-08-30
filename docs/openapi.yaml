@@ -1,19 +1,19 @@
 openapi: 3.1.0
 info:
-  title: AI Universe Intelligence Platform API
+  title: Inference Intelligence Platform API
   version: 2.5.0
   description: Local-first, provider-agnostic multi-agent intelligence platform serving Trading Bot, FORGE, Nexus, Sentinel, and FRIDAY.
 servers:
   - url: http://localhost:8000
     description: Local development server
-  - url: https://api.ai-universe.internal
+  - url: https://api.Inference.internal
     description: Production internal cluster
 
 paths:
   /v1/trading/consult:
     post:
       summary: Trading Consultation Advisory
-      description: Returns bounded trading parameter advisory for autonomous trading bots. AI Universe NEVER touches private keys or executes trades directly.
+      description: Returns bounded trading parameter advisory for autonomous trading bots. Inference NEVER touches private keys or executes trades directly.
       requestBody:
         required: true
         content:

@@ -1,6 +1,6 @@
 # Outcome Feedback Loop & Cross-Consumer Learning Architecture
 
-AI Universe closes the feedback loop between upstream multi-agent intelligence and downstream execution outcomes across **FORGE**, **Trading Bot**, **Nexus**, and **FRIDAY**.
+Inference closes the feedback loop between upstream multi-agent intelligence and downstream execution outcomes across **FORGE**, **Trading Bot**, **Nexus**, and **FRIDAY**.
 
 ---
 
@@ -8,7 +8,7 @@ AI Universe closes the feedback loop between upstream multi-agent intelligence a
 
 ```
 ┌─────────────────────────────────┐
-│     AI Universe Generation      │
+│     Inference Generation      │
 └────────────────┬────────────────┘
                  │
                  ▼

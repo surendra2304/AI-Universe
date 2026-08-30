@@ -1,4 +1,4 @@
-"""Golden Benchmark Dataset for AI Universe Quality Control."""
+"""Golden Benchmark Dataset for Inference Quality Control."""
 
 from typing import List, Optional
 from pydantic import BaseModel, Field

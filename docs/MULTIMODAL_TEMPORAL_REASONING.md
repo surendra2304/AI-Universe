@@ -1,6 +1,6 @@
 # Advanced Intelligence Capabilities & Multi-Modal Reasoning
 
-AI Universe supports multi-modal ingestion, temporal sequence reasoning, counterfactual what-if simulations, tailored audience explanations, and confidence interval estimation.
+Inference supports multi-modal ingestion, temporal sequence reasoning, counterfactual what-if simulations, tailored audience explanations, and confidence interval estimation.
 
 ---
 

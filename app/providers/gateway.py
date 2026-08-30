@@ -1,4 +1,4 @@
-"""Provider Gateway Subsystem for AI Universe.
+"""Provider Gateway Subsystem for Inference.
 
 Features:
 - Global Key Pool with Round-Robin key rotation per provider.

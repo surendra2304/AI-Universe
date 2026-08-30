@@ -204,7 +204,7 @@ class NexusIntelligenceService:
         ]
 
         safety_notes = [
-            "AI-Universe is strictly advisory; decisions must be executed through bounded actuators.",
+            "Inference is strictly advisory; decisions must be executed through bounded actuators.",
             "All untrusted user inputs have been sanitized and discounted in confidence scoring."
         ]
 

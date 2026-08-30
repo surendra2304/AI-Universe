@@ -1,4 +1,4 @@
-"""Real-Time Multi-Agent Collaboration Engine for AI Universe with Complexity-Aware Multi-Model Execution.
+"""Real-Time Multi-Agent Collaboration Engine for Inference with Complexity-Aware Multi-Model Execution.
 
 Implements the "Collaborate First, Debate on Conflict" model:
 - Step 1: Selected specialist agents generate independent perspectives in parallel via asyncio.gather.

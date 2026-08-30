@@ -1,9 +1,9 @@
 # Strategy Evolution Intelligence & Overfitting Diagnostics
 
-AI Universe provides advanced quantitative evaluation, overfitting detection (Deflated Sharpe Ratio, Probability of Backtest Overfitting), cross-regime robustness analysis, and genetic population health tracking for algorithmic trading systems.
+Inference provides advanced quantitative evaluation, overfitting detection (Deflated Sharpe Ratio, Probability of Backtest Overfitting), cross-regime robustness analysis, and genetic population health tracking for algorithmic trading systems.
 
 > [!IMPORTANT]
-> **Advisory Invariant**: AI Universe evaluates evolved strategies and outputs structured recommendations. It NEVER activates or modifies trading strategies directly on the exchange.
+> **Advisory Invariant**: Inference evaluates evolved strategies and outputs structured recommendations. It NEVER activates or modifies trading strategies directly on the exchange.
 
 ---
 

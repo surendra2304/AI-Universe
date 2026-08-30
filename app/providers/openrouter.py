@@ -57,8 +57,8 @@ class OpenRouterProvider(OpenAICompatibleProvider):
             supported_models=self.SUPPORTED_MODELS,
             timeout=timeout,
             extra_headers={
-                "HTTP-Referer": "https://github.com/surendra2304/AI-Universe",
-                "X-Title": "AI Universe"
+                "HTTP-Referer": "https://github.com/surendra2304/Inference",
+                "X-Title": "Inference"
             }
         )
         self._cached_free_models: List[str] = []

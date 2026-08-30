@@ -1,9 +1,9 @@
 # Deep Learning Prediction & Alternative Data Architecture
 
-AI Universe integrates high-performance sequence modeling (LSTM, Transformers), GARCH-LSTM volatility forecasts, and multi-source alternative data (news NLP, Reddit/X social attention spikes, on-chain whale tracking, and macro variables).
+Inference integrates high-performance sequence modeling (LSTM, Transformers), GARCH-LSTM volatility forecasts, and multi-source alternative data (news NLP, Reddit/X social attention spikes, on-chain whale tracking, and macro variables).
 
 > [!IMPORTANT]
-> **Advisory Invariant**: Deep learning forecasts and alternative data serve strictly as advisory inputs to trading consultations and risk gates. AI Universe never executes trades directly.
+> **Advisory Invariant**: Deep learning forecasts and alternative data serve strictly as advisory inputs to trading consultations and risk gates. Inference never executes trades directly.
 
 ---
 

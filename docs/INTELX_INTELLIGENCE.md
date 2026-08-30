@@ -1,6 +1,6 @@
 # IntelX Deep Research Intelligence & Verification API
 
-AI Universe provides specialized research reasoning and claim verification for **IntelX**, enabling structured multi-agent decomposition, verbatim span extraction, adversarial verification debates, and coherent research synthesis.
+Inference provides specialized research reasoning and claim verification for **IntelX**, enabling structured multi-agent decomposition, verbatim span extraction, adversarial verification debates, and coherent research synthesis.
 
 ---
 

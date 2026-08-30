@@ -1,4 +1,4 @@
-"""Unit tests for AI Universe Trading Analyst Agent and Decision Formulation."""
+"""Unit tests for Inference Trading Analyst Agent and Decision Formulation."""
 
 import pytest
 from app.agents.trading_analyst import AIUniverseDecision, TradingAnalyst, create_trading_analyst_agent

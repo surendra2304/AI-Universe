@@ -1,9 +1,9 @@
 # Cross-Market & Cross-Asset Intelligence Architecture
 
-AI Universe delivers unified multi-exchange market data, cross-asset correlation modeling, macro regime intelligence, and venue liquidity scoring.
+Inference delivers unified multi-exchange market data, cross-asset correlation modeling, macro regime intelligence, and venue liquidity scoring.
 
 > [!IMPORTANT]
-> **Advisory Invariant**: AI Universe remains purely an advisory intelligence layer. It NEVER signs transactions, NEVER touches private keys, and NEVER executes live market orders.
+> **Advisory Invariant**: Inference remains purely an advisory intelligence layer. It NEVER signs transactions, NEVER touches private keys, and NEVER executes live market orders.
 
 ---
 

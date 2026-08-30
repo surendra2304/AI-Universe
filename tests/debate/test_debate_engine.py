@@ -138,7 +138,7 @@ async def test_fastapi_debate_endpoint_collaboration(tmp_path):
             resp = client.post(
                 "/debate",
                 json={
-                    "question": "Should AI Universe use microservices or modular monolith?",
+                    "question": "Should Inference use microservices or modular monolith?",
                     "max_agents": 4
                 }
             )

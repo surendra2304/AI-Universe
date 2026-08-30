@@ -1,9 +1,9 @@
-# AI Universe Permanent Project Memory Rule: Diary Maintenance
+# Inference Permanent Project Memory Rule: Diary Maintenance
 
 ## Core Architecture
-- **Master Index**: `AI_UNIVERSE_DIARY.md` (Concise consolidated chronological history with links to all daily files)
+- **Master Index**: `inference_DIARY.md` (Concise consolidated chronological history with links to all daily files)
 - **Daily Raw Chronicles**: `diary/YYYY-MM-DD.md` (Detailed single file per calendar day)
-- **Specification Standard**: `AI_UNIVERSE_DIARY_SPEC.md`
+- **Specification Standard**: `inference_DIARY_SPEC.md`
 - **Automation Helper**: `scripts/update_diary.py`
 
 ## Permanent Requirement
@@ -11,7 +11,7 @@ Every meaningful completed engineering task MUST update the diary automatically.
 
 ### Mandatory Workflow
 1. **BEFORE TASK**:
-   - Read the current diary state and `AI_UNIVERSE_DIARY_SPEC.md`.
+   - Read the current diary state and `inference_DIARY_SPEC.md`.
    - Determine today's actual calendar date (e.g. `2026-08-24`).
    - Inspect relevant historical context.
 
@@ -31,13 +31,13 @@ Every meaningful completed engineering task MUST update the diary automatically.
 
 3. **AFTER TASK**:
    - Update today's `diary/YYYY-MM-DD.md` using the standard schema.
-   - Update `AI_UNIVERSE_DIARY.md` master index summary.
+   - Update `inference_DIARY.md` master index summary.
    - Verify that no secrets, API keys, tokens, passwords, or `.env` entries exist in the diary.
    - Stage and commit the diary alongside code changes.
 
 ### Date & File Rules
 - **One File Per Calendar Day**: Exactly one `diary/YYYY-MM-DD.md` per date. Never create duplicate files for the same date. Never invent dates.
-- **Master Index Synchronization**: `AI_UNIVERSE_DIARY.md` must list every daily file chronologically starting from project inception (**2026-08-24**).
+- **Master Index Synchronization**: `inference_DIARY.md` must list every daily file chronologically starting from project inception (**2026-08-24**).
 
 ### History & Additive Corrections Rule
 - Completed historical daily entries are immutable records of project evolution.
@@ -45,4 +45,4 @@ Every meaningful completed engineering task MUST update the diary automatically.
 - Record an explicit additive correction in today's entry under `## Corrections to Earlier Information`.
 
 ### Security Gate
-- **Zero Secrets**: Never store API keys, tokens, passwords, private keys, or `.env` contents in `AI_UNIVERSE_DIARY.md`, `diary/*.md`, or any repository file.
+- **Zero Secrets**: Never store API keys, tokens, passwords, private keys, or `.env` contents in `inference_DIARY.md`, `diary/*.md`, or any repository file.

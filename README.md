@@ -1,5 +1,5 @@
 ---
-title: AI Universe
+title: Inference
 emoji: 🌌
 colorFrom: indigo
 colorTo: purple
@@ -7,7 +7,7 @@ sdk: docker
 app_port: 7860
 ---
 
-# AI UNIVERSE
+# Inference
 
 > **Independent Multi-Agent Intelligence System**  
 > Master Architecture, Multi-Model Reasoning, Debate Engine, and FRIDAY Integration.
@@ -16,10 +16,10 @@ app_port: 7860
 
 ## 🌟 Overview
 
-**AI Universe** is a local-first, provider-agnostic multi-agent intelligence platform. Its purpose is to make multiple AI systems work together so that you can ask one complex question and receive a stronger, critically evaluated, and empirically verified answer than any single model would provide alone.
+**Inference** is a local-first, provider-agnostic multi-agent intelligence platform. Its purpose is to make multiple AI systems work together so that you can ask one complex question and receive a stronger, critically evaluated, and empirically verified answer than any single model would provide alone.
 
 ### Core Principles
-- **AI Universe is not FRIDAY, and FRIDAY is not a wrapper around AI Universe.** They are two independent intelligent systems. Later, AI Universe can exchange specialized reasoning, analysis, and debate outcomes with FRIDAY through a secure API boundary.
+- **Inference is not FRIDAY, and FRIDAY is not a wrapper around Inference.** They are two independent intelligent systems. Later, Inference can exchange specialized reasoning, analysis, and debate outcomes with FRIDAY through a secure API boundary.
 - **Multi-Model / Provider Agnostic**: Connects to **Gemini, Groq, Mistral, OpenRouter, NVIDIA, Cohere, and HuggingFace** through a unified provider gateway.
 - **Structured Debate Protocol**: Uses multi-agent adversarial critique, rebuttal, evidence checking, and uncertainty-aware synthesis.
 - **Persistent Memory & Learning**: Persistent SQLite memory with strict agent scoping, evaluation rubrics, and routing strategy optimization.
@@ -93,15 +93,15 @@ app_port: 7860
 ### 📈 Algorithmic Trading Bot Integration (Advisory Authority)
 - **Specialist Agent (`TradingAnalyst`)**: Evaluates performance telemetry (win rate, profit factor, drawdown, consecutive loss streaks) sent by FRIDAY.
 - **Debate & Consultation**: Engages in multi-agent deliberation with the **Strategist** and **Critic** to formulate calibrated recommendations (e.g. tightening stop loss, adjusting position sizes).
-- **Strict Safety Boundary**: AI Universe **NEVER** calls exchange APIs or executes trades directly; it returns structured `AIUniverseDecision` recommendations for FRIDAY to record and present to the user.
+- **Strict Safety Boundary**: Inference **NEVER** calls exchange APIs or executes trades directly; it returns structured `AIUniverseDecision` recommendations for FRIDAY to record and present to the user.
 
 ---
 
 ## 📖 Project Diary & Memory Standard
 
 Development in this repository strictly adheres to the project memory and diary policy:
-- **Master Index**: [AI_UNIVERSE_DIARY.md](AI_UNIVERSE_DIARY.md)
-- **Specification Standard**: [AI_UNIVERSE_DIARY_SPEC.md](AI_UNIVERSE_DIARY_SPEC.md)
+- **Master Index**: [inference_DIARY.md](inference_DIARY.md)
+- **Specification Standard**: [inference_DIARY_SPEC.md](inference_DIARY_SPEC.md)
 - **Daily Logs**: Located in [`diary/`](diary/) (e.g. [`diary/2026-08-24.md`](diary/2026-08-24.md))
 
 ---
@@ -110,8 +110,8 @@ Development in this repository strictly adheres to the project memory and diary 
 
 ### 1. Clone & Setup
 ```bash
-git clone https://github.com/surendra2304/AI-Universe.git
-cd AI-Universe
+git clone https://github.com/surendra2304/Inference.git
+cd Inference
 python -m venv .venv
 # On Windows:
 .venv\Scripts\activate

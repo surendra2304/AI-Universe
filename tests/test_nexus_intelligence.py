@@ -151,7 +151,7 @@ def test_multi_tenant_governance_and_deduplication():
     # 5. Prometheus metrics formatted
     resp_prom = client.get("/v1/governance/prometheus-metrics")
     assert resp_prom.status_code == 200
-    assert "ai_universe_requests_total" in resp_prom.json()["metrics"]
+    assert "inference_requests_total" in resp_prom.json()["metrics"]
 
 
 def test_multimodal_intelligence_and_temporal_reasoning():

@@ -1,6 +1,6 @@
-# AI Universe Multi-Consumer Integration Guide
+# Inference Multi-Consumer Integration Guide
 
-AI Universe serves seven specialized autonomous consumers with dedicated rate limits, priority queues, and monthly budget allocations.
+Inference serves seven specialized autonomous consumers with dedicated rate limits, priority queues, and monthly budget allocations.
 
 ---
 
@@ -35,7 +35,7 @@ Content-Type: application/json
 
 ### A. Trading Bot Integration
 ```python
-from sdk.python.ai_universe_client import AIUniverseClient
+from sdk.python.inference_client import AIUniverseClient
 client = AIUniverseClient(base_url="http://localhost:8000", api_key="key_trading_live_01")
 
 # Query bounded advisory

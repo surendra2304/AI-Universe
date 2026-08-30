@@ -1,4 +1,4 @@
-"""Main FastAPI application entrypoint for AI Universe."""
+"""Main FastAPI application entrypoint for Inference."""
 
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status
@@ -41,7 +41,7 @@ from app.utils.logger import logger, setup_logger
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifecycle events: startup and shutdown."""
-    setup_logger(name="ai_universe", log_level=production_config.LOG_LEVEL)
+    setup_logger(name="inference", log_level=production_config.LOG_LEVEL)
     logger.info(
         "Starting %s in %s environment on %s:%d",
         production_config.APP_NAME,

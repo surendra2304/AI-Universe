@@ -1,5 +1,5 @@
 /**
- * TypeScript SDK Client for AI Universe Multi-Agent Intelligence Platform.
+ * TypeScript SDK Client for Inference Multi-Agent Intelligence Platform.
  */
 
 export interface IntelligenceRequest {
@@ -42,7 +42,7 @@ export class AIUniverseClient {
     });
 
     if (!response.ok) {
-      throw new Error(`AI Universe API error: ${response.status} ${response.statusText}`);
+      throw new Error(`Inference API error: ${response.status} ${response.statusText}`);
     }
 
     return response.json();

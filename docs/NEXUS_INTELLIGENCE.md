@@ -1,6 +1,6 @@
 # Nexus Intelligence Service & Mode-Based Routing
 
-AI Universe implements high-speed, calibrated multi-mode intelligence endpoints adhering to the **Nexus Intelligence Contract**.
+Inference implements high-speed, calibrated multi-mode intelligence endpoints adhering to the **Nexus Intelligence Contract**.
 
 ---
 

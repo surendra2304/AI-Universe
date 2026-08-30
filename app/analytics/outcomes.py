@@ -15,7 +15,7 @@ class OutcomeReportRequest(BaseModel):
 
 
 class ConsumerOutcomeTracker:
-    """Records real-world downstream effectiveness of AI Universe generations and advice."""
+    """Records real-world downstream effectiveness of Inference generations and advice."""
 
     def __init__(self) -> None:
         self.outcome_history: List[Dict[str, Any]] = [

@@ -37,7 +37,7 @@ async def test_agent_persistence(memory_store):
 async def test_task_save_and_retrieve(memory_store):
     task = TaskRecord(
         id="task_test_001",
-        question="What is the architectural goal of AI Universe?",
+        question="What is the architectural goal of Inference?",
         mode="debate",
         status="running",
         metadata={"priority": "high"}
@@ -47,7 +47,7 @@ async def test_task_save_and_retrieve(memory_store):
     retrieved = await memory_store.get_task("task_test_001")
     assert retrieved is not None
     assert retrieved.id == "task_test_001"
-    assert retrieved.question == "What is the architectural goal of AI Universe?"
+    assert retrieved.question == "What is the architectural goal of Inference?"
     assert retrieved.status == "running"
     assert retrieved.metadata.get("priority") == "high"
 

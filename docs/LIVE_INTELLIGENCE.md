@@ -1,9 +1,9 @@
 # Live Capital Intelligence & Crisis Defense Architecture
 
-AI Universe provides conservative, capital-preservation-first intelligence when interacting with live deployed trading capital.
+Inference provides conservative, capital-preservation-first intelligence when interacting with live deployed trading capital.
 
 > [!IMPORTANT]
-> **Advisory Invariant**: AI Universe remains strictly an advisory intelligence layer. It NEVER signs transactions, NEVER touches private keys, and NEVER executes live market orders.
+> **Advisory Invariant**: Inference remains strictly an advisory intelligence layer. It NEVER signs transactions, NEVER touches private keys, and NEVER executes live market orders.
 
 ---
 

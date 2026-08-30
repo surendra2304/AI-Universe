@@ -1,4 +1,4 @@
-"""FastAPI API routes for AI Universe."""
+"""FastAPI API routes for Inference."""
 
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException, status
@@ -11,7 +11,7 @@ router = APIRouter()
 
 
 class AskRequest(BaseModel):
-    """Payload for submitting a question to AI Universe."""
+    """Payload for submitting a question to Inference."""
     question: str = Field(description="The user or system inquiry to analyze and answer")
     mode: str = Field(default="auto", description="auto, fast, review, debate")
     max_agents: int = Field(default=5, ge=1, le=10)
@@ -64,7 +64,7 @@ class DebateResponse(BaseModel):
 
 @router.post("/ask", response_model=AskResponse, status_code=status.HTTP_200_OK)
 async def ask_question(request: AskRequest) -> AskResponse:
-    """Submit a question to the AI Universe orchestrator (auto-routes to Fast, Review, or Debate)."""
+    """Submit a question to the Inference orchestrator (auto-routes to Fast, Review, or Debate)."""
     if not request.question.strip():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -159,7 +159,7 @@ async def get_task(task_id: str):
 
 @router.get("/agents")
 async def list_public_agents():
-    """Retrieve list of all active specialist agents in AI Universe."""
+    """Retrieve list of all active specialist agents in Inference."""
     agents = orchestrator.registry.list_agents()
     return [
         {

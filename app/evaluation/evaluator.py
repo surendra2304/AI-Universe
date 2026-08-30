@@ -152,7 +152,7 @@ class Evaluator(BaseEvaluator):
             for k, v in EVALUATION_RUBRICS.items() if not v.is_deterministic
         ])
 
-        return f"""You are an expert impartial judge in the AI Universe Quality Evaluation System.
+        return f"""You are an expert impartial judge in the Inference Quality Evaluation System.
 Evaluate the following generated answer against the given question and context.
 
 QUESTION:

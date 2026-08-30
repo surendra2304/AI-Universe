@@ -1,6 +1,6 @@
 # Sentinel Cybersecurity Intelligence & Posture Analysis
 
-AI Universe provides defensive security intelligence and posture analysis for **Sentinel**, supporting automated vulnerability assessment, adversarial attack path reasoning, remediation prioritization, threat intelligence correlation, and dynamic risk scoring.
+Inference provides defensive security intelligence and posture analysis for **Sentinel**, supporting automated vulnerability assessment, adversarial attack path reasoning, remediation prioritization, threat intelligence correlation, and dynamic risk scoring.
 
 ---
 
@@ -111,7 +111,7 @@ AI Universe provides defensive security intelligence and posture analysis for **
     "F-01": ["header_audit_log_line_45"]
   },
   "safety_notes": [
-    "AI-Universe Sentinel Analysis is strictly defensive and advisory.",
+    "Inference Sentinel Analysis is strictly defensive and advisory.",
     "Never executes active exploits, intrusive probing, or unauthorized network disruption.",
     "All findings and attack chain models are theoretical security posture assessments for defensive hardening."
   ],

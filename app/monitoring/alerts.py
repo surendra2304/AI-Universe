@@ -1,4 +1,4 @@
-"""Alert System and Webhook Dispatcher for AI Universe Operations."""
+"""Alert System and Webhook Dispatcher for Inference Operations."""
 
 import time
 from typing import Any, Dict, List, Literal, Optional

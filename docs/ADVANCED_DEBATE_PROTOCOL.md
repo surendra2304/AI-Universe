@@ -1,6 +1,6 @@
 # Advanced Debate Protocol & Reasoning Transparency
 
-AI Universe implements structured multi-round adversarial debate orchestration, reasoning chain explainability, evidence weighting, assumption tracking, and multi-model verification.
+Inference implements structured multi-round adversarial debate orchestration, reasoning chain explainability, evidence weighting, assumption tracking, and multi-model verification.
 
 ---
 

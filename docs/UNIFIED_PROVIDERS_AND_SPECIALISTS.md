@@ -1,9 +1,9 @@
 # Unified API Provider & Software Engineering Specialists Architecture
 
-AI Universe provides unified execution routing across 7 verified cloud providers (Gemini, Groq, Mistral, OpenRouter, NVIDIA, Cohere, HuggingFace) to simultaneously power both quantitative trading bots and the **FORGE** autonomous software engineering engine.
+Inference provides unified execution routing across 7 verified cloud providers (Gemini, Groq, Mistral, OpenRouter, NVIDIA, Cohere, HuggingFace) to simultaneously power both quantitative trading bots and the **FORGE** autonomous software engineering engine.
 
 > [!IMPORTANT]
-> **Advisory Invariant**: Model executions provide intelligence, code generation, and advisory analysis. AI Universe NEVER executes live trades, touches private keys, or applies unverified code directly.
+> **Advisory Invariant**: Model executions provide intelligence, code generation, and advisory analysis. Inference NEVER executes live trades, touches private keys, or applies unverified code directly.
 
 ---
 

@@ -54,7 +54,7 @@ async def test_friday_ask_authenticated(friday_client):
         assert "FRIDAY consultation" in data["answer"]
         assert data["confidence"] > 0.8
         assert data["provenance"]["caller_id"] == "friday_executive"
-        assert data["provenance"]["platform"] == "AI Universe"
+        assert data["provenance"]["platform"] == "Inference"
 
 
 @pytest.mark.asyncio

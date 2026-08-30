@@ -1,4 +1,4 @@
-"""Production Configuration for AI Universe."""
+"""Production Configuration for Inference."""
 
 from typing import Dict, List
 from pydantic_settings import BaseSettings

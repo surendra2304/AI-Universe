@@ -1,6 +1,6 @@
 # Research, Experimentation & Strategy Evolution Platform
 
-AI Universe implements automated hypothesis definition, controlled A/B testing with statistical significance ($p < 0.05$), genetic strategy variant evolution with elitism, and knowledge distillation into persistent rule memory.
+Inference implements automated hypothesis definition, controlled A/B testing with statistical significance ($p < 0.05$), genetic strategy variant evolution with elitism, and knowledge distillation into persistent rule memory.
 
 ---
 

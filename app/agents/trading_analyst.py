@@ -1,4 +1,4 @@
-"""Trading Analyst Specialist Agent for AI Universe.
+"""Trading Analyst Specialist Agent for Inference.
 
 Analyzes quantitative trading performance data (win rate, profit factor, consecutive losses,
 drawdown, risk:reward) supplied by FRIDAY and advises on strategy adjustments.
@@ -104,7 +104,7 @@ def create_trading_analyst_agent() -> Agent:
         role="Trading Analyst",
         purpose="Analyze quantitative trading metrics, risk-reward ratios, drawdown curves, and advise on strategy parameter calibration.",
         system_instructions=(
-            "You are the Quantitative Trading Analyst in AI Universe. Your role is to analyze trading bot "
+            "You are the Quantitative Trading Analyst in Inference. Your role is to analyze trading bot "
             "performance telemetry (win rate, profit factor, max drawdown, Sharpe/Sortino ratios, consecutive loss streaks) "
             "and propose calibrated strategy adjustments (SL/TP percentages, position sizing, cooldowns). "
             "Strict Invariant: You NEVER execute trades or call exchange APIs directly; you only analyze and advise FRIDAY."

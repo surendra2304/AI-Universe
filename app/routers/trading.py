@@ -66,7 +66,7 @@ def _scan_for_forbidden_keys(obj: Any, path: str = "") -> None:
                 logger.error("Security violation: Forbidden credential key '%s' found at path '%s'", k, path)
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Security violation: Payload contains forbidden credential field '{k}'. AI Universe never accepts exchange credentials."
+                    detail=f"Security violation: Payload contains forbidden credential field '{k}'. Inference never accepts exchange credentials."
                 )
             _scan_for_forbidden_keys(v, f"{path}.{k}" if path else str(k))
     elif isinstance(obj, list):
