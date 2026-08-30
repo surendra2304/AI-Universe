@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     )
 
     # Application settings
-    APP_NAME: str = "AI Universe"
+    APP_NAME: str = "Inference"
     APP_ENV: str = "development"
     HOST: str = "127.0.0.1"
     PORT: int = 8000
@@ -47,13 +47,14 @@ class Settings(BaseSettings):
     NVIDIA_API_KEYS: Optional[str] = Field(default=None)
 
     # Integration Keys
-    AI_UNIVERSE_API_KEY: Optional[str] = Field(default="ai_universe_api")
+    INFERENCE_API_KEY: Optional[str] = Field(default="inference_api")
+    AI_UNIVERSE_API_KEY: Optional[str] = Field(default=None)
     FRIDAY_UNIVERSE_API_KEY: Optional[str] = Field(default=None)
     X_FRIDAY_API_KEY: Optional[str] = Field(default=None)
     FRIDAY_API_KEY: Optional[str] = Field(default=None)
 
     def get_friday_api_key(self) -> Optional[str]:
-        return self.AI_UNIVERSE_API_KEY or self.FRIDAY_UNIVERSE_API_KEY or self.X_FRIDAY_API_KEY or self.FRIDAY_API_KEY
+        return self.INFERENCE_API_KEY or self.AI_UNIVERSE_API_KEY or self.FRIDAY_UNIVERSE_API_KEY or self.X_FRIDAY_API_KEY or self.FRIDAY_API_KEY or "inference_api"
 
     # Operational Budgets & Limits (Unlimited Token Flow Mode)
     MAX_BUDGET: float = Field(default=999999.0, description="Unlimited budget - supplies all available tokens until provider quota exhausted")

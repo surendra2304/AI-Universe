@@ -9,23 +9,24 @@ from app.utils.logger import logger
 
 
 async def verify_friday_api_key(
+    x_inference_api_key: Optional[str] = Header(None, alias="X-INFERENCE-API-KEY"),
     x_ai_universe_api_key: Optional[str] = Header(None, alias="X-AI-UNIVERSE-API-KEY"),
     x_friday_api_key: Optional[str] = Header(None, alias="X-FRIDAY-API-Key"),
     authorization: Optional[str] = Header(None, alias="Authorization"),
 ) -> str:
     """
     Validates that the incoming request from FRIDAY or agents possesses the authorized API Key.
-    Supports X-AI-UNIVERSE-API-KEY, X-FRIDAY-API-Key, and Bearer token headers.
+    Supports X-INFERENCE-API-KEY, X-AI-UNIVERSE-API-KEY, X-FRIDAY-API-Key, and Bearer token headers.
     """
     configured_key = settings.get_friday_api_key()
     if not configured_key:
-        logger.error("AI_UNIVERSE_API_KEY is not configured on the server.")
+        logger.error("INFERENCE_API_KEY is not configured on the server.")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Server security configuration error: AI Universe integration key not configured."
+            detail="Server security configuration error: Inference integration key not configured."
         )
 
-    provided_key = x_ai_universe_api_key or x_friday_api_key
+    provided_key = x_inference_api_key or x_ai_universe_api_key or x_friday_api_key
     if not provided_key and authorization:
         if authorization.startswith("Bearer "):
             provided_key = authorization[7:].strip()

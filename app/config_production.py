@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings
 
 class ProductionConfig(BaseSettings):
     """Production runtime settings for high throughput & resilience."""
-    APP_NAME: str = "AI-Universe"
+    APP_NAME: str = "Inference"
     APP_ENV: str = "production"
     HOST: str = "0.0.0.0"
     PORT: int = 8000
