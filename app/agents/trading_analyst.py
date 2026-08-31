@@ -113,7 +113,7 @@ def create_trading_analyst_agent() -> Agent:
         model_name="deepseek/deepseek-v4-flash:free",
         models=[
             AgentModelConfig(provider="openrouter", model="deepseek/deepseek-v4-flash:free", capability="reasoning"),
-            AgentModelConfig(provider="gemini", model="gemini-3.7-flash", capability="reasoning"),
+            AgentModelConfig(provider="gemini", model="gemini-3.6-flash", capability="reasoning"),
             AgentModelConfig(provider="nvidia", model="nvidia/nemotron-3-ultra-550b-a55b", capability="reasoning"),
         ],
         strengths=["quantitative trading analysis", "risk-adjusted return modeling", "drawdown mitigation", "statistical expectancy"],

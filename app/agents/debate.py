@@ -271,7 +271,7 @@ class CollaborationEngine:
         then merges the best parts into a single coherent synthesis answer.
         """
         preferred = synthesizer_agent.models if synthesizer_agent.models else [
-            AgentModelConfig(provider="gemini", model="gemini-3.7-flash", capability="synthesis"),
+            AgentModelConfig(provider="gemini", model="gemini-3.6-flash", capability="synthesis"),
             AgentModelConfig(provider="openrouter", model="deepseek/deepseek-v4-flash:free", capability="reasoning")
         ]
 
@@ -414,13 +414,14 @@ class CollaborationEngine:
         # -------------------------------------------------------------
         logger.info("Collaboration %s: Synthesizer reviewing parallel responses for conflict vs consensus", session_id)
         synthesis_prompt = (
-            f"User Goal / Question:\n{question}\n\n"
-            f"Specialist Proposals:\n{combined_proposals}\n\n"
-            "As the Consensus Synthesizer, evaluate the specialist proposals:\n"
-            "1. If they are fundamentally aligned, merge them immediately into one comprehensive, unified, "
-            "and actionable final answer. Explicitly call out the winning recommendations and key trade-offs.\n"
-            "2. If there is an irreconcilable, dangerous technical conflict (e.g. security flaw or incompatible architectures), "
-            "start your response with 'CONFLICT_DETECTED:' followed by a description of the exact dispute.\n"
+            f"User Question:\n{question}\n\n"
+            f"Specialist Analysis:\n{combined_proposals}\n\n"
+            "As the Consensus Synthesizer, synthesize the specialist inputs into a single, polished, and comprehensive answer.\n"
+            "Guidelines:\n"
+            "- Deliver the direct, actionable answer immediately using clean GitHub-flavored Markdown.\n"
+            "- Do NOT output robotic boilerplate meta-headers like 'Consensus Synthesis (Unified Answer)' or 'Operating Assumptions'.\n"
+            "- Structure key technical points with clear bullet points, bold emphasis, and concise explanations.\n"
+            "- If there is a severe, dangerous technical disagreement between specialists, start with 'CONFLICT_DETECTED:' followed by the dispute."
         )
 
         synthesis_text, syn_tokens, _, syn_models = await self._execute_multi_model_synthesis(

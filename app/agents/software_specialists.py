@@ -29,9 +29,9 @@ def get_software_specialist_agents() -> List[Agent]:
                 "boundary conditions, error states, and security considerations before architecture begins."
             ),
             model_provider="gemini",
-            model_name="gemini-3.7-flash",
+            model_name="gemini-3.6-flash",
             models=[
-                AgentModelConfig(provider="gemini", model="gemini-3.7-flash", capability="reasoning"),
+                AgentModelConfig(provider="gemini", model="gemini-3.6-flash", capability="reasoning"),
                 AgentModelConfig(provider="openrouter", model="deepseek/deepseek-v4-flash:free", capability="reasoning"),
                 AgentModelConfig(provider="cohere", model="command-a-plus-05-2026", capability="synthesis"),
             ],
@@ -52,7 +52,7 @@ def get_software_specialist_agents() -> List[Agent]:
             model_name="nvidia/nemotron-3-ultra-550b-a55b",
             models=[
                 AgentModelConfig(provider="nvidia", model="nvidia/nemotron-3-ultra-550b-a55b", capability="reasoning"),
-                AgentModelConfig(provider="gemini", model="gemini-3.7-flash", capability="reasoning"),
+                AgentModelConfig(provider="gemini", model="gemini-3.6-flash", capability="reasoning"),
                 AgentModelConfig(provider="groq", model="openai/gpt-oss-120b", capability="reasoning"),
             ],
             strengths=["system topology", "clean architecture", "file manifest generation", "API schema definition"],
@@ -73,7 +73,7 @@ def get_software_specialist_agents() -> List[Agent]:
             models=[
                 AgentModelConfig(provider="groq", model="openai/gpt-oss-120b", capability="coding"),
                 AgentModelConfig(provider="openrouter", model="deepseek/deepseek-v4-flash:free", capability="coding"),
-                AgentModelConfig(provider="gemini", model="gemini-3.7-flash", capability="coding"),
+                AgentModelConfig(provider="gemini", model="gemini-3.6-flash", capability="coding"),
             ],
             strengths=["production code generation", "type safety", "idiomatic patterns", "efficient algorithms"],
             weaknesses=["high-level product roadmap decisions"]
@@ -92,7 +92,7 @@ def get_software_specialist_agents() -> List[Agent]:
             model_name="deepseek/deepseek-v4-flash:free",
             models=[
                 AgentModelConfig(provider="openrouter", model="deepseek/deepseek-v4-flash:free", capability="review"),
-                AgentModelConfig(provider="gemini", model="gemini-3.7-flash", capability="safety"),
+                AgentModelConfig(provider="gemini", model="gemini-3.6-flash", capability="safety"),
                 AgentModelConfig(provider="nvidia", model="nvidia/nemotron-3-ultra-550b-a55b", capability="reasoning"),
             ],
             strengths=["security vulnerability audit", "static analysis", "refactoring recommendations", "complexity reduction"],
@@ -109,9 +109,9 @@ def get_software_specialist_agents() -> List[Agent]:
                 "and async execution flows."
             ),
             model_provider="gemini",
-            model_name="gemini-3.7-flash",
+            model_name="gemini-3.6-flash",
             models=[
-                AgentModelConfig(provider="gemini", model="gemini-3.7-flash", capability="coding"),
+                AgentModelConfig(provider="gemini", model="gemini-3.6-flash", capability="coding"),
                 AgentModelConfig(provider="groq", model="openai/gpt-oss-120b", capability="coding"),
                 AgentModelConfig(provider="mistral", model="mistral-large-2411", capability="coding"),
             ],
@@ -132,7 +132,7 @@ def get_software_specialist_agents() -> List[Agent]:
             model_name="command-a-plus-05-2026",
             models=[
                 AgentModelConfig(provider="cohere", model="command-a-plus-05-2026", capability="synthesis"),
-                AgentModelConfig(provider="gemini", model="gemini-3.7-flash", capability="research"),
+                AgentModelConfig(provider="gemini", model="gemini-3.6-flash", capability="research"),
                 AgentModelConfig(provider="openrouter", model="deepseek/deepseek-v4-flash:free", capability="synthesis"),
             ],
             strengths=["technical documentation", "API references", "markdown tutorials", "architecture diagrams"],
@@ -153,7 +153,7 @@ def get_software_specialist_agents() -> List[Agent]:
             models=[
                 AgentModelConfig(provider="mistral", model="mistral-large-2411", capability="reasoning"),
                 AgentModelConfig(provider="groq", model="openai/gpt-oss-120b", capability="coding"),
-                AgentModelConfig(provider="gemini", model="gemini-3.7-flash", capability="reasoning"),
+                AgentModelConfig(provider="gemini", model="gemini-3.6-flash", capability="reasoning"),
             ],
             strengths=["Docker & containerization", "CI/CD pipeline automation", "Nginx/reverse proxies", "production hardening"],
             weaknesses=["frontend styling"]

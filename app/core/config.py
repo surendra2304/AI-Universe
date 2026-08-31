@@ -16,7 +16,8 @@ class Settings(BaseSettings):
 
     # Application settings
     APP_NAME: str = "Inference"
-    APP_ENV: str = "development"
+    APP_VERSION: str = "2.0.0"
+    APP_ENV: str = "production"
     HOST: str = "127.0.0.1"
     PORT: int = 8000
     LOG_LEVEL: str = "INFO"

@@ -44,14 +44,14 @@ class UnifiedProviderManager:
     # Default fallback mapping from agent roles to best provider & model
     ROLE_PROVIDER_MAPPING = {
         "trading_analyst": ("groq", "openai/gpt-oss-120b"),
-        "requirements_analyst": ("gemini", "gemini-3.7-flash"),
+        "requirements_analyst": ("gemini", "gemini-3.6-flash"),
         "system_architect": ("nvidia", "nvidia/nemotron-3-ultra-550b-a55b"),
         "code_generator": ("groq", "openai/gpt-oss-120b"),
         "code_reviewer": ("openrouter", "deepseek/deepseek-v4-flash:free"),
-        "test_generator": ("gemini", "gemini-3.7-flash"),
+        "test_generator": ("gemini", "gemini-3.6-flash"),
         "documentation_writer": ("cohere", "command-a-plus-05-2026"),
         "devops_engineer": ("mistral", "mistral-large-2411"),
-        "researcher": ("gemini", "gemini-3.7-flash"),
+        "researcher": ("gemini", "gemini-3.6-flash"),
         "critic": ("openrouter", "deepseek/deepseek-v4-flash:free"),
     }
 
@@ -81,7 +81,7 @@ class UnifiedProviderManager:
             target_model = default_mod
         elif target_provider == "auto":
             target_provider = "gemini"
-            target_model = "gemini-3.7-flash"
+            target_model = "gemini-3.6-flash"
 
         # Build provider request
         messages = [

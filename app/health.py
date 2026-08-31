@@ -15,7 +15,12 @@ health_router = APIRouter(tags=["Health & Monitoring"])
 @health_router.head("/health", status_code=status.HTTP_200_OK)
 async def basic_health():
     """Basic liveness health check."""
-    return {"status": "healthy"}
+    return {
+        "status": "healthy",
+        "service": "inference-api",
+        "version": "2.0.0",
+        "active_specialist_agents": 10,
+    }
 
 
 @health_router.get("/health/detailed", status_code=status.HTTP_200_OK)
@@ -23,7 +28,10 @@ async def detailed_health():
     """Detailed health status with live API metrics, cache performance, and concurrency."""
     return {
         "status": "healthy",
+        "service": "inference-api",
+        "version": "2.0.0",
         "app_env": production_config.APP_ENV,
+        "active_specialist_agents": 10,
         "performance": monitor.get_api_metrics(),
         "cache": {
             "enabled": production_config.CACHE_ENABLED,

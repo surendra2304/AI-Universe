@@ -148,7 +148,7 @@ class AgentMetadata(BaseModel):
 class FridayInfoResponse(BaseModel):
     """System metadata and active agent list for discovery."""
     platform: str = "Inference"
-    version: str = "1.0.0"
+    version: str = "2.0.0"
     total_specialists: int
     active_cloud_providers: List[str]
     agents: List[AgentMetadata]

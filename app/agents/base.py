@@ -67,7 +67,7 @@ class Agent(BaseModel):
     system_instructions: str = Field(description="Base prompt/system instructions guiding reasoning")
     allowed_tools: List[str] = Field(default_factory=list, description="List of tools the agent is permitted to call")
     model_provider: str = Field(default="gemini", description="Primary underlying provider")
-    model_name: str = Field(default="gemini-3.7-flash", description="Primary model identifier")
+    model_name: str = Field(default="gemini-3.6-flash", description="Primary model identifier")
     models: List[AgentModelConfig] = Field(
         default_factory=list,
         description="Ranked list of specialized models and capabilities assigned to this agent"
