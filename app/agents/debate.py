@@ -367,11 +367,18 @@ class CollaborationEngine:
         )
 
         async def analyze_agent(agent: Agent) -> tuple[Agent, str, int, list[str]]:
-            prompt = (
-                f"Question / Goal:\n{question}\n\n"
-                f"As the {agent.role}, provide your direct, concise technical recommendation and core rationale. "
-                "Be concrete, identify primary trade-offs, and state assumptions explicitly."
-            )
+            if len(participating_agents) == 1:
+                prompt = (
+                    f"User Query:\n{question}\n\n"
+                    "Provide a direct, clear, and concise response matching the exact formatting and length requested by the user. "
+                    "Avoid unnecessary verbosity, robotic disclaimers, or excessive introductory fluff."
+                )
+            else:
+                prompt = (
+                    f"Question / Goal:\n{question}\n\n"
+                    f"As the {agent.role}, provide your direct, concise technical recommendation and core rationale. "
+                    "Be concrete, identify primary trade-offs, and state assumptions explicitly."
+                )
             text, t_count, _, models = await self._execute_agent_call(
                 task_id=task_id,
                 stage_name="independent_analysis",
@@ -405,6 +412,28 @@ class CollaborationEngine:
             summary=f"Gathered {len(round_1_messages)} parallel specialist perspectives."
         ))
 
+        # Optimization: In fast / simple 1-agent mode, return the specialist's direct response immediately (bypassing redundant 2nd synthesis round)
+        if len(participating_agents) == 1 and complexity == TaskComplexity.SIMPLE:
+            direct_ans = round_1_messages[0].content if round_1_messages else ""
+            elapsed_time = round(time.perf_counter() - start_total_time, 2)
+            logger.info("Collaboration %s: Fast single-specialist answer completed in %.2fs", session_id, elapsed_time)
+            return CollaborationResult(
+                debate_id=session_id,
+                task_id=task_id,
+                canonical_problem=question,
+                mode_used="fast",
+                complexity=complexity.value,
+                final_answer=direct_ans,
+                participating_agents=[a.id for a in participating_agents],
+                models_used=all_models_used,
+                rounds=rounds_log,
+                confidence=0.95,
+                unresolved_disagreements=[],
+                key_evidence=[],
+                total_tokens=total_tokens,
+                total_latency_seconds=elapsed_time
+            )
+
         combined_proposals = "\n\n".join([
             f"=== Specialist Perspective: {m.agent_role} ({m.agent_id}) ===\n{m.content}"
             for m in round_1_messages
@@ -420,6 +449,7 @@ class CollaborationEngine:
             "As the Consensus Synthesizer, synthesize the specialist inputs into a single, polished, and comprehensive answer.\n"
             "Guidelines:\n"
             "- Deliver the direct, actionable answer immediately using clean GitHub-flavored Markdown.\n"
+            "- Strictly respect any length constraints, bullet count, or format requested in the user's question.\n"
             "- Do NOT output robotic boilerplate meta-headers like 'Consensus Synthesis (Unified Answer)' or 'Operating Assumptions'.\n"
             "- Structure key technical points with clear bullet points, bold emphasis, and concise explanations.\n"
             "- If there is a severe, dangerous technical disagreement between specialists, start with 'CONFLICT_DETECTED:' followed by the dispute."

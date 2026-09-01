@@ -81,8 +81,8 @@ async def test_easy_task_triggers_single_model_call_per_agent(dag_env):
 
         assert res.complexity == "simple"
         assert res.task_id.startswith("task_")
-        # In fast mode, each participating agent (2 agents: specialist + synthesizer) invokes 1 model
-        assert len(called_models) == 2
+        # In fast mode for a simple query, 1 direct specialist model call is executed (instant fast-path)
+        assert len(called_models) == 1
 
 
 @pytest.mark.asyncio

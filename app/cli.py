@@ -6,10 +6,12 @@ requiring a running uvicorn background server.
 
 import asyncio
 import json
+import logging
 import sys
 
 import typer
 from rich.console import Console
+from rich.markdown import Markdown
 from rich.panel import Panel
 
 from app.core.orchestrator import OrchestrationRequest, Orchestrator
@@ -27,14 +29,25 @@ cli_app = typer.Typer(help="Inference — Multi-Agent Intelligence CLI")
 console = Console(legacy_windows=False)
 
 
+def _silence_internal_logs() -> None:
+    """Mute noisy backend logs so CLI output is clean and uncluttered."""
+    for log_name in ["inference", "httpx", "aiosqlite", "uvicorn"]:
+        l = logging.getLogger(log_name)
+        l.setLevel(logging.WARNING)
+
+
 async def _run_in_process_ask(
     question: str,
     mode: str = "auto",
     max_agents: int = 5,
     budget: float | None = None,
-    latency: float | None = None
+    latency: float | None = None,
+    verbose: bool = False
 ) -> None:
     """Instantiate orchestrator and run task directly in-process."""
+    if not verbose:
+        _silence_internal_logs()
+
     memory = SQLiteMemory()
     await memory.initialize()
     orch = Orchestrator(memory=memory)
@@ -47,32 +60,28 @@ async def _run_in_process_ask(
         max_latency=latency
     )
 
-    if console:
-        console.print(f"[bold cyan]Processing query in-process:[/bold cyan] {question}")
-    else:
-        print(f"Processing query in-process: {question}")
-
     try:
+        if verbose:
+            console.print(f"[bold cyan]Processing query in-process:[/bold cyan] {question}")
+
         res = await orch.process_task(req)
+
         if console:
-            console.print(Panel(
-                f"[bold green]Answer ({res.mode_used.upper()} mode | Complexity: {res.complexity.upper()}):[/bold green]\n\n{res.answer}",
-                title=f"Task: {res.task_id} (Confidence: {res.confidence:.2f})"
-            ))
-            console.print(
-                f"[dim]Agents: {', '.join(res.agents_used)} | "
-                f"Models: {', '.join(res.models_used)} | "
-                f"Latency: {res.total_latency_seconds:.2f}s | "
-                f"Tokens: {res.total_tokens}[/dim]"
-            )
-            if res.unresolved_disagreements:
-                console.print("[bold yellow]Unresolved Disagreements / Preserved Dissent:[/bold yellow]")
-                for d in res.unresolved_disagreements:
-                    console.print(f" - {d}")
+            console.print()
+            console.print(Markdown(res.answer))
+            console.print()
+            if verbose:
+                console.print(
+                    f"[dim]Mode: {res.mode_used} | Agents: {', '.join(res.agents_used)} | "
+                    f"Latency: {res.total_latency_seconds:.2f}s | Tokens: {res.total_tokens}[/dim]"
+                )
         else:
-            print(f"\n--- Answer ({res.mode_used.upper()} mode | Complexity: {res.complexity.upper()}) ---")
-            print(res.answer)
-            print(f"Agents: {res.agents_used} | Latency: {res.total_latency_seconds:.2f}s | Tokens: {res.total_tokens}")
+            print(f"\n{res.answer}\n")
+    except Exception as exc:
+        if console:
+            console.print(f"[bold red]Execution error:[/bold red] {exc}")
+        else:
+            print(f"Execution error: {exc}")
     except Exception as exc:
         if console:
             console.print(f"[bold red]Execution error:[/bold red] {exc}")
@@ -167,10 +176,11 @@ def ask(
     mode: str = typer.Option("auto", "--mode", "-m", help="Mode: auto, fast, review, debate"),
     max_agents: int = typer.Option(5, "--agents", "-a", help="Max agents to allocate"),
     budget: float | None = typer.Option(None, "--budget", "-b", help="Max budget in USD"),
-    latency: float | None = typer.Option(None, "--latency", "-l", help="Max latency in seconds")
+    latency: float | None = typer.Option(None, "--latency", "-l", help="Max latency in seconds"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show debug logs & execution metadata")
 ):
     """Submit a question to the orchestrator directly in-process."""
-    asyncio.run(_run_in_process_ask(question, mode=mode, max_agents=max_agents, budget=budget, latency=latency))
+    asyncio.run(_run_in_process_ask(question, mode=mode, max_agents=max_agents, budget=budget, latency=latency, verbose=verbose))
 
 
 @cli_app.command()
