@@ -1,20 +1,17 @@
 """Cross-Exchange Unified Market Data, Consolidated Order Books, and Arbitrage Tracking."""
 
 import time
-from typing import Any, Dict, List, Optional
-import httpx
-
-from app.utils.logger import logger
+from typing import Any
 
 
 class MultiMarketDataFetcher:
     """Aggregates and normalizes market data across Binance, Bybit, Coinbase, and OKX."""
 
     def __init__(self) -> None:
-        self._cache: Dict[str, Tuple[float, Any]] = {}
+        self._cache: dict[str, tuple[float, Any]] = {}
         self.cache_ttl = 5.0
 
-    async def get_cross_exchange_book(self, symbol: str = "BTCUSDT") -> Dict[str, Any]:
+    async def get_cross_exchange_book(self, symbol: str = "BTCUSDT") -> dict[str, Any]:
         """Consolidates orderbook depth and price divergence across exchanges."""
         now = time.time()
         cache_key = f"cross_book:{symbol}"

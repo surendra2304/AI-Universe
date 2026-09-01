@@ -1,7 +1,7 @@
 """Real-Time Market Monitor for Anomaly Detection, Volume Spikes, and Regime Alerts."""
 
 import time
-from typing import Any, Dict, List
+from typing import Any
 
 
 class MarketMonitor:
@@ -11,10 +11,10 @@ class MarketMonitor:
         self,
         symbol: str,
         current_price: float,
-        indicators: Dict[str, Any],
-        sentiment: Dict[str, Any],
-        orderbook: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
+        indicators: dict[str, Any],
+        sentiment: dict[str, Any],
+        orderbook: dict[str, Any]
+    ) -> list[dict[str, Any]]:
         """Generates real-time anomaly alerts based on market telemetry."""
         alerts = []
         now = time.time()

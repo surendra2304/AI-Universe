@@ -3,10 +3,10 @@
 import math
 import time
 from collections import defaultdict
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
-def _percentile(data: List[float], percentile: float) -> float:
+def _percentile(data: list[float], percentile: float) -> float:
     """Calculates percentile using standard Python libraries without numpy dependency."""
     if not data:
         return 0.0
@@ -25,21 +25,21 @@ class PerformanceMonitor:
     """Tracks latency percentiles, error rates, cache performance, and provider health."""
 
     def __init__(self) -> None:
-        self.request_latencies: List[float] = []
+        self.request_latencies: list[float] = []
         self.total_requests = 0
         self.failed_requests = 0
         self.start_time = time.time()
 
         # Provider metrics: provider_name -> {success: int, failure: int, latencies: []}
-        self.provider_stats: Dict[str, Dict[str, Any]] = defaultdict(lambda: {
+        self.provider_stats: dict[str, dict[str, Any]] = defaultdict(lambda: {
             "success": 0,
             "failure": 0,
             "latencies": []
         })
 
         # Debate engine metrics
-        self.debate_durations: List[float] = []
-        self.agent_calls: Dict[str, int] = defaultdict(int)
+        self.debate_durations: list[float] = []
+        self.agent_calls: dict[str, int] = defaultdict(int)
 
     def record_request(self, latency_sec: float, success: bool = True) -> None:
         self.total_requests += 1
@@ -63,7 +63,7 @@ class PerformanceMonitor:
     def record_agent_participation(self, agent_id: str) -> None:
         self.agent_calls[agent_id] += 1
 
-    def get_api_metrics(self) -> Dict[str, Any]:
+    def get_api_metrics(self) -> dict[str, Any]:
         """Calculates p50, p95, p99 latencies, throughput, and error rate."""
         if not self.request_latencies:
             return {
@@ -91,7 +91,7 @@ class PerformanceMonitor:
             "uptime_seconds": round(time.time() - self.start_time, 1)
         }
 
-    def get_provider_health(self) -> Dict[str, Any]:
+    def get_provider_health(self) -> dict[str, Any]:
         """Returns per-provider success rates and average response times."""
         result = {}
         for p_name, stats in self.provider_stats.items():
@@ -106,7 +106,7 @@ class PerformanceMonitor:
             }
         return result
 
-    def get_debate_metrics(self) -> Dict[str, Any]:
+    def get_debate_metrics(self) -> dict[str, Any]:
         """Returns multi-agent debate metrics and participation frequencies."""
         return {
             "agent_participation_counts": dict(self.agent_calls),

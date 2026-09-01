@@ -1,13 +1,11 @@
 """Tests for Ecosystem Intelligence Hub, Continuous Learning, Meta-Intelligence, and Long-Term Memory."""
 
-import pytest
 from fastapi.testclient import TestClient
 
 from app.intelligence.meta_intel import meta_intelligence
 from app.learning.continuous_learning import continuous_learning_engine
 from app.main import app
 from app.memory.long_term import long_term_memory
-from app.services.ecosystem_intel import ecosystem_hub
 
 client = TestClient(app)
 

@@ -1,6 +1,5 @@
 """Integration and Unit Tests for Advanced Market Intelligence, Sentiment, On-Chain, and ML Predictions."""
 
-import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app

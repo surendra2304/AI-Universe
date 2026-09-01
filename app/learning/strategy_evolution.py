@@ -1,15 +1,15 @@
 """Strategy Evolution Engine: Genetic Strategy Variants, Elitism, Mutation & Adaptation."""
 
 import random
-import time
-from typing import Any, Dict, List, Literal, Optional
-from pydantic import BaseModel, Field
+from typing import Any, Literal
+
+from pydantic import BaseModel
 
 
 class StrategyVariant(BaseModel):
     strategy_id: str
     task_type: str
-    agent_composition: List[str]
+    agent_composition: list[str]
     provider_selection: str
     prompt_template: str
     mode: Literal["fast", "review", "debate"]
@@ -24,7 +24,7 @@ class StrategyEvolutionEngine:
     """Maintains a population of 20 strategy variants, allocating 80% traffic to top elites and 20% to mutating explorers."""
 
     def __init__(self) -> None:
-        self.population: List[StrategyVariant] = [
+        self.population: list[StrategyVariant] = [
             StrategyVariant(
                 strategy_id=f"strat-{i+1:02d}",
                 task_type="strategic_decision" if i % 2 == 0 else "lead_qualification",
@@ -55,10 +55,10 @@ class StrategyEvolutionEngine:
         # 20% Exploration of underused variants
         return random.choice(matching)
 
-    def evolve_population(self) -> Dict[str, Any]:
+    def evolve_population(self) -> dict[str, Any]:
         """Mutates the bottom 25% underperforming variants while protecting top elites."""
         self.population.sort(key=lambda s: (s.success_count / max(1, s.outcomes_evaluated)), reverse=True)
-        
+
         # Mark top 3 as elite
         for idx, s in enumerate(self.population):
             s.is_elite = (idx < 3)
@@ -83,7 +83,7 @@ class StrategyEvolutionEngine:
             "top_strategy_success_rate": round((self.population[0].success_count / max(1, self.population[0].outcomes_evaluated)) * 100.0, 1)
         }
 
-    def get_population_dashboard(self) -> List[Dict[str, Any]]:
+    def get_population_dashboard(self) -> list[dict[str, Any]]:
         return [s.model_dump() for s in self.population]
 
 

@@ -1,8 +1,8 @@
 """Multi-Consumer Router and Usage Attribution for Trading Bot, FORGE, FRIDAY, and Human users."""
 
-import time
-from typing import Any, Dict, List, Literal, Optional
-from pydantic import BaseModel, Field
+from typing import Any, Literal
+
+from pydantic import BaseModel
 
 ConsumerType = Literal["trading_bot", "forge", "friday", "human", "nexus", "sentinel", "intelx", "futuris"]
 
@@ -26,7 +26,7 @@ class ConsumerUsageRecord(BaseModel):
 class MultiConsumerRouter:
     """Manages consumer identity, rate-limit policies, priority queues, and usage accounting."""
 
-    PROFILES: Dict[ConsumerType, ConsumerProfile] = {
+    PROFILES: dict[ConsumerType, ConsumerProfile] = {
         "futuris": ConsumerProfile(
             name="futuris",
             rate_limit_per_hour=150,
@@ -86,11 +86,11 @@ class MultiConsumerRouter:
     }
 
     def __init__(self) -> None:
-        self.usage_records: Dict[ConsumerType, ConsumerUsageRecord] = {
+        self.usage_records: dict[ConsumerType, ConsumerUsageRecord] = {
             k: ConsumerUsageRecord(consumer=k) for k in self.PROFILES.keys()
         }
 
-    def identify_consumer(self, api_key_or_header: Optional[str]) -> ConsumerType:
+    def identify_consumer(self, api_key_or_header: str | None) -> ConsumerType:
         """Determines the consumer from API key, header, or default fallback."""
         if not api_key_or_header:
             return "forge"  # Default for forge service paths
@@ -114,7 +114,7 @@ class MultiConsumerRouter:
             rec.total_latency_seconds += latency_sec
             rec.estimated_cost_usd += (tokens / 1000.0) * 0.0005  # $0.0005 per 1k tokens proxy
 
-    def get_usage(self, consumer: Optional[ConsumerType] = None) -> Dict[str, Any]:
+    def get_usage(self, consumer: ConsumerType | None = None) -> dict[str, Any]:
         """Returns usage stats."""
         if consumer and consumer in self.usage_records:
             return self.usage_records[consumer].model_dump()

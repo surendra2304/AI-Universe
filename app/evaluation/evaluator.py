@@ -1,9 +1,9 @@
 """Evaluator engine and contracts for multi-dimensional quality control and LLM-as-a-judge scoring."""
 
 import json
-import re
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 from app.evaluation.rubrics import EVALUATION_RUBRICS, RUBRIC_DIMENSION_NAMES
@@ -23,12 +23,12 @@ class EvaluationReport(BaseModel):
     """Consolidated evaluation assessment for a synthesized answer or debate round."""
     run_id: str
     overall_score: float = Field(ge=0.0, le=1.0)
-    scores: List[EvaluationScore]
-    strengths: List[str] = Field(default_factory=list)
-    flaws_identified: List[str] = Field(default_factory=list)
+    scores: list[EvaluationScore]
+    strengths: list[str] = Field(default_factory=list)
+    flaws_identified: list[str] = Field(default_factory=list)
     confidence: float = Field(ge=0.0, le=1.0)
-    evaluator_model: Optional[str] = None
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    evaluator_model: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class BaseEvaluator(ABC):
@@ -39,26 +39,23 @@ class BaseEvaluator(ABC):
         self,
         question: str,
         answer: str,
-        context: Optional[Dict[str, Any]] = None,
-        criteria: Optional[List[str]] = None
+        context: dict[str, Any] | None = None,
+        criteria: list[str] | None = None
     ) -> EvaluationReport:
         """Evaluate and score a generated answer across dimensions."""
-        pass
 
     @abstractmethod
     async def evaluate_debate_round(
         self,
         question: str,
         round_number: int,
-        round_messages: List[Dict[str, Any]]
+        round_messages: list[dict[str, Any]]
     ) -> EvaluationReport:
         """Evaluate intermediate arguments, critiques, and rebuttals in a debate round."""
-        pass
 
     @abstractmethod
-    def get_supported_criteria(self) -> List[str]:
+    def get_supported_criteria(self) -> list[str]:
         """Return list of supported evaluation criteria."""
-        pass
 
 
 class Evaluator(BaseEvaluator):
@@ -76,7 +73,7 @@ class Evaluator(BaseEvaluator):
         self.judge_provider_name = judge_provider_name
         self.judge_model_name = judge_model_name
 
-    def get_supported_criteria(self) -> List[str]:
+    def get_supported_criteria(self) -> list[str]:
         return list(RUBRIC_DIMENSION_NAMES)
 
     def _score_deterministic_dimensions(
@@ -84,9 +81,9 @@ class Evaluator(BaseEvaluator):
         latency_seconds: float,
         total_tokens: int,
         mode: str = "fast"
-    ) -> List[EvaluationScore]:
+    ) -> list[EvaluationScore]:
         """Calculates exact scores for latency and usage efficiency."""
-        scores: List[EvaluationScore] = []
+        scores: list[EvaluationScore] = []
 
         # Latency scoring
         if mode == "fast":
@@ -144,7 +141,7 @@ class Evaluator(BaseEvaluator):
         self,
         question: str,
         answer: str,
-        context: Optional[Dict[str, Any]] = None
+        context: dict[str, Any] | None = None
     ) -> str:
         """Constructs LLM-as-a-judge evaluation prompt."""
         rubrics_desc = "\n".join([
@@ -189,8 +186,8 @@ Return ONLY a valid JSON object matching this schema:
         self,
         question: str,
         answer: str,
-        context: Optional[Dict[str, Any]] = None,
-        criteria: Optional[List[str]] = None
+        context: dict[str, Any] | None = None,
+        criteria: list[str] | None = None
     ) -> EvaluationReport:
         """Evaluate an answer using LLM-as-a-judge and deterministic metrics."""
         ctx = context or {}
@@ -215,14 +212,11 @@ Return ONLY a valid JSON object matching this schema:
         try:
             resp = await judge_provider.generate(judge_req)
             raw_text = resp.content.strip()
-            
+
             # Clean possible markdown code fences
-            if raw_text.startswith("```json"):
-                raw_text = raw_text[7:]
-            if raw_text.startswith("```"):
-                raw_text = raw_text[3:]
-            if raw_text.endswith("```"):
-                raw_text = raw_text[:-3]
+            raw_text = raw_text.removeprefix("```json")
+            raw_text = raw_text.removeprefix("```")
+            raw_text = raw_text.removesuffix("```")
 
             parsed = json.loads(raw_text.strip())
             llm_scores = [
@@ -269,7 +263,7 @@ Return ONLY a valid JSON object matching this schema:
         self,
         question: str,
         round_number: int,
-        round_messages: List[Dict[str, Any]]
+        round_messages: list[dict[str, Any]]
     ) -> EvaluationReport:
         """Evaluate the quality of arguments and critiques in a specific debate round."""
         combined_text = "\n".join([f"{m.get('agent_role', 'Agent')}: {m.get('content', '')}" for m in round_messages])

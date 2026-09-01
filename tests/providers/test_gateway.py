@@ -1,13 +1,13 @@
 """Unit and integration tests for ModelGateway, KeyPool, RateLimiter, HealthTracker, and Dynamic OpenRouter Fallback."""
 
 import asyncio
-import pytest
 from unittest.mock import AsyncMock, patch
 
-from app.core.config import settings
+import pytest
+
 from app.providers.base import ProviderMessage, ProviderRequest, ProviderResponse
 from app.providers.gateway import KeyPool, ModelGateway, ProviderRateLimiter
-from app.providers.health import ProviderHealthTracker, provider_health_tracker
+from app.providers.health import ProviderHealthTracker
 from app.providers.openrouter import OpenRouterProvider
 
 

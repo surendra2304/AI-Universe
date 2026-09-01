@@ -2,10 +2,10 @@
 
 import asyncio
 import hashlib
-import json
 import time
 from collections import defaultdict
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from collections.abc import Callable
+from typing import Any
 
 from app.config_production import production_config
 from app.schemas.trading_consult import AIUniverseDecision, TradingConsultRequest
@@ -18,7 +18,7 @@ class TelemetryCache:
     def __init__(self, ttl_seconds: int = 86400, max_entries: int = 5000) -> None:
         self.ttl = ttl_seconds
         self.max_entries = max_entries
-        self.cache: Dict[str, Tuple[float, Dict[str, Any]]] = {}
+        self.cache: dict[str, tuple[float, dict[str, Any]]] = {}
         self.hits = 0
         self.misses = 0
 
@@ -37,7 +37,7 @@ class TelemetryCache:
         key_raw = f"{mode}:{arm}:{wr_bucket}:{pf_bucket}:{dd_bucket}:{trades_bucket}:{losses}:{req.consultation_reason}"
         return hashlib.sha256(key_raw.encode("utf-8")).hexdigest()
 
-    def get(self, req: TradingConsultRequest) -> Optional[AIUniverseDecision]:
+    def get(self, req: TradingConsultRequest) -> AIUniverseDecision | None:
         if not production_config.CACHE_ENABLED:
             return None
         key = self._generate_key(req)
@@ -73,8 +73,8 @@ class ProviderCircuitBreaker:
     def __init__(self, failure_threshold: int = 3, recovery_time: float = 60.0) -> None:
         self.failure_threshold = failure_threshold
         self.recovery_time = recovery_time
-        self.failure_counts: Dict[str, int] = defaultdict(int)
-        self.opened_at: Dict[str, float] = {}
+        self.failure_counts: dict[str, int] = defaultdict(int)
+        self.opened_at: dict[str, float] = {}
 
     def is_available(self, provider_name: str) -> bool:
         now = time.time()
@@ -103,11 +103,23 @@ class ConcurrencyController:
     """Limits the number of concurrent consultations to maintain low latency SLAs."""
 
     def __init__(self, max_concurrent: int = 100) -> None:
-        self.semaphore = asyncio.Semaphore(max_concurrent)
+        self.max_concurrent = max_concurrent
+        self._semaphores: dict[int, asyncio.Semaphore] = {}
         self.active_count = 0
 
+    def _get_semaphore(self) -> asyncio.Semaphore:
+        try:
+            loop = asyncio.get_running_loop()
+            loop_id = id(loop)
+        except RuntimeError:
+            loop_id = 0
+        if loop_id not in self._semaphores:
+            self._semaphores[loop_id] = asyncio.Semaphore(self.max_concurrent)
+        return self._semaphores[loop_id]
+
     async def run(self, coro_func: Callable, *args, **kwargs) -> Any:
-        async with self.semaphore:
+        sem = self._get_semaphore()
+        async with sem:
             self.active_count += 1
             try:
                 return await coro_func(*args, **kwargs)

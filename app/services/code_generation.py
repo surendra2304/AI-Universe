@@ -2,10 +2,14 @@
 
 import hashlib
 import time
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Literal
+
 from pydantic import BaseModel, Field
 
-from app.providers.unified_manager import UnifiedExecutionRequest, unified_provider_manager
+from app.providers.unified_manager import (
+    UnifiedExecutionRequest,
+    unified_provider_manager,
+)
 from app.utils.logger import logger
 
 
@@ -14,12 +18,12 @@ class CodeGenerationRequest(BaseModel):
         default="python", description="Target file language/format"
     )
     filename: str = Field(..., description="Target file name or relative path")
-    context: Dict[str, Any] = Field(
+    context: dict[str, Any] = Field(
         default_factory=dict,
         description="Project context: project_goal, architecture_spec, file_manifest, related_files"
     )
-    requirements: List[str] = Field(default_factory=list, description="Specific functional requirements")
-    language_features: List[str] = Field(default_factory=list, description="Target syntax/framework features")
+    requirements: list[str] = Field(default_factory=list, description="Specific functional requirements")
+    language_features: list[str] = Field(default_factory=list, description="Target syntax/framework features")
 
 
 class CodeGenerationResponse(BaseModel):
@@ -35,7 +39,7 @@ class CodeGenerationService:
     """Specialized code generator with per-language prompt engineering, context pruning, and caching."""
 
     def __init__(self) -> None:
-        self._cache: Dict[str, Tuple[float, CodeGenerationResponse]] = {}
+        self._cache: dict[str, tuple[float, CodeGenerationResponse]] = {}
         self._cache_ttl = 3600.0  # 1 hour TTL
 
     def _get_cache_key(self, req: CodeGenerationRequest) -> str:
@@ -83,7 +87,7 @@ class CodeGenerationService:
                     break
             code_text = "\n".join(lines[start_idx:end_idx]).strip()
 
-        gen_path = "template_fallback" if exec_res.status == "fallback_success" else "agent"
+        gen_path: Literal["agent", "template_fallback"] = "template_fallback" if exec_res.status == "fallback_success" else "agent"
         confidence = 0.92 if gen_path == "agent" else 0.55
 
         response = CodeGenerationResponse(
@@ -121,9 +125,9 @@ class CodeGenerationService:
             "Return ONLY the runnable source code."
         )
 
-    def _prune_context(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    def _prune_context(self, context: dict[str, Any]) -> dict[str, Any]:
         """Prunes and limits context size (max 3 related files)."""
-        pruned = {}
+        pruned: dict[str, Any] = {}
         if "project_goal" in context:
             pruned["project_goal"] = str(context["project_goal"])[:500]
         if "architecture_spec" in context:
@@ -133,7 +137,7 @@ class CodeGenerationService:
             if isinstance(rel, dict):
                 pruned["related_files"] = {k: str(v)[:400] for i, (k, v) in enumerate(rel.items()) if i < 3}
             elif isinstance(rel, list):
-                pruned["related_files"] = rel[:3]
+                pruned["related_files"] = [str(x)[:400] for x in rel[:3]]
         return pruned
 
 

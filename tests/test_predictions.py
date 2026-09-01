@@ -1,13 +1,11 @@
 """Tests for Deep Learning Models, Alternative Data Ingestion, Prediction Aggregation, and Accuracy Tracking."""
 
-import pytest
 from fastapi.testclient import TestClient
 
 from app.data.alternative_data import alt_data_engine
 from app.main import app
 from app.ml.deep_models import deep_models_engine
 from app.ml.prediction_aggregator import prediction_aggregator
-from app.ml.prediction_tracking import prediction_tracker
 
 client = TestClient(app)
 

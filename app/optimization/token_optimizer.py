@@ -2,8 +2,9 @@
 
 import hashlib
 import time
-from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field
+from typing import Any
+
+from pydantic import BaseModel
 
 
 class CompressedContextResult(BaseModel):
@@ -11,7 +12,7 @@ class CompressedContextResult(BaseModel):
     original_tokens_estimate: int
     compressed_tokens_estimate: int
     compression_ratio_pct: float
-    selected_evidence: List[Dict[str, Any]]
+    selected_evidence: list[dict[str, Any]]
 
 
 class TokenOptimizationEngine:
@@ -19,7 +20,7 @@ class TokenOptimizationEngine:
 
     def __init__(self) -> None:
         # Cache structure: hash -> (response_payload, expiry_timestamp, similarity_hash)
-        self.semantic_cache: Dict[str, Dict[str, Any]] = {}
+        self.semantic_cache: dict[str, dict[str, Any]] = {}
         self.ttl_by_domain = {
             "trading": 300.0,       # 5 minutes for volatile trading domains
             "nexus": 1800.0,        # 30 minutes for enterprise decisions
@@ -29,8 +30,8 @@ class TokenOptimizationEngine:
 
     def compress_context(
         self,
-        context: Dict[str, Any],
-        evidence_list: List[Dict[str, Any]],
+        context: dict[str, Any],
+        evidence_list: list[dict[str, Any]],
         max_evidence: int = 3
     ) -> CompressedContextResult:
         """Compresses context and selects top-N most relevant evidence items."""
@@ -67,7 +68,7 @@ class TokenOptimizationEngine:
             selected_evidence=ranked_evidence
         )
 
-    def get_cached_response(self, domain: str, query_key: str) -> Optional[Dict[str, Any]]:
+    def get_cached_response(self, domain: str, query_key: str) -> dict[str, Any] | None:
         """Retrieves cached response if TTL has not expired."""
         h = hashlib.sha256(query_key.strip().lower().encode()).hexdigest()
         entry = self.semantic_cache.get(h)
@@ -78,7 +79,7 @@ class TokenOptimizationEngine:
                 del self.semantic_cache[h]
         return None
 
-    def store_cached_response(self, domain: str, query_key: str, response_payload: Dict[str, Any]) -> None:
+    def store_cached_response(self, domain: str, query_key: str, response_payload: dict[str, Any]) -> None:
         """Stores response payload with domain-specific TTL."""
         h = hashlib.sha256(query_key.strip().lower().encode()).hexdigest()
         ttl = self.ttl_by_domain.get(domain.lower(), 3600.0)

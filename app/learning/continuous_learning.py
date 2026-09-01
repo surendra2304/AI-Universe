@@ -1,7 +1,7 @@
 """Continuous Learning Engine: Attribution of Advisory Recommendations and Model Tuning."""
 
-import time
-from typing import Any, Dict, List
+from typing import Any
+
 from app.memory.long_term import long_term_memory
 
 
@@ -9,7 +9,7 @@ class ContinuousLearningEngine:
     """Evaluates whether AI advice helped or hurt, tracks model reliability, and refines debate agent weights."""
 
     def __init__(self) -> None:
-        self.recommendation_outcomes: List[Dict[str, Any]] = [
+        self.recommendation_outcomes: list[dict[str, Any]] = [
             {"consultation_id": "c-001", "action_taken": "TIGHTEN_STOPS", "drawdown_reduction_pct": 2.4, "outcome": "HELPED", "score": 0.88},
             {"consultation_id": "c-002", "action_taken": "REDUCE_RISK", "drawdown_reduction_pct": 4.1, "outcome": "HELPED", "score": 0.94},
             {"consultation_id": "c-003", "action_taken": "NO_CHANGE", "drawdown_reduction_pct": 0.0, "outcome": "NEUTRAL", "score": 0.80}
@@ -32,7 +32,7 @@ class ContinuousLearningEngine:
             "score": score
         })
 
-    def get_learning_status(self) -> Dict[str, Any]:
+    def get_learning_status(self) -> dict[str, Any]:
         """Calculates system-wide learning progression and dynamic debate weights."""
         total = len(self.recommendation_outcomes)
         helped = sum(1 for r in self.recommendation_outcomes if r["outcome"] == "HELPED")

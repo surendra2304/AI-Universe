@@ -1,6 +1,5 @@
 """Counterfactual Reasoning Engine: What-If Scenario Analysis with Confidence Intervals."""
 
-from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 
@@ -14,11 +13,11 @@ class CounterfactualScenario(BaseModel):
 class CounterfactualResult(BaseModel):
     scenario_name: str
     estimated_outcome_delta_pct: float
-    confidence_interval_95: Dict[str, float] = Field(description="Lower and upper bound of 95% CI")
+    confidence_interval_95: dict[str, float] = Field(description="Lower and upper bound of 95% CI")
     counterfactual_confidence: float = 0.72  # Clearly wider & lower than factual analysis
     is_counterfactual: bool = True
     reasoning_basis: str
-    caveats: List[str] = Field(default_factory=list)
+    caveats: list[str] = Field(default_factory=list)
 
 
 class CounterfactualReasoningEngine:

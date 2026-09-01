@@ -10,28 +10,38 @@ Features:
 
 import asyncio
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from app.core.config import settings
 from app.core.policies import ProviderSwitchingPolicy, SwitchReason
-from app.providers import get_provider
-from app.providers.base import BaseLLMProvider, ProviderMessage, ProviderRequest, ProviderResponse
+from app.providers.base import (
+    ProviderRequest,
+    ProviderResponse,
+)
 from app.providers.health import provider_health_tracker
-from app.providers.openrouter import OpenRouterProvider
 from app.utils.logger import logger
 
 
 class KeyPool:
     """Manages round-robin key rotation and 60-second quarantines for a provider."""
 
-    def __init__(self, provider_name: str, keys: Optional[List[str]] = None) -> None:
+    def __init__(self, provider_name: str, keys: list[str] | None = None) -> None:
         self.provider_name = provider_name.lower().strip()
-        self._keys: List[str] = keys or []
+        self._keys: list[str] = keys or []
         self._index: int = 0
-        self._quarantined_until: Dict[str, float] = {}  # key -> timestamp until quarantined
-        self._lock = asyncio.Lock()
+        self._quarantined_until: dict[str, float] = {}  # key -> timestamp until quarantined
+        self._locks: dict[int, asyncio.Lock] = {}
 
-    def set_keys(self, keys: List[str]) -> None:
+    def _get_lock(self) -> asyncio.Lock:
+        try:
+            loop_id = id(asyncio.get_running_loop())
+        except RuntimeError:
+            loop_id = 0
+        if loop_id not in self._locks:
+            self._locks[loop_id] = asyncio.Lock()
+        return self._locks[loop_id]
+
+    def set_keys(self, keys: list[str]) -> None:
         """Update active keys for this pool."""
         self._keys = [k.strip() for k in keys if k.strip()]
         self._index = 0
@@ -48,12 +58,12 @@ class KeyPool:
         now = time.time()
         return sum(1 for k in self._keys if self._quarantined_until.get(k, 0) > now)
 
-    async def get_next_key(self) -> Optional[str]:
+    async def get_next_key(self) -> str | None:
         """
         Returns the next available un-quarantined key in round-robin sequence.
         If all keys are quarantined, returns the key with the earliest expiration.
         """
-        async with self._lock:
+        async with self._get_lock():
             if not self._keys:
                 return None
 
@@ -75,8 +85,8 @@ class KeyPool:
             return earliest_key
 
     async def quarantine_key(self, key: str, duration_seconds: float = 60.0) -> None:
-        """Blacklist a key temporarily due to 429 rate limit or 503 service error."""
-        async with self._lock:
+        """Temporarily quarantines a rate-limited or failing API key."""
+        async with self._get_lock():
             self._quarantined_until[key] = time.time() + duration_seconds
             masked_key = f"{key[:4]}...{key[-4:]}" if len(key) > 8 else "***"
             logger.warning(
@@ -91,16 +101,36 @@ class ProviderRateLimiter:
     def __init__(self, provider_name: str, requests_per_second: float = 5.0, max_concurrency: int = 4) -> None:
         self.provider_name = provider_name
         self.rate = requests_per_second
+        self.max_concurrency = max_concurrency
         self.max_tokens = float(max_concurrency * 2)
         self.tokens = self.max_tokens
         self.last_update = time.time()
-        self.semaphore = asyncio.Semaphore(max_concurrency)
-        self._lock = asyncio.Lock()
+        self._semaphores: dict[int, asyncio.Semaphore] = {}
+        self._locks: dict[int, asyncio.Lock] = {}
+
+    def _get_semaphore(self) -> asyncio.Semaphore:
+        try:
+            loop_id = id(asyncio.get_running_loop())
+        except RuntimeError:
+            loop_id = 0
+        if loop_id not in self._semaphores:
+            self._semaphores[loop_id] = asyncio.Semaphore(self.max_concurrency)
+        return self._semaphores[loop_id]
+
+    def _get_lock(self) -> asyncio.Lock:
+        try:
+            loop_id = id(asyncio.get_running_loop())
+        except RuntimeError:
+            loop_id = 0
+        if loop_id not in self._locks:
+            self._locks[loop_id] = asyncio.Lock()
+        return self._locks[loop_id]
 
     async def acquire(self) -> None:
         """Acquire a rate limit token and semaphore slot asynchronously."""
-        await self.semaphore.acquire()
-        async with self._lock:
+        sem = self._get_semaphore()
+        await sem.acquire()
+        async with self._get_lock():
             now = time.time()
             elapsed = now - self.last_update
             self.last_update = now
@@ -115,7 +145,8 @@ class ProviderRateLimiter:
 
     def release(self) -> None:
         """Release the concurrency semaphore slot."""
-        self.semaphore.release()
+        sem = self._get_semaphore()
+        sem.release()
 
 
 class ModelGateway:
@@ -128,8 +159,8 @@ class ModelGateway:
     """
 
     def __init__(self) -> None:
-        self.key_pools: Dict[str, KeyPool] = {}
-        self.rate_limiters: Dict[str, ProviderRateLimiter] = {}
+        self.key_pools: dict[str, KeyPool] = {}
+        self.rate_limiters: dict[str, ProviderRateLimiter] = {}
         self.health_tracker = provider_health_tracker
         self._initialize_pools()
 
@@ -226,7 +257,7 @@ class ModelGateway:
 
                 self.health_tracker.record_failure(prov_name, err_str, is_429=is_429, is_503=is_503, latency_seconds=latency)
 
-                if current_key and (is_429 or is_503):
+                if pool and current_key and (is_429 or is_503):
                     await pool.quarantine_key(current_key, duration_seconds=60.0)
                     logger.warning(
                         "GATEWAY: Provider '%s' hit rate limit/error. Rotating to next key in pool. Error: %s",
@@ -259,7 +290,7 @@ class ModelGateway:
         request: ProviderRequest,
         capability: str,
         stage_name: str,
-        last_error: Optional[Exception]
+        last_error: Exception | None
     ) -> ProviderResponse:
         """Executes fallback via OpenRouter with dynamic capability matching or policy matrix."""
         # 1. If failed provider is NOT openrouter, use OpenRouter with dynamic capability model discovery

@@ -1,12 +1,12 @@
 """HuggingFace Inference API LLM Provider Adapter."""
 
-from typing import List, Optional
+
 from app.core.config import settings
 from app.providers.openai_compatible import OpenAICompatibleProvider
 
 HUGGINGFACE_DEFAULT_MODEL = "meta-llama/llama-3.1-8b-instruct"
 
-HUGGINGFACE_SUPPORTED_MODELS: List[str] = [
+HUGGINGFACE_SUPPORTED_MODELS: list[str] = [
     "meta-llama/llama-3.1-8b-instruct",
     "meta-llama/Llama-3.3-70B-Instruct",
     "mistralai/Mistral-7B-Instruct-v0.3",
@@ -19,7 +19,7 @@ class HuggingFaceProvider(OpenAICompatibleProvider):
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
+        api_key: str | None = None,
         default_model: str = HUGGINGFACE_DEFAULT_MODEL,
         timeout: float = 60.0
     ) -> None:

@@ -1,6 +1,7 @@
 """Strategy Evaluation Debate Engine with 5 Specialized Evaluator Roles."""
 
-from typing import Any, Dict, List
+from typing import Any
+
 from app.analysis.overfitting_intel import overfitting_engine
 from app.analysis.regime_robustness import regime_robustness_engine
 
@@ -18,9 +19,9 @@ class StrategyEvaluationDebateEngine:
     def evaluate_strategy_candidate(
         self,
         strategy_name: str,
-        backtest_metrics: Dict[str, Any],
-        regime_metrics: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        backtest_metrics: dict[str, Any],
+        regime_metrics: dict[str, Any]
+    ) -> dict[str, Any]:
         """Conducts structured 5-panel evaluation debate on strategy candidate."""
         sharpe = backtest_metrics.get("sharpe_ratio", 1.8)
         pf = backtest_metrics.get("profit_factor", 1.6)

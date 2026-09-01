@@ -3,7 +3,9 @@
 import asyncio
 import json
 import time
-from typing import Any, AsyncIterator, Dict, List, Optional
+from collections.abc import AsyncIterator
+from typing import Any
+
 import httpx
 
 from app.core.config import settings
@@ -13,7 +15,7 @@ from app.providers.base import (
     ProviderMessage,
     ProviderRequest,
     ProviderResponse,
-    UsageEstimate
+    UsageEstimate,
 )
 from app.utils.logger import logger
 
@@ -33,8 +35,8 @@ class GeminiProvider(BaseLLMProvider):
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        default_model: Optional[str] = None,
+        api_key: str | None = None,
+        default_model: str | None = None,
         timeout: float = 60.0
     ) -> None:
         self.api_keys = settings.get_provider_keys("gemini")
@@ -45,7 +47,7 @@ class GeminiProvider(BaseLLMProvider):
         self.timeout = timeout
 
     @property
-    def api_key(self) -> Optional[str]:
+    def api_key(self) -> str | None:
         if not self.api_keys:
             return None
         key = self.api_keys[self._key_index % len(self.api_keys)]
@@ -73,14 +75,14 @@ class GeminiProvider(BaseLLMProvider):
         total_chars = sum(len(m.content) for m in request.messages)
         if request.system_instruction:
             total_chars += len(request.system_instruction)
-        
+
         # Rule of thumb: ~4 characters per token
         prompt_tokens = max(1, total_chars // 4)
         max_completion = request.max_tokens or 1000
-        
+
         # Approximate Gemini Flash pricing ($0.075 / 1M input, $0.30 / 1M output)
         cost = (prompt_tokens * 0.000000075) + (max_completion * 0.00000030)
-        
+
         return UsageEstimate(
             estimated_prompt_tokens=prompt_tokens,
             estimated_completion_tokens=max_completion,
@@ -88,9 +90,9 @@ class GeminiProvider(BaseLLMProvider):
             estimated_cost_usd=round(cost, 6)
         )
 
-    def _convert_messages(self, messages: List[ProviderMessage]) -> List[Dict[str, Any]]:
+    def _convert_messages(self, messages: list[ProviderMessage]) -> list[dict[str, Any]]:
         """Converts standardized ProviderMessages to Gemini contents structure."""
-        contents: List[Dict[str, Any]] = []
+        contents: list[dict[str, Any]] = []
         for msg in messages:
             role = "model" if msg.role in ("assistant", "model") else "user"
             contents.append({
@@ -99,11 +101,11 @@ class GeminiProvider(BaseLLMProvider):
             })
         return contents
 
-    def _build_payload(self, request: ProviderRequest) -> Dict[str, Any]:
+    def _build_payload(self, request: ProviderRequest) -> dict[str, Any]:
         """Constructs the JSON payload for the Gemini generateContent API."""
         contents = self._convert_messages(request.messages)
-        
-        payload: Dict[str, Any] = {
+
+        payload: dict[str, Any] = {
             "contents": contents,
             "generationConfig": {
                 "temperature": request.temperature,
@@ -157,7 +159,7 @@ class GeminiProvider(BaseLLMProvider):
                     raise RuntimeError(f"Gemini API returned HTTP {response.status_code}: {error_msg}")
 
                 data = response.json()
-                
+
                 # Extract text from response candidates
                 candidates = data.get("candidates", [])
                 if not candidates:

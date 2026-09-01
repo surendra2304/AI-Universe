@@ -1,12 +1,12 @@
 """NVIDIA NIM LLM Provider Adapter."""
 
-from typing import List, Optional
+
 from app.core.config import settings
 from app.providers.openai_compatible import OpenAICompatibleProvider
 
 NVIDIA_DEFAULT_MODEL = "nvidia/nemotron-3-ultra-550b-a55b"
 
-NVIDIA_SUPPORTED_MODELS: List[str] = [
+NVIDIA_SUPPORTED_MODELS: list[str] = [
     "nvidia/nemotron-3-ultra-550b-a55b",
     "nvidia/nemotron-3.5-lightning-30b-a3b",
     "nvidia/llama-3.1-nemotron-70b-instruct",
@@ -20,7 +20,7 @@ class NvidiaProvider(OpenAICompatibleProvider):
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
+        api_key: str | None = None,
         default_model: str = NVIDIA_DEFAULT_MODEL,
         timeout: float = 60.0
     ) -> None:

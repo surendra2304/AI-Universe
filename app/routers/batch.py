@@ -2,8 +2,9 @@
 
 import asyncio
 import time
-from typing import Any, Dict, List
-from fastapi import APIRouter, HTTPException, status
+from typing import Any
+
+from fastapi import APIRouter, status
 from pydantic import BaseModel, Field
 
 from app.services.code_generation import (
@@ -16,12 +17,12 @@ batch_router = APIRouter(prefix="/v1/forge", tags=["FORGE Batch Processing"])
 
 
 class BatchGenerateRequest(BaseModel):
-    requests: List[CodeGenerationRequest] = Field(..., max_length=10, description="Up to 10 parallel code generation requests")
+    requests: list[CodeGenerationRequest] = Field(..., max_length=10, description="Up to 10 parallel code generation requests")
 
 
 class BatchGenerateResponse(BaseModel):
-    results: List[CodeGenerationResponse]
-    failed: List[Dict[str, Any]]
+    results: list[CodeGenerationResponse]
+    failed: list[dict[str, Any]]
     total_latency_ms: float
     total_tokens: int
 
@@ -30,8 +31,8 @@ class BatchGenerateResponse(BaseModel):
 async def batch_generate_code(req: BatchGenerateRequest):
     """Processes up to 10 code generation requests in parallel with partial failure resilience."""
     start_time = time.perf_counter()
-    results: List[CodeGenerationResponse] = []
-    failed: List[Dict[str, Any]] = []
+    results: list[CodeGenerationResponse] = []
+    failed: list[dict[str, Any]] = []
 
     async def _process_item(item: CodeGenerationRequest):
         try:

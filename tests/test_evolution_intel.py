@@ -1,12 +1,10 @@
 """Tests for Strategy Evolution Debate, Overfitting Intelligence, Regime Robustness, and Evolution Trends."""
 
-import pytest
 from fastapi.testclient import TestClient
 
 from app.analysis.evolution_trends import evolution_trends_engine
 from app.analysis.overfitting_intel import overfitting_engine
 from app.analysis.regime_robustness import regime_robustness_engine
-from app.debate.strategy_evaluation import strategy_evaluation_debate
 from app.main import app
 
 client = TestClient(app)

@@ -1,7 +1,8 @@
 """FastAPI Router for Strategy Evolution Candidates, Overfitting Checks, Regime Tests, and Trends."""
 
-from typing import Any, Dict, Optional
-from fastapi import APIRouter, HTTPException, Query, status
+from typing import Any
+
+from fastapi import APIRouter, Query, status
 from pydantic import BaseModel, Field
 
 from app.analysis.evolution_trends import evolution_trends_engine
@@ -14,7 +15,7 @@ evolution_router = APIRouter(prefix="/v1/evolution", tags=["Strategy Evolution I
 
 class StrategyEvaluationRequest(BaseModel):
     strategy_name: str = Field(default="Evolved_ADX_EMA_v4", description="Name of candidate strategy")
-    backtest_metrics: Dict[str, Any] = Field(
+    backtest_metrics: dict[str, Any] = Field(
         default={
             "sharpe_ratio": 1.95,
             "profit_factor": 1.72,
@@ -23,7 +24,7 @@ class StrategyEvaluationRequest(BaseModel):
         },
         description="Backtest performance summary"
     )
-    regime_metrics: Optional[Dict[str, Any]] = Field(
+    regime_metrics: dict[str, Any] | None = Field(
         default=None,
         description="Performance partitioned across Bull, Bear, and Chop regimes"
     )
@@ -39,7 +40,7 @@ class OverfittingCheckRequest(BaseModel):
 
 class RegimeTestRequest(BaseModel):
     strategy_name: str = Field(default="Evolved_ADX_EMA_v4")
-    regime_metrics: Optional[Dict[str, Dict[str, float]]] = Field(default=None)
+    regime_metrics: dict[str, dict[str, float]] | None = Field(default=None)
 
 
 @evolution_router.post("/evaluate", status_code=status.HTTP_200_OK)

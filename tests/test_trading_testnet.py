@@ -1,6 +1,5 @@
 """Integration and unit tests for Testnet Trading Consultation capabilities."""
 
-import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app

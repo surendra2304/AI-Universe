@@ -1,7 +1,6 @@
 """Identifier generator utilities for tasks, runs, and debates."""
 
 import uuid
-from typing import Optional
 
 
 def generate_id(prefix: str = "id") -> str:

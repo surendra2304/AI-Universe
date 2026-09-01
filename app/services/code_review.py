@@ -1,15 +1,19 @@
 """Code Review Debate Service for FORGE."""
 
 import time
-from typing import Any, Dict, List, Literal, Optional
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
-from app.providers.unified_manager import UnifiedExecutionRequest, unified_provider_manager
+from app.providers.unified_manager import (
+    UnifiedExecutionRequest,
+    unified_provider_manager,
+)
 
 
 class CodeReviewIssue(BaseModel):
     severity: Literal["critical", "high", "medium", "low", "info"]
-    line_hint: Optional[str] = None
+    line_hint: str | None = None
     description: str
     suggested_fix: str
 
@@ -17,15 +21,15 @@ class CodeReviewIssue(BaseModel):
 class CodeReviewRequest(BaseModel):
     code: str = Field(..., description="Source code to review")
     filename: str = Field(default="app/main.py", description="Filename")
-    project_context: Optional[str] = Field(default="", description="High-level project context")
-    review_focus: List[Literal["bugs", "security", "performance", "style"]] = Field(
+    project_context: str | None = Field(default="", description="High-level project context")
+    review_focus: list[Literal["bugs", "security", "performance", "style"]] = Field(
         default=["bugs", "security", "performance", "style"]
     )
 
 
 class CodeReviewResponse(BaseModel):
     verdict: Literal["approve", "fix_required", "needs_review"]
-    issues: List[CodeReviewIssue]
+    issues: list[CodeReviewIssue]
     consensus_confidence: float
     debate_summary: str
     latency_ms: float
@@ -56,9 +60,10 @@ class CodeReviewDebateService:
 
         exec_res = await unified_provider_manager.execute(exec_req)
         elapsed_ms = round((time.perf_counter() - start_time) * 1000.0, 2)
+        exec_feedback = exec_res.content if exec_res and exec_res.content else ""
 
         # Heuristic security & syntax analysis
-        issues: List[CodeReviewIssue] = []
+        issues: list[CodeReviewIssue] = []
         verdict: Literal["approve", "fix_required", "needs_review"] = "approve"
 
         # Check for obvious anti-patterns
@@ -83,6 +88,7 @@ class CodeReviewDebateService:
             f"Code Review Debate for `{req.filename}` completed. "
             f"Panel consensus reached across Coder, Security Analyst, and Critic. "
             f"Issues found: {len(issues)}. Final Verdict: {verdict.upper()}."
+            + (f" Reviewer notes: {exec_feedback[:100]}..." if exec_feedback else "")
         )
 
         return CodeReviewResponse(

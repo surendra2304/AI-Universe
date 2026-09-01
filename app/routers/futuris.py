@@ -1,6 +1,7 @@
 """FastAPI Router for Futuris Predictive Forecasting and Statistical Grounding."""
 
 from fastapi import APIRouter, HTTPException, Path, status
+
 from app.services.futuris_enhancement import (
     FuturisEnhanceRequest,
     FuturisEnhanceResponse,

@@ -2,7 +2,8 @@
 
 import hashlib
 import time
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 from app.utils.logger import logger
@@ -15,7 +16,7 @@ class TenantPolicy(BaseModel):
     daily_budget_usd: float = 999999.0
     current_daily_spend_usd: float = 0.0
     hard_cutoff_enabled: bool = False
-    active_keys: List[str] = Field(default_factory=list)
+    active_keys: list[str] = Field(default_factory=list)
     created_at: float = Field(default_factory=time.time)
 
 
@@ -23,7 +24,7 @@ class MultiTenantManager:
     """Manages tenant isolation, API key rotation, budget cutoffs, and request deduplication."""
 
     def __init__(self) -> None:
-        self.tenants: Dict[str, TenantPolicy] = {
+        self.tenants: dict[str, TenantPolicy] = {
             "tenant_trading": TenantPolicy(
                 tenant_id="tenant_trading",
                 name="Algorithmic Trading Bot",
@@ -75,10 +76,10 @@ class MultiTenantManager:
             )
         }
         # In-memory deduplication cache: hash -> (response_payload, expiry_timestamp)
-        self.dedup_cache: Dict[str, Dict[str, Any]] = {}
+        self.dedup_cache: dict[str, dict[str, Any]] = {}
         self.dedup_ttl_seconds = 300.0  # 5 minutes idempotency window
 
-    def extract_tenant_id(self, auth_header: Optional[str], api_key: Optional[str]) -> str:
+    def extract_tenant_id(self, auth_header: str | None, api_key: str | None) -> str:
         token = (api_key or auth_header or "").strip()
         for t_id, policy in self.tenants.items():
             if any(k in token for k in policy.active_keys) or t_id in token.lower():
@@ -114,7 +115,7 @@ class MultiTenantManager:
         policy.active_keys.append(new_key)
         return new_key
 
-    def check_deduplication(self, request_id: str) -> Optional[Dict[str, Any]]:
+    def check_deduplication(self, request_id: str) -> dict[str, Any] | None:
         """Returns cached response if request_id was processed in the last 5 minutes."""
         entry = self.dedup_cache.get(request_id)
         if entry:
@@ -125,7 +126,7 @@ class MultiTenantManager:
                 del self.dedup_cache[request_id]
         return None
 
-    def store_deduplication(self, request_id: str, response_payload: Dict[str, Any]) -> None:
+    def store_deduplication(self, request_id: str, response_payload: dict[str, Any]) -> None:
         self.dedup_cache[request_id] = {
             "response": response_payload,
             "expires_at": time.time() + self.dedup_ttl_seconds

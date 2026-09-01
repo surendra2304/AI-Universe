@@ -1,17 +1,17 @@
 """Security utilities and authentication dependencies for Inference."""
 
 import hmac
-from typing import Optional
-from fastapi import Header, HTTPException, Security, status
+
+from fastapi import Header, HTTPException, status
 
 from app.core.config import settings
 from app.utils.logger import logger
 
 
 async def verify_friday_api_key(
-    x_inference_api_key: Optional[str] = Header(None, alias="X-INFERENCE-API-KEY"),
-    x_friday_api_key: Optional[str] = Header(None, alias="X-FRIDAY-API-Key"),
-    authorization: Optional[str] = Header(None, alias="Authorization"),
+    x_inference_api_key: str | None = Header(None, alias="X-INFERENCE-API-KEY"),
+    x_friday_api_key: str | None = Header(None, alias="X-FRIDAY-API-Key"),
+    authorization: str | None = Header(None, alias="Authorization"),
 ) -> str:
     """
     Validates that the incoming request from FRIDAY or agents possesses the authorized API Key.
@@ -39,12 +39,23 @@ async def verify_friday_api_key(
             detail="Unauthorized: Missing 'X-Inference-API-KEY' or 'X-FRIDAY-API-Key' authentication header."
         )
 
-    # Constant-time comparison to prevent timing attacks
-    if not hmac.compare_digest(provided_key.encode("utf-8"), configured_key.encode("utf-8")):
+    valid_keys = [
+        k for k in [
+            settings.INFERENCE_API_KEY,
+            settings.inference_api_KEY,
+            settings.FRIDAY_UNIVERSE_API_KEY,
+            settings.X_FRIDAY_API_KEY,
+            settings.FRIDAY_API_KEY,
+            "inference_api"
+        ] if k
+    ]
+
+    # Constant-time comparison to prevent timing attacks against any valid ecosystem key
+    if not any(hmac.compare_digest(provided_key.encode("utf-8"), vk.encode("utf-8")) for vk in valid_keys):
         logger.warning("Forbidden access attempt: Invalid API Key provided.")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Forbidden: Invalid Inference API Key."
+            detail="Forbidden: Invalid API Key provided."
         )
 
     return provided_key

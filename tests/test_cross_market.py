@@ -1,12 +1,8 @@
 """Tests for Cross-Market Data Aggregation, Correlation Matrix, Regime Intelligence, Liquidity Analysis, and Debate Specialists."""
 
-import pytest
 from fastapi.testclient import TestClient
 
 from app.analysis.cross_asset import cross_asset_engine
-from app.analysis.liquidity_intel import liquidity_intel
-from app.analysis.market_regime_intel import regime_intel
-from app.debate.market_debate import multi_market_debate
 from app.main import app
 
 client = TestClient(app)

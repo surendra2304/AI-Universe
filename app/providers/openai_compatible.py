@@ -3,16 +3,17 @@
 import asyncio
 import json
 import time
-from typing import Any, AsyncIterator, Dict, List, Optional
+from collections.abc import AsyncIterator
+from typing import Any
+
 import httpx
 
 from app.providers.base import (
     BaseLLMProvider,
     ProviderCapabilities,
-    ProviderMessage,
     ProviderRequest,
     ProviderResponse,
-    UsageEstimate
+    UsageEstimate,
 )
 from app.utils.logger import logger
 
@@ -24,11 +25,11 @@ class OpenAICompatibleProvider(BaseLLMProvider):
         self,
         provider_name: str,
         base_url: str,
-        api_key: Optional[str],
+        api_key: str | None,
         default_model: str,
-        supported_models: List[str],
+        supported_models: list[str],
         timeout: float = 60.0,
-        extra_headers: Optional[Dict[str, str]] = None
+        extra_headers: dict[str, str] | None = None
     ) -> None:
         self._provider_name = provider_name
         self.base_url = base_url.rstrip("/")
@@ -40,7 +41,7 @@ class OpenAICompatibleProvider(BaseLLMProvider):
         self.extra_headers = extra_headers or {}
 
     @property
-    def api_key(self) -> Optional[str]:
+    def api_key(self) -> str | None:
         if not self.api_keys:
             return None
         key = self.api_keys[self._key_index % len(self.api_keys)]
@@ -48,7 +49,7 @@ class OpenAICompatibleProvider(BaseLLMProvider):
         return key
 
     @api_key.setter
-    def api_key(self, val: Optional[str]) -> None:
+    def api_key(self, val: str | None) -> None:
         if val:
             self.api_keys = [k.strip() for k in val.split(",") if k.strip()]
         else:
@@ -73,11 +74,11 @@ class OpenAICompatibleProvider(BaseLLMProvider):
         total_chars = sum(len(m.content) for m in request.messages)
         if request.system_instruction:
             total_chars += len(request.system_instruction)
-        
+
         prompt_tokens = max(1, total_chars // 4)
         max_completion = request.max_tokens or 1000
         cost = (prompt_tokens * 0.0000001) + (max_completion * 0.0000004)
-        
+
         return UsageEstimate(
             estimated_prompt_tokens=prompt_tokens,
             estimated_completion_tokens=max_completion,
@@ -85,8 +86,8 @@ class OpenAICompatibleProvider(BaseLLMProvider):
             estimated_cost_usd=round(cost, 6)
         )
 
-    def _build_payload(self, request: ProviderRequest) -> Dict[str, Any]:
-        messages: List[Dict[str, Any]] = []
+    def _build_payload(self, request: ProviderRequest) -> dict[str, Any]:
+        messages: list[dict[str, Any]] = []
         if request.system_instruction:
             messages.append({"role": "system", "content": request.system_instruction})
 
@@ -94,7 +95,7 @@ class OpenAICompatibleProvider(BaseLLMProvider):
             messages.append({"role": msg.role, "content": msg.content})
 
         model = request.model or self.default_model
-        payload: Dict[str, Any] = {
+        payload: dict[str, Any] = {
             "model": model,
             "messages": messages,
             "temperature": request.temperature,
@@ -109,7 +110,7 @@ class OpenAICompatibleProvider(BaseLLMProvider):
         payload.update(request.extra_params)
         return payload
 
-    def _get_headers(self) -> Dict[str, str]:
+    def _get_headers(self) -> dict[str, str]:
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.api_key}"

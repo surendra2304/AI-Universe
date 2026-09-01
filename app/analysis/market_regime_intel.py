@@ -1,12 +1,12 @@
 """Market Regime Intelligence, Transition Probabilities, and Macro Leading Indicators."""
 
-from typing import Any, Dict, List
+from typing import Any
 
 
 class MarketRegimeIntelligence:
     """Classifies risk-on/risk-off regimes, crypto seasonality, and forecasts transition probabilities."""
 
-    def classify_market_regime(self) -> Dict[str, Any]:
+    def classify_market_regime(self) -> dict[str, Any]:
         """Provides comprehensive macro and crypto regime classification."""
         return {
             "macro_regime": "RISK_ON",

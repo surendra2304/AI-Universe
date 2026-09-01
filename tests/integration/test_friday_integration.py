@@ -1,7 +1,8 @@
 """Integration tests for FRIDAY Integration: FRIDAY Peer Integration and Security Boundary."""
 
-import pytest
 from unittest.mock import AsyncMock, patch
+
+import pytest
 from fastapi.testclient import TestClient
 
 from app.core.config import settings
@@ -98,7 +99,7 @@ async def test_friday_authentication_failure_missing_header(friday_client):
     # No header provided
     resp = client.post("/v1/friday/ask", json={"question": "Test unauthorized inquiry"})
     assert resp.status_code == 401
-    assert "Missing 'X-FRIDAY-API-Key'" in resp.json()["detail"]
+    assert "Missing 'X-Inference-API-KEY' or 'X-FRIDAY-API-Key'" in resp.json()["detail"]
 
 
 @pytest.mark.asyncio
@@ -107,7 +108,8 @@ async def test_friday_authentication_failure_invalid_key(friday_client):
     headers = {"X-FRIDAY-API-Key": "invalid_wrong_secret_key"}
     resp = client.post("/v1/friday/ask", headers=headers, json={"question": "Test forbidden inquiry"})
     assert resp.status_code == 403
-    assert "Forbidden: Invalid FRIDAY API Key" in resp.json()["detail"]
+    assert "Forbidden: Invalid API Key provided." in resp.json()["detail"]
+
 
 
 @pytest.mark.asyncio

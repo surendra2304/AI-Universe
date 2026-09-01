@@ -2,7 +2,6 @@
 
 import logging
 import sys
-from typing import Optional
 
 
 class SensitiveDataFilter(logging.Filter):
@@ -17,7 +16,7 @@ class SensitiveDataFilter(logging.Filter):
 
 def setup_logger(
     name: str = "inference",
-    log_level: Optional[str] = None
+    log_level: str | None = None
 ) -> logging.Logger:
     """Configures and returns a structured application logger."""
     level_name = (log_level or "INFO").upper()

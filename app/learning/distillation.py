@@ -1,10 +1,9 @@
 """Knowledge Distillation Engine: Distilling Learned Patterns into StrategyBank Rules."""
 
 import time
-from typing import Any, Dict, List
-from pydantic import BaseModel, Field
+from typing import Any
 
-from app.analytics.outcome_learning import outcome_learning_engine
+from pydantic import BaseModel, Field
 
 
 class DistilledKnowledgeRule(BaseModel):
@@ -21,7 +20,7 @@ class KnowledgeDistillationEngine:
     """Extracts empirical rules from multi-consumer outcomes and injects them into future debates."""
 
     def __init__(self) -> None:
-        self.rules: List[DistilledKnowledgeRule] = [
+        self.rules: list[DistilledKnowledgeRule] = [
             DistilledKnowledgeRule(
                 rule_id="RULE-001",
                 consumer="nexus",
@@ -60,7 +59,7 @@ class KnowledgeDistillationEngine:
         self.rules.append(rule)
         return rule
 
-    def query_distilled_rules(self, consumer: str, task_type: str) -> List[Dict[str, Any]]:
+    def query_distilled_rules(self, consumer: str, task_type: str) -> list[dict[str, Any]]:
         return [r.model_dump() for r in self.rules if r.task_type == task_type or r.consumer == consumer]
 
 

@@ -7,23 +7,14 @@ requiring a running uvicorn background server.
 import asyncio
 import json
 import sys
-from typing import Optional
 
-try:
-    import typer
-    from rich.console import Console
-    from rich.panel import Panel
-    from rich.table import Table
-except ImportError:
-    import click as typer
-    Console = None
-    Panel = None
-    Table = None
+import typer
+from rich.console import Console
+from rich.panel import Panel
 
-from app.core.config import settings
 from app.core.orchestrator import OrchestrationRequest, Orchestrator
+from app.experiments.harness import BenchmarkHarness
 from app.memory.sqlite import SQLiteMemory
-from app.experiments.harness import BenchmarkHarness, ExperimentRunRequest
 
 # Configure UTF-8 safe console for Windows terminal
 if sys.platform == "win32" and hasattr(sys.stdout, "reconfigure"):
@@ -33,15 +24,15 @@ if sys.platform == "win32" and hasattr(sys.stdout, "reconfigure"):
         pass
 
 cli_app = typer.Typer(help="Inference — Multi-Agent Intelligence CLI")
-console = Console(legacy_windows=False) if Console else None
+console = Console(legacy_windows=False)
 
 
 async def _run_in_process_ask(
     question: str,
     mode: str = "auto",
     max_agents: int = 5,
-    budget: Optional[float] = None,
-    latency: Optional[float] = None
+    budget: float | None = None,
+    latency: float | None = None
 ) -> None:
     """Instantiate orchestrator and run task directly in-process."""
     memory = SQLiteMemory()
@@ -139,7 +130,7 @@ async def _run_in_process_debate(
 
 async def _run_in_process_experiment(
     exp_type: str = "benchmark_suite",
-    question: Optional[str] = None
+    question: str | None = None
 ) -> None:
     """Run an automated experiment in-process."""
     memory = SQLiteMemory()
@@ -175,8 +166,8 @@ def ask(
     question: str = typer.Argument(..., help="Question to ask Inference"),
     mode: str = typer.Option("auto", "--mode", "-m", help="Mode: auto, fast, review, debate"),
     max_agents: int = typer.Option(5, "--agents", "-a", help="Max agents to allocate"),
-    budget: Optional[float] = typer.Option(None, "--budget", "-b", help="Max budget in USD"),
-    latency: Optional[float] = typer.Option(None, "--latency", "-l", help="Max latency in seconds")
+    budget: float | None = typer.Option(None, "--budget", "-b", help="Max budget in USD"),
+    latency: float | None = typer.Option(None, "--latency", "-l", help="Max latency in seconds")
 ):
     """Submit a question to the orchestrator directly in-process."""
     asyncio.run(_run_in_process_ask(question, mode=mode, max_agents=max_agents, budget=budget, latency=latency))
@@ -194,7 +185,7 @@ def debate(
 @cli_app.command()
 def experiment(
     exp_type: str = typer.Option("benchmark_suite", "--type", "-t", help="benchmark_suite, baseline_vs_debate, model_comparison"),
-    question: Optional[str] = typer.Option(None, "--question", "-q", help="Optional test question")
+    question: str | None = typer.Option(None, "--question", "-q", help="Optional test question")
 ):
     """Trigger an automated benchmark or comparison experiment directly in-process."""
     asyncio.run(_run_in_process_experiment(exp_type=exp_type, question=question))

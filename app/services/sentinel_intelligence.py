@@ -13,12 +13,12 @@ Features:
 """
 
 import time
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Literal
+
 from pydantic import BaseModel, Field
 
 from app.analytics.usage_analytics import usage_analytics
 from app.routing.consumer_router import consumer_router
-from app.utils.logger import logger
 
 AnalysisType = Literal[
     "vulnerability_assessment",
@@ -37,35 +37,35 @@ class SecurityFinding(BaseModel):
     severity: SeverityLevel
     title: str
     description: str
-    evidence_refs: List[str] = Field(default_factory=list)
-    cvss_score: Optional[float] = Field(default=None, ge=0.0, le=10.0)
+    evidence_refs: list[str] = Field(default_factory=list)
+    cvss_score: float | None = Field(default=None, ge=0.0, le=10.0)
 
 
 class TargetContext(BaseModel):
     asset_type: str = Field(description="e.g., web_app, api_gateway, database, container_cluster")
-    technologies_detected: List[str] = Field(default_factory=list)
+    technologies_detected: list[str] = Field(default_factory=list)
     exposure_level: ExposureLevel = "public_internet"
 
 
 class ThreatIntelInput(BaseModel):
-    cve_matches: List[str] = Field(default_factory=list)
-    exploit_availability: Optional[str] = Field(default="none", description="e.g., none, poc, in_the_wild, weaponized")
-    threat_actor_activity: Optional[str] = Field(default="low", description="e.g., low, active_campaign, targeted")
+    cve_matches: list[str] = Field(default_factory=list)
+    exploit_availability: str | None = Field(default="none", description="e.g., none, poc, in_the_wild, weaponized")
+    threat_actor_activity: str | None = Field(default="low", description="e.g., low, active_campaign, targeted")
 
 
 class ScanConstraints(BaseModel):
-    scan_mode: Optional[str] = "standard"
-    authorized_scope: Optional[List[str]] = Field(default_factory=list)
-    time_budget: Optional[int] = Field(default=10, description="Time budget in seconds")
+    scan_mode: str | None = "standard"
+    authorized_scope: list[str] | None = Field(default_factory=list)
+    time_budget: int | None = Field(default=10, description="Time budget in seconds")
 
 
 class SentinelAnalysisRequest(BaseModel):
     request_id: str
     analysis_type: AnalysisType
     target_context: TargetContext
-    findings: List[SecurityFinding] = Field(default_factory=list)
-    threat_intel: Optional[ThreatIntelInput] = Field(default_factory=ThreatIntelInput)
-    constraints: Optional[ScanConstraints] = Field(default_factory=ScanConstraints)
+    findings: list[SecurityFinding] = Field(default_factory=list)
+    threat_intel: ThreatIntelInput | None = Field(default_factory=ThreatIntelInput)
+    constraints: ScanConstraints | None = Field(default_factory=ScanConstraints)
 
 
 class AttackPathNode(BaseModel):
@@ -74,7 +74,7 @@ class AttackPathNode(BaseModel):
     preconditions: str
     potential_impact: str
     likelihood_score: float = Field(..., ge=0.0, le=1.0)
-    associated_finding_ids: List[str] = Field(default_factory=list)
+    associated_finding_ids: list[str] = Field(default_factory=list)
 
 
 class AttackPathChain(BaseModel):
@@ -82,7 +82,7 @@ class AttackPathChain(BaseModel):
     title: str
     overall_probability: float = Field(..., ge=0.0, le=1.0)
     criticality: SeverityLevel
-    nodes: List[AttackPathNode] = Field(default_factory=list)
+    nodes: list[AttackPathNode] = Field(default_factory=list)
 
 
 class RemediationItem(BaseModel):
@@ -99,39 +99,39 @@ class RiskAssessment(BaseModel):
     overall_risk_score: float = Field(..., ge=0.0, le=10.0)
     risk_tier: SeverityLevel
     executive_summary: str
-    key_vulnerability_factors: List[str] = Field(default_factory=list)
+    key_vulnerability_factors: list[str] = Field(default_factory=list)
 
 
 class ThreatContextResult(BaseModel):
     active_in_the_wild: bool = False
-    trending_cves_for_stack: List[str] = Field(default_factory=list)
-    mitre_attack_tactics: List[str] = Field(default_factory=list)
+    trending_cves_for_stack: list[str] = Field(default_factory=list)
+    mitre_attack_tactics: list[str] = Field(default_factory=list)
 
 
 class SentinelAnalysisPayload(BaseModel):
     risk_assessment: RiskAssessment
-    attack_paths: Optional[List[AttackPathChain]] = None
-    prioritized_remediation: List[RemediationItem] = Field(default_factory=list)
+    attack_paths: list[AttackPathChain] | None = None
+    prioritized_remediation: list[RemediationItem] = Field(default_factory=list)
     threat_context: ThreatContextResult
     confidence: float = Field(..., ge=0.0, le=1.0)
-    dissent: List[str] = Field(default_factory=list)
+    dissent: list[str] = Field(default_factory=list)
 
 
 class SentinelAnalysisResponse(BaseModel):
     request_id: str
     analysis: SentinelAnalysisPayload
-    evidence_references: Dict[str, List[str]] = Field(
+    evidence_references: dict[str, list[str]] = Field(
         default_factory=dict,
         description="Mapping of findings/conclusions to driving evidence references"
     )
-    safety_notes: List[str] = Field(default_factory=list)
-    provenance: Dict[str, Any] = Field(default_factory=dict)
+    safety_notes: list[str] = Field(default_factory=list)
+    provenance: dict[str, Any] = Field(default_factory=dict)
 
 
 class SentinelIntelligenceService:
     """Specialized cybersecurity intelligence service for Sentinel."""
 
-    ANALYSIS_AGENT_MAPPING: Dict[str, List[str]] = {
+    ANALYSIS_AGENT_MAPPING: dict[str, list[str]] = {
         "vulnerability_assessment": ["security_analyst", "data_analyst"],
         "attack_path_reasoning": ["security_analyst", "strategist", "critic"],
         "remediation_prioritization": ["strategist", "security_analyst"],
@@ -140,9 +140,9 @@ class SentinelIntelligenceService:
     }
 
     def __init__(self) -> None:
-        self.provenance_store: Dict[str, Dict[str, Any]] = {}
+        self.provenance_store: dict[str, dict[str, Any]] = {}
 
-    def _compute_risk_score(self, findings: List[SecurityFinding], exposure: ExposureLevel) -> tuple[float, SeverityLevel]:
+    def _compute_risk_score(self, findings: list[SecurityFinding], exposure: ExposureLevel) -> tuple[float, SeverityLevel]:
         if not findings:
             return 1.0, "LOW"
 
@@ -168,6 +168,7 @@ class SentinelIntelligenceService:
         combined = min(10.0, (0.7 * max_score + 0.3 * avg_score) * exposure_multipliers.get(exposure, 1.0))
         combined = round(combined, 1)
 
+        tier: Literal["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFORMATIONAL"]
         if combined >= 8.5:
             tier = "CRITICAL"
         elif combined >= 7.0:
@@ -192,7 +193,7 @@ class SentinelIntelligenceService:
         risk_score, risk_tier = self._compute_risk_score(req.findings, req.target_context.exposure_level)
 
         # Evidence references mapping
-        evidence_refs: Dict[str, List[str]] = {}
+        evidence_refs: dict[str, list[str]] = {}
         for f in req.findings:
             evidence_refs[f.finding_id] = f.evidence_refs if f.evidence_refs else [f"finding_signature_{f.finding_id}"]
 
@@ -203,7 +204,7 @@ class SentinelIntelligenceService:
             exposure_level=req.target_context.exposure_level
         )
 
-        prioritized_remediations: List[RemediationItem] = [
+        prioritized_remediations: list[RemediationItem] = [
             RemediationItem(
                 priority_rank=item.priority_order,
                 finding_id=item.primary_finding_id,
@@ -233,8 +234,8 @@ class SentinelIntelligenceService:
         )
 
         # Attack path reasoning (Debate mode)
-        attack_paths: Optional[List[AttackPathChain]] = None
-        dissent: List[str] = []
+        attack_paths: list[AttackPathChain] | None = None
+        dissent: list[str] = []
         confidence = 0.90
 
         if req.analysis_type == "attack_path_reasoning":
@@ -347,7 +348,7 @@ class SentinelIntelligenceService:
 
         return response
 
-    def get_provenance(self, request_id: str) -> Optional[Dict[str, Any]]:
+    def get_provenance(self, request_id: str) -> dict[str, Any] | None:
         return self.provenance_store.get(request_id)
 
 

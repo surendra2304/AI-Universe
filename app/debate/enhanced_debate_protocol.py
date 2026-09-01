@@ -1,10 +1,9 @@
 """Enhanced Debate Protocol, Reasoning Chains, Evidence Scoring, Assumption Tracking & Multi-Model Routing."""
 
 import time
-from typing import Any, Dict, List, Literal, Optional
-from pydantic import BaseModel, Field
+from typing import Any, Literal
 
-from app.utils.logger import logger
+from pydantic import BaseModel, Field
 
 
 class EvidenceScore(BaseModel):
@@ -14,7 +13,7 @@ class EvidenceScore(BaseModel):
     relevance_score: float = 0.90
     reliability_weight: float = 0.90  # 0.3 for untrusted_user_input, 1.0 for system_fact
     is_contradictory: bool = False
-    flag_notes: Optional[str] = None
+    flag_notes: str | None = None
 
 
 class StatedAssumption(BaseModel):
@@ -27,22 +26,22 @@ class StatedAssumption(BaseModel):
 class DebateRound(BaseModel):
     round_number: int
     stage: Literal["INDEPENDENT_ANALYSIS", "CROSS_EXAMINATION", "SYNTHESIS_ATTEMPT", "FINAL_OBJECTIONS"]
-    agent_outputs: Dict[str, str]
-    challenges: List[Dict[str, str]] = Field(default_factory=list)
-    defenses: List[Dict[str, str]] = Field(default_factory=list)
+    agent_outputs: dict[str, str]
+    challenges: list[dict[str, str]] = Field(default_factory=list)
+    defenses: list[dict[str, str]] = Field(default_factory=list)
 
 
 class ReasoningChainTrace(BaseModel):
     request_id: str
     task_type: str
     mode: str
-    provider_allocation: Dict[str, str]
-    rounds: List[DebateRound]
+    provider_allocation: dict[str, str]
+    rounds: list[DebateRound]
     synthesis_logic: str
-    unresolved_objections: List[str] = Field(default_factory=list)
-    stated_assumptions: List[StatedAssumption] = Field(default_factory=list)
-    evidence_scores: List[EvidenceScore] = Field(default_factory=list)
-    confidence_evolution: List[float] = Field(default_factory=list)
+    unresolved_objections: list[str] = Field(default_factory=list)
+    stated_assumptions: list[StatedAssumption] = Field(default_factory=list)
+    evidence_scores: list[EvidenceScore] = Field(default_factory=list)
+    confidence_evolution: list[float] = Field(default_factory=list)
     created_at: float = Field(default_factory=time.time)
 
 
@@ -50,18 +49,18 @@ class EnhancedDebateEngine:
     """Orchestrates structured 4-round multi-agent adversarial debate with multi-model diversity."""
 
     def __init__(self) -> None:
-        self.reasoning_traces: Dict[str, ReasoningChainTrace] = {}
+        self.reasoning_traces: dict[str, ReasoningChainTrace] = {}
         self.total_debates = 24
         self.provider_diversity_success_rate = 93.8
         self.single_provider_success_rate = 81.2
 
-    def score_evidence(self, evidence_list: List[Dict[str, Any]]) -> List[EvidenceScore]:
+    def score_evidence(self, evidence_list: list[dict[str, Any]]) -> list[EvidenceScore]:
         """Calculates relevance and reliability weights for all evidence."""
-        scored: List[EvidenceScore] = []
+        scored: list[EvidenceScore] = []
         for idx, item in enumerate(evidence_list):
             label = item.get("trust_label", "verified_telemetry")
             claim = item.get("claim", "")
-            
+
             # Low-trust penalty (0.3x)
             if label == "untrusted_user_input":
                 rel_weight = 0.30
@@ -93,8 +92,8 @@ class EnhancedDebateEngine:
         request_id: str,
         task_type: str,
         goal: str,
-        evidence: List[Dict[str, Any]],
-        agents: List[str]
+        evidence: list[dict[str, Any]],
+        agents: list[str]
     ) -> ReasoningChainTrace:
         """Executes the 4-round structured adversarial debate protocol."""
         scored_evidence = self.score_evidence(evidence)
@@ -133,7 +132,7 @@ class EnhancedDebateEngine:
 
         # Round 3: Synthesis Attempt
         synth_agent = "synthesizer"
-        synthesis_logic = f"Synthesizer reconciled primary initiative with Critic constraints, prioritizing system_fact evidence over untrusted inputs."
+        synthesis_logic = "Synthesizer reconciled primary initiative with Critic constraints, prioritizing system_fact evidence over untrusted inputs."
         r3 = DebateRound(
             round_number=3,
             stage="SYNTHESIS_ATTEMPT",
@@ -174,10 +173,10 @@ class EnhancedDebateEngine:
         self.total_debates += 1
         return trace
 
-    def get_trace(self, request_id: str) -> Optional[ReasoningChainTrace]:
+    def get_trace(self, request_id: str) -> ReasoningChainTrace | None:
         return self.reasoning_traces.get(request_id)
 
-    def get_debate_statistics(self) -> Dict[str, Any]:
+    def get_debate_statistics(self) -> dict[str, Any]:
         """Returns empirical debate metrics, provider diversity impact, and objection rates."""
         return {
             "total_structured_debates": self.total_debates,

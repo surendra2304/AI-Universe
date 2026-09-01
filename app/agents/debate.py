@@ -13,16 +13,14 @@ Implements the "Collaborate First, Debate on Conflict" model:
 import asyncio
 import time
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+
 from pydantic import BaseModel, Field
 
-from app.agents.base import Agent, AgentModelConfig, AgentResponse, BaseAgentRegistry
+from app.agents.base import Agent, AgentModelConfig, BaseAgentRegistry
 from app.agents.registry import agent_registry
 from app.core.dag import TaskComplexity
-from app.core.policies import ProviderSwitchingPolicy, SwitchReason
 from app.memory.base import BaseMemory, MessageRecord, RunRecord
 from app.memory.sqlite import SQLiteMemory
-from app.providers import get_provider
 from app.providers.base import ProviderMessage, ProviderRequest, ProviderResponse
 from app.providers.gateway import model_gateway
 from app.providers.health import provider_health_tracker
@@ -38,8 +36,8 @@ class CollaborationMessage(BaseModel):
     agent_id: str
     agent_role: str
     content: str
-    target_agent_id: Optional[str] = None
-    models_used: List[str] = Field(default_factory=list)
+    target_agent_id: str | None = None
+    models_used: list[str] = Field(default_factory=list)
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -47,8 +45,8 @@ class CollaborationRoundLog(BaseModel):
     """Log record summarizing an individual round in the collaboration."""
     round_number: int
     stage_name: str
-    messages: List[CollaborationMessage] = Field(default_factory=list)
-    summary: Optional[str] = None
+    messages: list[CollaborationMessage] = Field(default_factory=list)
+    summary: str | None = None
 
 
 # Backward-compatibility alias for tests and older consumers
@@ -63,13 +61,13 @@ class CollaborationResult(BaseModel):
     canonical_problem: str
     final_answer: str
     confidence: float = Field(ge=0.0, le=1.0)
-    unresolved_disagreements: List[str] = Field(default_factory=list)
-    key_evidence: List[str] = Field(default_factory=list)
-    participating_agents: List[str] = Field(default_factory=list)
-    rounds: List[CollaborationRoundLog] = Field(default_factory=list)
+    unresolved_disagreements: list[str] = Field(default_factory=list)
+    key_evidence: list[str] = Field(default_factory=list)
+    participating_agents: list[str] = Field(default_factory=list)
+    rounds: list[CollaborationRoundLog] = Field(default_factory=list)
     mode_used: str = "consensus"
     complexity: str = "simple"
-    models_used: List[str] = Field(default_factory=list)
+    models_used: list[str] = Field(default_factory=list)
     total_tokens: int = 0
     total_latency_seconds: float = 0.0
 
@@ -82,8 +80,8 @@ class CollaborationEngine:
 
     def __init__(
         self,
-        memory: Optional[BaseMemory] = None,
-        registry: Optional[BaseAgentRegistry] = None
+        memory: BaseMemory | None = None,
+        registry: BaseAgentRegistry | None = None
     ) -> None:
         self.memory = memory or SQLiteMemory()
         self.registry = registry or agent_registry
@@ -95,9 +93,9 @@ class CollaborationEngine:
         round_number: int,
         agent: Agent,
         model_cfg: AgentModelConfig,
-        messages: List[ProviderMessage],
+        messages: list[ProviderMessage],
         system_instruction: str
-    ) -> Tuple[Optional[ProviderResponse], float, Optional[Exception]]:
+    ) -> tuple[ProviderResponse | None, float, Exception | None]:
         """Invoke a specific model configuration through the ModelGateway with health check."""
         # 1. Health check: if provider is unhealthy / rate-limited, fail fast to next model
         health = provider_health_tracker.get_provider_health(model_cfg.provider)
@@ -135,10 +133,10 @@ class CollaborationEngine:
         stage_name: str,
         round_number: int,
         agent: Agent,
-        messages: List[ProviderMessage],
-        system_override: Optional[str] = None,
+        messages: list[ProviderMessage],
+        system_override: str | None = None,
         complexity: TaskComplexity = TaskComplexity.SIMPLE
-    ) -> Tuple[str, int, float, List[str]]:
+    ) -> tuple[str, int, float, list[str]]:
         """
         Executes an agent call with complexity awareness:
         - SIMPLE / EASY: calls ONLY the 1st model in the agent's preferred_models list.
@@ -187,7 +185,7 @@ class CollaborationEngine:
             ]
 
         # Gather successful responses
-        successful_resps: List[Tuple[ProviderResponse, AgentModelConfig]] = [
+        successful_resps: list[tuple[ProviderResponse, AgentModelConfig]] = [
             (resp, cfg) for resp, lat, err, cfg in model_results if resp is not None
         ]
 
@@ -264,7 +262,7 @@ class CollaborationEngine:
         synthesizer_agent: Agent,
         synthesis_prompt: str,
         complexity: TaskComplexity
-    ) -> Tuple[str, int, float, List[str]]:
+    ) -> tuple[str, int, float, list[str]]:
         """
         Parallel Multi-Model Synthesis:
         Calls multiple models for the Synthesizer (e.g. Gemini + OpenRouter DeepSeek) in parallel,
@@ -333,7 +331,7 @@ class CollaborationEngine:
         self,
         task_id: str,
         question: str,
-        participating_agents: Optional[List[Agent]] = None,
+        participating_agents: list[Agent] | None = None,
         require_evidence: bool = True,
         complexity: TaskComplexity = TaskComplexity.SIMPLE
     ) -> CollaborationResult:
@@ -347,12 +345,15 @@ class CollaborationEngine:
         session_id = generate_debate_id()
         start_total_time = time.perf_counter()
         total_tokens = 0
-        all_models_used: List[str] = []
-        rounds_log: List[CollaborationRoundLog] = []
+        all_models_used: list[str] = []
+        rounds_log: list[CollaborationRoundLog] = []
 
         if not participating_agents:
             agent_ids = ["architect", "security_analyst", "coder"]
-            participating_agents = [self.registry.get_agent(aid) for aid in agent_ids if self.registry.get_agent(aid)]
+            participating_agents = [
+                a for aid in agent_ids
+                if (a := self.registry.get_agent(aid)) is not None
+            ]
 
         synthesizer_agent = self.registry.get_agent("synthesizer") or participating_agents[0]
         critic_agent = self.registry.get_agent("critic") or participating_agents[-1]
@@ -365,7 +366,7 @@ class CollaborationEngine:
             session_id, len(participating_agents), complexity.value
         )
 
-        async def analyze_agent(agent: Agent) -> Tuple[Agent, str, int, List[str]]:
+        async def analyze_agent(agent: Agent) -> tuple[Agent, str, int, list[str]]:
             prompt = (
                 f"Question / Goal:\n{question}\n\n"
                 f"As the {agent.role}, provide your direct, concise technical recommendation and core rationale. "
@@ -383,7 +384,7 @@ class CollaborationEngine:
 
         # Execute all specialist perspectives simultaneously with asyncio.gather
         r1_results = await asyncio.gather(*[analyze_agent(agent) for agent in participating_agents])
-        round_1_messages: List[CollaborationMessage] = []
+        round_1_messages: list[CollaborationMessage] = []
 
         for agent, text, t_count, models in r1_results:
             total_tokens += t_count
@@ -531,7 +532,7 @@ class CollaborationEngine:
             for msg in round_1_messages:
                 if not msg.content.startswith("*[Specialist"):
                     extracted_proposals.append(f"### {msg.agent_role} Recommendation\n{msg.content}")
-            
+
             if extracted_proposals:
                 synthesis_text = (
                     "## Multi-Specialist Consolidated Recommendations\n\n" +

@@ -1,6 +1,6 @@
 """Evolution System Health, Population Diversity Tracking, and Mutation Feedback."""
 
-from typing import Any, Dict, List
+from typing import Any
 
 
 class EvolutionTrendIntelligence:
@@ -11,7 +11,7 @@ class EvolutionTrendIntelligence:
         generation_count: int = 15,
         population_size: int = 50,
         diversity_metric: float = 0.72
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Analyzes population convergence and recommends mutation/seeding adjustments."""
         # Detect if population is prematurely converging
         is_converging = diversity_metric < 0.45

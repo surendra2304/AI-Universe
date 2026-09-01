@@ -1,10 +1,12 @@
 """FastAPI Router for Usage Analytics, Provider Intelligence, Self-Optimization, and Admin Dashboards."""
 
-from typing import Any, Dict, List, Optional
-from fastapi import APIRouter, HTTPException, Path, Query, status
+from fastapi import APIRouter, Path, Query, status
 
 from app.alerts import alert_system
-from app.analytics.outcome_learning import DetailedOutcomeReport, outcome_learning_engine
+from app.analytics.outcome_learning import (
+    DetailedOutcomeReport,
+    outcome_learning_engine,
+)
 from app.analytics.outcomes import OutcomeReportRequest, consumer_outcome_tracker
 from app.analytics.predictive import predictive_provider_manager
 from app.analytics.provider_intel import provider_intel

@@ -3,7 +3,7 @@
 import asyncio
 import statistics
 import time
-from typing import List
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 
@@ -34,8 +34,8 @@ async def test_load_concurrent_consultations():
         "consultation_reason": "SCHEDULED"
     }
 
-    latencies: List[float] = []
-    status_codes: List[int] = []
+    latencies: list[float] = []
+    status_codes: list[int] = []
     decisions_count = 0
 
     transport = ASGITransport(app=app)
@@ -55,7 +55,7 @@ async def test_load_concurrent_consultations():
                     decision = AIUniverseDecision.model_validate(data)
                     return decision
                 return None
-            except Exception as e:
+            except Exception:
                 elapsed = time.perf_counter() - start_t
                 latencies.append(elapsed)
                 status_codes.append(500)

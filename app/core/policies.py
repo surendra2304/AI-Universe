@@ -1,8 +1,9 @@
 """System policies, execution guardrails, and provider switching rules across 7 Free Cloud Providers."""
 
 from enum import Enum
-from typing import Dict, List, Optional
-from pydantic import BaseModel, Field
+
+from pydantic import BaseModel
+
 from app.utils.logger import logger
 
 
@@ -22,7 +23,7 @@ class FallbackRoute(BaseModel):
 
 
 # Explicit provider fallback configuration for the 7 active verified free providers
-PROVIDER_FALLBACK_MATRIX: Dict[str, FallbackRoute] = {
+PROVIDER_FALLBACK_MATRIX: dict[str, FallbackRoute] = {
     "gemini": FallbackRoute(
         primary_provider="gemini",
         fallback_provider="openrouter",
@@ -72,8 +73,8 @@ class ProviderSwitchingPolicy:
     def get_fallback_provider(
         primary_provider: str,
         reason: SwitchReason,
-        stage: Optional[str] = None
-    ) -> Optional[FallbackRoute]:
+        stage: str | None = None
+    ) -> FallbackRoute | None:
         """
         Determines appropriate fallback provider upon error/quota exhaustion.
         Logs audit record with reason.
@@ -114,4 +115,4 @@ class SystemPolicies:
     REVIEW_MODE_BUDGET_THRESHOLD_USD: float = 0.02
 
     # Allowlist of safe operations
-    ALLOWED_TOOLS: List[str] = ["read_memory", "search_knowledge", "calculate"]
+    ALLOWED_TOOLS: list[str] = ["read_memory", "search_knowledge", "calculate"]

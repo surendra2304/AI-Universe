@@ -1,13 +1,13 @@
 """Quality Assurance & Output Self-Assessment Service."""
 
 import ast
-from typing import Any, Dict, List
+from typing import Any
 
 
 class QualityAssuranceService:
     """Evaluates syntactic validity, confidence honesty calibration, and multi-agent contradiction detection."""
 
-    def evaluate_code_syntax(self, code: str, language: str = "python") -> Dict[str, Any]:
+    def evaluate_code_syntax(self, code: str, language: str = "python") -> dict[str, Any]:
         """Validates Python syntax via AST parser."""
         if language.lower() == "python":
             try:
@@ -17,7 +17,7 @@ class QualityAssuranceService:
                 return {"is_valid": False, "error": f"SyntaxError at line {exc.lineno}: {exc.msg}"}
         return {"is_valid": True, "error": None}
 
-    def get_quality_report(self) -> Dict[str, Any]:
+    def get_quality_report(self) -> dict[str, Any]:
         """Returns quality trends, calibration curves, and agent performance."""
         return {
             "overall_output_quality_score": 96.4,

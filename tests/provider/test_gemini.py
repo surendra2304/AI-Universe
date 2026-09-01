@@ -1,9 +1,9 @@
 """Unit and mock tests for Google Gemini Provider adapter."""
 
-import json
-import pytest
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import httpx
-from unittest.mock import AsyncMock, patch, MagicMock
+import pytest
 
 from app.providers import get_provider
 from app.providers.base import ProviderMessage, ProviderRequest

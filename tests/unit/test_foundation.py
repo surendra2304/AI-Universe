@@ -1,17 +1,17 @@
 """Unit tests for configuration, logging, ID utilities, and health endpoint."""
 
-import pytest
 from fastapi.testclient import TestClient
-from app.core.config import Settings, settings
+
+from app.core.config import Settings
 from app.main import app
-from app.utils.logger import setup_logger
 from app.utils.ids import (
-    generate_task_id,
-    generate_run_id,
     generate_debate_id,
+    generate_deterministic_id,
     generate_message_id,
-    generate_deterministic_id
+    generate_run_id,
+    generate_task_id,
 )
+from app.utils.logger import setup_logger
 
 
 def test_settings_initialization():
@@ -57,4 +57,7 @@ def test_health_endpoint():
     with TestClient(app) as client:
         response = client.get("/health")
         assert response.status_code == 200
-        assert response.json() == {"status": "healthy"}
+        data = response.json()
+        assert data["status"] == "healthy"
+        assert "service" in data
+

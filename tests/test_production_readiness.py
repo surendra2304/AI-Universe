@@ -1,6 +1,5 @@
 """Production Readiness and Security Hardening Test Suite."""
 
-import pytest
 from fastapi.testclient import TestClient
 
 from app.ha.high_availability import ha_manager

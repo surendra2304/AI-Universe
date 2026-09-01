@@ -1,11 +1,12 @@
 """Unit tests for the Evaluator, rubrics, and Golden Benchmark dataset."""
 
 import json
+from unittest.mock import AsyncMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.evaluation.benchmarks import GOLDEN_BENCHMARK_SUITE, get_benchmark_by_id
-from app.evaluation.evaluator import Evaluator, evaluator
+from app.evaluation.evaluator import Evaluator
 from app.evaluation.rubrics import EVALUATION_RUBRICS, RUBRIC_DIMENSION_NAMES
 from app.providers.base import ProviderResponse
 

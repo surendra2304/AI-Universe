@@ -1,8 +1,8 @@
-import asyncio
 import json
 import os
 import sys
-from typing import Any, Dict, List, Tuple
+from typing import Any
+
 from fastapi.testclient import TestClient
 
 # Ensure UTF-8 output on Windows terminals
@@ -14,7 +14,7 @@ if sys.platform == "win32":
         pass
 
 from app.main import app
-from app.schemas.trading_consult import AIUniverseDecision, TradingConsultRequest
+from app.schemas.trading_consult import AIUniverseDecision
 
 FIXTURES_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tests", "fixtures")
 
@@ -30,11 +30,11 @@ class QualityAuditor:
 
     def __init__(self):
         self.client = TestClient(app)
-        self.violations: List[str] = []
+        self.violations: list[str] = []
         self.tests_run = 0
         self.tests_passed = 0
 
-    def audit_scenario(self, scenario_name: str, payload: Dict[str, Any]) -> Tuple[int, List[str]]:
+    def audit_scenario(self, scenario_name: str, payload: dict[str, Any]) -> tuple[int, list[str]]:
         """Sends request to /v1/trading/consult and evaluates response quality."""
         scenario_violations = []
         self.tests_run += 1

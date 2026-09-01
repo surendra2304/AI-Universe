@@ -1,28 +1,27 @@
 """Benchmark harness and automated experiment runner for Inference."""
 
-import asyncio
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 from app.core.orchestrator import OrchestrationRequest, Orchestrator
-from app.evaluation.benchmarks import GOLDEN_BENCHMARK_SUITE, BenchmarkTestCase
+from app.evaluation.benchmarks import GOLDEN_BENCHMARK_SUITE
 from app.evaluation.evaluator import Evaluator
 from app.memory.base import BaseMemory, ExperimentRecord
 from app.memory.sqlite import SQLiteMemory
 from app.providers import get_provider
 from app.providers.base import ProviderMessage, ProviderRequest
 from app.utils.ids import generate_id
-from app.utils.logger import logger
 
 
 class ExperimentRunRequest(BaseModel):
     """Payload to trigger an automated experiment."""
     experiment_type: str = Field(description="benchmark_suite, baseline_vs_debate, model_comparison")
     hypothesis: str
-    target_benchmarks: Optional[List[str]] = Field(default=None, description="Subset of benchmark IDs to run")
-    models_to_test: Optional[List[str]] = Field(default=None, description="List of providers/models for model_comparison")
-    custom_question: Optional[str] = None
+    target_benchmarks: list[str] | None = Field(default=None, description="Subset of benchmark IDs to run")
+    models_to_test: list[str] | None = Field(default=None, description="List of providers/models for model_comparison")
+    custom_question: str | None = None
 
 
 class BenchmarkHarness:
@@ -30,9 +29,9 @@ class BenchmarkHarness:
 
     def __init__(
         self,
-        memory: Optional[BaseMemory] = None,
-        orchestrator: Optional[Orchestrator] = None,
-        evaluator: Optional[Evaluator] = None
+        memory: BaseMemory | None = None,
+        orchestrator: Orchestrator | None = None,
+        evaluator: Evaluator | None = None
     ) -> None:
         self.memory = memory or SQLiteMemory()
         self.orchestrator = orchestrator or Orchestrator(memory=self.memory)
@@ -40,27 +39,27 @@ class BenchmarkHarness:
 
     async def run_benchmark_suite(
         self,
-        benchmark_ids: Optional[List[str]] = None
+        benchmark_ids: list[str] | None = None
     ) -> ExperimentRecord:
         """Runs the Golden Benchmark Suite and evaluates outputs."""
         exp_id = generate_id("exp_bench")
         start_time = time.perf_counter()
-        
+
         benchmarks = GOLDEN_BENCHMARK_SUITE
         if benchmark_ids:
             benchmarks = [b for b in benchmarks if b.id in benchmark_ids]
+        cases = benchmarks
 
-        results = []
-        for case in benchmarks:
-            logger.info("Executing benchmark case %s (%s)", case.id, case.domain)
-            orch_req = OrchestrationRequest(
+        results: list[dict[str, Any]] = []
+        for case in cases:
+            # 1. Run via Orchestrator in debate mode
+            orch_res = await self.orchestrator.process_task(OrchestrationRequest(
                 question=case.question,
-                mode=case.ideal_mode,
-                max_agents=5
-            )
-            orch_res = await self.orchestrator.process_task(orch_req)
-            
-            # Evaluate result
+                mode="debate",
+                require_evidence=True
+            ))
+
+            # 2. Evaluate with Evaluator
             eval_report = await self.evaluator.evaluate_answer(
                 question=case.question,
                 answer=orch_res.answer,
@@ -72,11 +71,9 @@ class BenchmarkHarness:
                 }
             )
 
-            # Check for presence of required key concepts
-            present_concepts = [
-                kw for kw in case.expected_key_concepts
-                if kw.lower() in orch_res.answer.lower()
-            ]
+            # 3. Check concepts
+            answer_lower = orch_res.answer.lower()
+            present_concepts = [c for c in case.expected_key_concepts if c.lower() in answer_lower]
             concept_coverage = len(present_concepts) / len(case.expected_key_concepts) if case.expected_key_concepts else 1.0
 
             results.append({
@@ -91,7 +88,8 @@ class BenchmarkHarness:
                 "total_tokens": orch_res.total_tokens
             })
 
-        avg_score = round(sum(r["overall_score"] for r in results) / len(results), 3) if results else 0.0
+        total_score: float = sum(float(r["overall_score"]) for r in results) if results else 0.0
+        avg_score: float = round(total_score / len(results), 3) if results else 0.0
         duration = round(time.perf_counter() - start_time, 2)
 
         exp_record = ExperimentRecord(
@@ -165,7 +163,7 @@ class BenchmarkHarness:
     async def run_model_comparison_matrix(
         self,
         prompt: str,
-        providers_to_test: Optional[List[str]] = None
+        providers_to_test: list[str] | None = None
     ) -> ExperimentRecord:
         """Tests the same prompt across different cloud providers."""
         exp_id = generate_id("exp_models")

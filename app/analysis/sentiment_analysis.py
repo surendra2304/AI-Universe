@@ -1,7 +1,7 @@
 """NLP Sentiment Analysis Engine for News Feeds and Social Media Signals."""
 
 import time
-from typing import Any, Dict, List
+from typing import Any
 
 
 class SentimentAnalysisEngine:
@@ -17,7 +17,7 @@ class SentimentAnalysisEngine:
             "fraud", "ban", "outflow", "recession", "insolvency", "sec"
         }
 
-    def analyze_news(self, news_items: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def analyze_news(self, news_items: list[dict[str, Any]]) -> dict[str, Any]:
         """Calculates time-decayed, credibility-weighted sentiment scores across news feeds."""
         if not news_items:
             return {"overall_score": 0.0, "classification": "NEUTRAL", "item_count": 0}

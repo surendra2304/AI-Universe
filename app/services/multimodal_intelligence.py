@@ -1,14 +1,21 @@
 """Multi-Modal Intelligence Processor: Text, Code, Structured JSON/CSV, URLs, and Images."""
 
 import json
-import time
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Literal
+
 from pydantic import BaseModel, Field
 
-from app.intelligence.counterfactual import CounterfactualResult, CounterfactualScenario, counterfactual_engine
+from app.intelligence.counterfactual import (
+    CounterfactualResult,
+    CounterfactualScenario,
+    counterfactual_engine,
+)
 from app.intelligence.explanations import AudienceExplanation, explanation_engine
-from app.intelligence.temporal import TemporalPatternResult, TimeSeriesPoint, temporal_reasoning_engine
-from app.utils.logger import logger
+from app.intelligence.temporal import (
+    TemporalPatternResult,
+    TimeSeriesPoint,
+    temporal_reasoning_engine,
+)
 
 ContentType = Literal["text", "code", "structured_data", "url", "image"]
 
@@ -16,18 +23,18 @@ ContentType = Literal["text", "code", "structured_data", "url", "image"]
 class AttachedContentItem(BaseModel):
     content_type: ContentType
     payload: str = Field(description="Raw text, code snippet, JSON string, URL, or image base64/URI")
-    language_or_mime: Optional[str] = None
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    language_or_mime: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class MultiModalIntelligenceRequest(BaseModel):
     request_id: str
     task_type: str = "strategic_decision"
     goal: str
-    attached_contents: List[AttachedContentItem]
-    temporal_context: Optional[str] = None
-    time_series_data: Optional[List[TimeSeriesPoint]] = None
-    what_if_scenario: Optional[CounterfactualScenario] = None
+    attached_contents: list[AttachedContentItem]
+    temporal_context: str | None = None
+    time_series_data: list[TimeSeriesPoint] | None = None
+    what_if_scenario: CounterfactualScenario | None = None
     audience: Literal["brief", "standard", "detailed"] = "standard"
 
 
@@ -36,19 +43,19 @@ class MultiModalIntelligenceResponse(BaseModel):
     decision: str
     point_estimate_with_ci: str = Field(description="Point estimate with 95% Confidence Interval")
     confidence: float
-    content_analysis_summaries: List[Dict[str, Any]]
+    content_analysis_summaries: list[dict[str, Any]]
     explanation: AudienceExplanation
-    temporal_insights: Optional[TemporalPatternResult] = None
-    counterfactual_analysis: Optional[CounterfactualResult] = None
-    limitation_notes: List[str] = Field(default_factory=list)
+    temporal_insights: TemporalPatternResult | None = None
+    counterfactual_analysis: CounterfactualResult | None = None
+    limitation_notes: list[str] = Field(default_factory=list)
 
 
 class MultiModalIntelligenceService:
     """Processes multi-modal intelligence queries across text, code, tables, URLs, and vision inputs."""
 
     async def analyze_multimodal(self, req: MultiModalIntelligenceRequest) -> MultiModalIntelligenceResponse:
-        content_summaries: List[Dict[str, Any]] = []
-        limitations: List[str] = []
+        content_summaries: list[dict[str, Any]] = []
+        limitations: list[str] = []
 
         for item in req.attached_contents:
             c_type = item.content_type
@@ -65,7 +72,7 @@ class MultiModalIntelligenceService:
                     ast.parse(item.payload)
                     syntax_status = "VALID_SYNTAX"
                 except Exception as e:
-                    syntax_status = f"SYNTAX_WARNING: {str(e)}"
+                    syntax_status = f"SYNTAX_WARNING: {e!s}"
                 content_summaries.append({
                     "type": "code",
                     "language": item.language_or_mime or "python",
@@ -88,7 +95,7 @@ class MultiModalIntelligenceService:
                 content_summaries.append({
                     "type": "url",
                     "target_url": item.payload,
-                    "summary": f"Target URL content fetched and indexed for evidence synthesis."
+                    "summary": "Target URL content fetched and indexed for evidence synthesis."
                 })
             elif c_type == "image":
                 limitations.append("Image processed via metadata & OCR analysis; fallback to structural bounding applied.")

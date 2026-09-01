@@ -1,12 +1,10 @@
 """A/B Experiment Management Service for Algorithmic Trading Bots."""
 
-import json
 import time
-from datetime import datetime
-from typing import Any, Dict, List, Optional
-from uuid import uuid4
+from datetime import datetime, timezone
+from typing import Any, Literal
 
-from app.memory.base import BaseMemory, MemoryRecord, TaskRecord
+from app.memory.base import BaseMemory
 from app.memory.sqlite import SQLiteMemory
 from app.schemas.trading_consult import (
     ExperimentConfigResponse,
@@ -23,15 +21,15 @@ class ExperimentService:
     Stores experiment metadata, arm telemetry snapshots, and computes comparative results.
     """
 
-    def __init__(self, memory: Optional[BaseMemory] = None) -> None:
+    def __init__(self, memory: BaseMemory | None = None) -> None:
         self.memory = memory or SQLiteMemory()
         # In-memory fast cache of active experiments
-        self._experiments: Dict[str, Dict[str, Any]] = {}
+        self._experiments: dict[str, dict[str, Any]] = {}
 
     def start_experiment(self, req: ExperimentStartRequest) -> ExperimentConfigResponse:
         """Initializes and registers a new A/B trading experiment."""
-        now_iso = datetime.utcnow().isoformat()
-        exp_data = {
+        now_iso = datetime.now(timezone.utc).isoformat()
+        exp_data: dict[str, Any] = {
             "experiment_id": req.experiment_id,
             "hypothesis": req.hypothesis,
             "duration_hours": req.duration_hours,
@@ -76,7 +74,7 @@ class ExperimentService:
         self,
         experiment_id: str,
         arm: str,
-        telemetry: Dict[str, Any],
+        telemetry: dict[str, Any],
         decision_id: str
     ) -> None:
         """Records a consultation event and telemetry snapshot for an arm."""
@@ -93,7 +91,7 @@ class ExperimentService:
                 "telemetry": telemetry
             })
 
-    def get_status(self, experiment_id: str) -> Optional[ExperimentStatusResponse]:
+    def get_status(self, experiment_id: str) -> ExperimentStatusResponse | None:
         """Returns the current status and telemetry summary of an experiment."""
         if experiment_id not in self._experiments:
             return None
@@ -112,7 +110,7 @@ class ExperimentService:
             latest_telemetry=exp["latest_telemetry"]
         )
 
-    def get_results(self, experiment_id: str) -> Optional[ExperimentResultsResponse]:
+    def get_results(self, experiment_id: str) -> ExperimentResultsResponse | None:
         """Computes comparative analysis and aggregates results across arms."""
         if experiment_id not in self._experiments:
             return None
@@ -156,17 +154,18 @@ class ExperimentService:
         elif c_dd < t_dd:
             control_score += 1
 
-        if treatment_score > control_score and (t_trades >= 10 or c_trades >= 10):
+        winner: Literal["CONTROL", "TREATMENT", "INCONCLUSIVE"]
+        if t_pf > c_pf * 1.05 and t_wr >= c_wr * 0.98 and t_trades >= 10:
             winner = "TREATMENT"
             conclusion = (
-                f"Treatment arm outperformed Control (PF: {t_pf:.2f} vs {c_pf:.2f}, "
-                f"WinRate: {t_wr*100:.1f}% vs {c_wr*100:.1f}%, MaxDD: {t_dd:.2f}% vs {c_dd:.2f}%). "
-                f"Recommend promoting Treatment calibrations to production."
+                f"Treatment demonstrated superior profit factor ({t_pf:.2f} vs {c_pf:.2f}) "
+                f"while maintaining comparable win rate ({t_wr*100:.1f}% vs {c_wr*100:.1f}%). "
+                f"Calibrated parameter changes generated higher statistical expectancy."
             )
-        elif control_score > treatment_score and (t_trades >= 10 or c_trades >= 10):
+        elif c_pf > t_pf * 1.05 and c_trades >= 10:
             winner = "CONTROL"
             conclusion = (
-                f"Control baseline outperformed Treatment (PF: {c_pf:.2f} vs {t_pf:.2f}, "
+                f"Control outperformed Treatment (PF: {c_pf:.2f} vs {t_pf:.2f} | "
                 f"MaxDD: {c_dd:.2f}% vs {t_dd:.2f}%). Treatment modifications did not demonstrate superior expectancy."
             )
         else:
@@ -176,7 +175,9 @@ class ExperimentService:
                 f"Both arms operating at comparable expectancy levels (Delta PF: {pf_diff:+.2f})."
             )
 
-        status_str = "COMPLETED" if elapsed >= exp["duration_hours"] else exp["status"]
+        status_str: Literal["ACTIVE", "COMPLETED", "TERMINATED"] = (
+            "COMPLETED" if elapsed >= exp["duration_hours"] else ("ACTIVE" if exp.get("status") != "TERMINATED" else "TERMINATED")
+        )
 
         return ExperimentResultsResponse(
             experiment_id=experiment_id,

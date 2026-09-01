@@ -1,6 +1,7 @@
 """Live Mode Consultation Profile with Stricter Bounds, Critic Veto, and Capital Preservation."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 from app.utils.logger import logger
 
 
@@ -17,12 +18,11 @@ class LiveConsultProfile:
         cls,
         decision_type: str,
         confidence: float,
-        proposed_changes: Dict[str, Any],
+        proposed_changes: dict[str, Any],
         critic_opposition_score: float = 0.0,
         total_trades: int = 0
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Applies conservative constraints and critic veto power to consultation output."""
-        status_flag = "VALID"
         modified_decision = decision_type
         rationale_additions = []
 

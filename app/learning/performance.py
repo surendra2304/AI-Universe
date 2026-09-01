@@ -1,7 +1,8 @@
 """Performance analytics and tracking for models, agents, and debate combinations."""
 
-from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field
+from typing import Any
+
+from pydantic import BaseModel
 
 from app.memory.base import BaseMemory
 from app.memory.sqlite import SQLiteMemory
@@ -22,7 +23,7 @@ class ModelPerformanceStats(BaseModel):
 class PerformanceTracker:
     """Calculates and persists statistics on models, agents, and critic effectiveness from SQLite audit trails."""
 
-    def __init__(self, memory: Optional[BaseMemory] = None) -> None:
+    def __init__(self, memory: BaseMemory | None = None) -> None:
         self.memory = memory or SQLiteMemory()
 
     async def record_task_outcome(
@@ -30,7 +31,7 @@ class PerformanceTracker:
         task_id: str,
         task_type: str,
         mode: str,
-        agents: List[str],
+        agents: list[str],
         score: float,
         latency_s: float,
         tokens: int
@@ -41,7 +42,7 @@ class PerformanceTracker:
             task_id, task_type, mode, score, latency_s
         )
 
-    async def compute_model_statistics(self) -> Dict[str, Any]:
+    async def compute_model_statistics(self) -> dict[str, Any]:
         """Queries the SQLite database to compute empirical performance benchmarks per provider/model."""
         return {
             "top_reasoning_model": "gemini-2.5-pro",

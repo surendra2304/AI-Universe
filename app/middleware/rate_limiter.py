@@ -8,7 +8,8 @@ Features:
 """
 
 import time
-from typing import Callable, Dict, List
+from collections.abc import Callable
+
 from fastapi import Request, Response, status
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -22,7 +23,7 @@ class EnhancedRateLimiterMiddleware(BaseHTTPMiddleware):
 
     def __init__(self, app) -> None:
         super().__init__(app)
-        self._request_history: Dict[str, List[float]] = {}
+        self._request_history: dict[str, list[float]] = {}
         self._window_seconds = 3600.0  # 1 hour sliding window
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:

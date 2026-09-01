@@ -1,6 +1,6 @@
 """Evaluation rubrics, scoring dimensions, and definitions for Inference."""
 
-from typing import Dict, List
+
 from pydantic import BaseModel, Field
 
 
@@ -14,7 +14,7 @@ class DimensionDefinition(BaseModel):
     is_deterministic: bool = Field(default=False, description="Whether dimension is calculated deterministically")
 
 
-EVALUATION_RUBRICS: Dict[str, DimensionDefinition] = {
+EVALUATION_RUBRICS: dict[str, DimensionDefinition] = {
     "correctness": DimensionDefinition(
         dimension="correctness",
         description="Is the answer factually, logically, and technically correct without hallucinations?",
@@ -81,4 +81,4 @@ EVALUATION_RUBRICS: Dict[str, DimensionDefinition] = {
     )
 }
 
-RUBRIC_DIMENSION_NAMES: List[str] = list(EVALUATION_RUBRICS.keys())
+RUBRIC_DIMENSION_NAMES: list[str] = list(EVALUATION_RUBRICS.keys())

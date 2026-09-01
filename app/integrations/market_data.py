@@ -1,8 +1,8 @@
 """Market Data Integrations with Public APIs and Multi-Source Normalization."""
 
-import asyncio
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 import httpx
 
 from app.utils.logger import logger
@@ -13,9 +13,9 @@ class MarketDataFetcher:
 
     def __init__(self, cache_ttl_sec: float = 10.0) -> None:
         self.cache_ttl = cache_ttl_sec
-        self._cache: Dict[str, Tuple[float, Any]] = {}
+        self._cache: dict[str, tuple[float, Any]] = {}
 
-    async def get_ohlcv(self, symbol: str = "BTCUSDT", interval: str = "1h", limit: int = 100) -> List[Dict[str, Any]]:
+    async def get_ohlcv(self, symbol: str = "BTCUSDT", interval: str = "1h", limit: int = 100) -> list[dict[str, Any]]:
         """Fetches OHLCV candlestick data from public endpoints with deterministic fallback."""
         cache_key = f"ohlcv:{symbol}:{interval}:{limit}"
         now = time.time()
@@ -53,17 +53,17 @@ class MarketDataFetcher:
         cur_price = base_price
         for i in range(limit):
             t_stamp = int((now - (limit - i) * 3600) * 1000)
-            delta = (math_sin := (i % 7 - 3) * 50.0) + (i % 3 - 1) * 20.0
+            delta = ((i % 7 - 3) * 50.0) + (i % 3 - 1) * 20.0
             o = cur_price
             c = round(cur_price + delta, 2)
             h = round(max(o, c) + abs(delta) * 0.4 + 20.0, 2)
-            l = round(min(o, c) - abs(delta) * 0.4 - 20.0, 2)
+            low_val = round(min(o, c) - abs(delta) * 0.4 - 20.0, 2)
             v = round(120.0 + (i % 5) * 30.0, 2)
             synthetic_candles.append({
                 "timestamp": t_stamp,
                 "open": o,
                 "high": h,
-                "low": l,
+                "low": low_val,
                 "close": c,
                 "volume": v,
                 "quote_volume": round(v * c, 2),
@@ -74,7 +74,7 @@ class MarketDataFetcher:
         self._cache[cache_key] = (now, synthetic_candles)
         return synthetic_candles
 
-    async def get_orderbook(self, symbol: str = "BTCUSDT", limit: int = 20) -> Dict[str, Any]:
+    async def get_orderbook(self, symbol: str = "BTCUSDT", limit: int = 20) -> dict[str, Any]:
         """Fetches orderbook snapshot."""
         cache_key = f"depth:{symbol}:{limit}"
         now = time.time()
@@ -110,7 +110,7 @@ class MarketDataFetcher:
         self._cache[cache_key] = (now, depth)
         return depth
 
-    async def get_news_and_social_feed(self, symbol: str = "BTC") -> List[Dict[str, Any]]:
+    async def get_news_and_social_feed(self, symbol: str = "BTC") -> list[dict[str, Any]]:
         """Aggregates public crypto news headlines and social discourse."""
         return [
             {

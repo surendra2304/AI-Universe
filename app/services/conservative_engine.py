@@ -1,6 +1,6 @@
 """Conservative Recommendation Engine prioritizing capital preservation and risk reduction."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class ConservativeRecommendationEngine:
@@ -12,8 +12,8 @@ class ConservativeRecommendationEngine:
         current_drawdown_pct: float,
         profit_factor: float,
         confidence: float,
-        proposed_action: Optional[str] = None
-    ) -> Dict[str, Any]:
+        proposed_action: str | None = None
+    ) -> dict[str, Any]:
         """Generates bounded conservative recommendation with explicit 'what could go wrong' analysis."""
         # 1. Immediate risk reduction if drawdown is elevated
         if current_drawdown_pct >= 5.0 or profit_factor < 1.0:

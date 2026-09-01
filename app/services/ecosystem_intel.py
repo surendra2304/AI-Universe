@@ -1,7 +1,8 @@
 """Central Ecosystem Intelligence Hub for System-Wide Diagnostics and Early Warning Alerts."""
 
 import time
-from typing import Any, Dict, List
+from typing import Any
+
 from app.analysis.cross_asset import cross_asset_engine
 from app.analysis.market_regime_intel import regime_intel
 from app.intelligence.meta_intel import meta_intelligence
@@ -11,7 +12,7 @@ from app.learning.continuous_learning import continuous_learning_engine
 class EcosystemIntelligenceHub:
     """Consolidates cross-market states, active strategy portfolios, continuous learning, and system-level early warnings."""
 
-    def get_ecosystem_intelligence_report(self) -> Dict[str, Any]:
+    def get_ecosystem_intelligence_report(self) -> dict[str, Any]:
         """Provides full real-time model of entire trading ecosystem."""
         regime_data = regime_intel.classify_market_regime()
         corr_data = cross_asset_engine.get_correlation_matrix()
@@ -36,9 +37,9 @@ class EcosystemIntelligenceHub:
 
     def conduct_ecosystem_consultation(
         self,
-        portfolio_positions: Dict[str, float],
-        active_strategies: List[str]
-    ) -> Dict[str, Any]:
+        portfolio_positions: dict[str, float],
+        active_strategies: list[str]
+    ) -> dict[str, Any]:
         """Generates comprehensive ecosystem-level advisory recommendations."""
         corr_analysis = cross_asset_engine.analyze_portfolio_correlation(portfolio_positions)
         regime_data = regime_intel.classify_market_regime()

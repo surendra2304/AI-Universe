@@ -1,16 +1,14 @@
 """Integration and Unit tests for Dynamic DAG Orchestration, Complexity Dispatch, and Health-Aware Routing."""
 
-import asyncio
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import AsyncMock, patch
-from fastapi.testclient import TestClient
 
 from app.core.dag import DAGNode, ExecutionDAG, TaskComplexity, classify_task_complexity
 from app.core.orchestrator import OrchestrationRequest, Orchestrator
 from app.memory.sqlite import SQLiteMemory
 from app.providers.base import ProviderResponse
 from app.providers.health import provider_health_tracker
-from app.agents.registry import agent_registry
 
 
 @pytest.fixture

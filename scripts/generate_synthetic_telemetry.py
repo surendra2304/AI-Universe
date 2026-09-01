@@ -2,12 +2,12 @@
 
 import json
 import os
-from typing import Any, Dict
+from typing import Any
 
 FIXTURES_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tests", "fixtures")
 
 
-def generate_healthy_telemetry() -> Dict[str, Any]:
+def generate_healthy_telemetry() -> dict[str, Any]:
     """Generates synthetic telemetry for a healthy, profitable trading bot."""
     return {
         "bot_id": "bot_healthy_alpha",
@@ -73,7 +73,7 @@ def generate_healthy_telemetry() -> Dict[str, Any]:
     }
 
 
-def generate_struggling_telemetry() -> Dict[str, Any]:
+def generate_struggling_telemetry() -> dict[str, Any]:
     """Generates synthetic telemetry for a bot experiencing severe drawdown and loss streaks."""
     return {
         "bot_id": "bot_struggling_beta",
@@ -139,7 +139,7 @@ def generate_struggling_telemetry() -> Dict[str, Any]:
     }
 
 
-def generate_insufficient_data_telemetry() -> Dict[str, Any]:
+def generate_insufficient_data_telemetry() -> dict[str, Any]:
     """Generates synthetic telemetry for a newly launched bot with <20 total trades."""
     return {
         "bot_id": "bot_newborn_gamma",
@@ -186,7 +186,7 @@ def generate_insufficient_data_telemetry() -> Dict[str, Any]:
     }
 
 
-def generate_mixed_strategies_telemetry() -> Dict[str, Any]:
+def generate_mixed_strategies_telemetry() -> dict[str, Any]:
     """Generates synthetic telemetry with 3 mixed strategies (1 profitable, 1 failing, 1 neutral)."""
     return {
         "bot_id": "bot_portfolio_delta",

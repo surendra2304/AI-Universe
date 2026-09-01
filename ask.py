@@ -1,4 +1,5 @@
 import sys
+
 import requests
 
 # Ensure UTF-8 output encoding for Windows PowerShell console
@@ -13,7 +14,7 @@ if not q.strip():
     print("Question cannot be empty.")
     sys.exit(0)
 
-print(f"\n[Inference Gateway] Routing to Multi-Agent Specialist Cluster...")
+print("\n[Inference Gateway] Routing to Multi-Agent Specialist Cluster...")
 try:
     r = requests.post(
         "https://inference-3i2b.onrender.com/v1/friday/ask",

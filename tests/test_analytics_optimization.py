@@ -1,10 +1,8 @@
 """Tests for Usage Analytics, Provider Intelligence, Self-Optimization, and Admin Dashboards."""
 
-import pytest
 from fastapi.testclient import TestClient
 
 from app.analytics.outcomes import OutcomeReportRequest, consumer_outcome_tracker
-from app.analytics.predictive import predictive_provider_manager
 from app.analytics.provider_intel import provider_intel
 from app.analytics.usage_analytics import usage_analytics
 from app.main import app
@@ -132,9 +130,8 @@ def test_analytics_and_admin_api_endpoints():
 
 def test_cost_aware_routing_and_token_optimization():
     """Tests CostAwareRouter, TokenOptimizationEngine, and ProviderCostTracker."""
-    from app.token_optimizer import token_optimizer
     from app.routing.cost_router import cost_aware_router
-    from app.analytics.cost_tracking import provider_cost_tracker
+    from app.token_optimizer import token_optimizer
 
     # 1. Cost-aware routing
     route_dec = cost_aware_router.route_request("nexus", "lead_qualification", estimated_tokens=1200)

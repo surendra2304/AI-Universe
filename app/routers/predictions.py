@@ -1,12 +1,10 @@
 """FastAPI Router for Deep Learning Predictions, Alternative Data Intelligence, and Performance Tracking."""
 
 import time
-from typing import Any, Dict, List, Optional
-from fastapi import APIRouter, HTTPException, Path, Query, status
-from pydantic import BaseModel, Field
+
+from fastapi import APIRouter, Path, Query, status
 
 from app.data.alternative_data import alt_data_engine
-from app.ml.deep_models import deep_models_engine
 from app.ml.prediction_aggregator import prediction_aggregator
 from app.ml.prediction_tracking import prediction_tracker
 

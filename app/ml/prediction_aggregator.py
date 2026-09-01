@@ -1,6 +1,7 @@
 """Prediction Aggregation Engine combining Deep Learning, Technicals, Sentiment, and On-Chain."""
 
-from typing import Any, Dict, List
+from typing import Any
+
 from app.data.alternative_data import alt_data_engine
 from app.ml.deep_models import deep_models_engine
 
@@ -12,8 +13,8 @@ class PredictionAggregationEngine:
         self,
         symbol: str,
         current_price: float,
-        recent_returns: List[float]
-    ) -> Dict[str, Any]:
+        recent_returns: list[float]
+    ) -> dict[str, Any]:
         """Generates unified ensemble directional signal and key drivers."""
         dl_pred = deep_models_engine.predict_horizons(symbol, current_price, recent_returns)
         alt_data = alt_data_engine.get_consolidated_alternative_data(symbol)

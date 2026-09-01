@@ -2,9 +2,11 @@
 
 import json
 import os
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import datetime
-from typing import Any, AsyncIterator, Dict, List, Optional
+from typing import Any
+
 import aiosqlite
 
 from app.core.config import settings
@@ -15,7 +17,7 @@ from app.memory.base import (
     MessageRecord,
     RunRecord,
     StrategyRecord,
-    TaskRecord
+    TaskRecord,
 )
 from app.utils.logger import logger
 
@@ -23,7 +25,7 @@ from app.utils.logger import logger
 class SQLiteMemory(BaseMemory):
     """Asynchronous SQLite storage implementation for agents, tasks, runs, messages, memories, strategies, and experiments."""
 
-    def __init__(self, db_path: Optional[str] = None) -> None:
+    def __init__(self, db_path: str | None = None) -> None:
         raw_path = db_path or settings.DATABASE_URL
         if raw_path.startswith("sqlite+aiosqlite:///"):
             self.db_path = raw_path[len("sqlite+aiosqlite:///"):]
@@ -31,8 +33,8 @@ class SQLiteMemory(BaseMemory):
             self.db_path = raw_path[len("sqlite:///"):]
         else:
             self.db_path = raw_path
-        
-        self._memory_conn: Optional[aiosqlite.Connection] = None
+
+        self._memory_conn: aiosqlite.Connection | None = None
 
     @asynccontextmanager
     async def connect(self) -> AsyncIterator[aiosqlite.Connection]:
@@ -46,8 +48,10 @@ class SQLiteMemory(BaseMemory):
             db_dir = os.path.dirname(os.path.abspath(self.db_path))
             if db_dir:
                 os.makedirs(db_dir, exist_ok=True)
-            async with aiosqlite.connect(self.db_path) as conn:
+            async with aiosqlite.connect(self.db_path, timeout=30.0) as conn:
                 conn.row_factory = aiosqlite.Row
+                await conn.execute("PRAGMA journal_mode=WAL;")
+                await conn.execute("PRAGMA busy_timeout=30000;")
                 yield conn
 
     async def close(self) -> None:
@@ -176,7 +180,7 @@ class SQLiteMemory(BaseMemory):
             await db.commit()
             logger.info("SQLite database initialized at: %s", self.db_path)
 
-    async def save_agent(self, agent_data: Dict[str, Any]) -> None:
+    async def save_agent(self, agent_data: dict[str, Any]) -> None:
         """Persist or update an agent configuration record."""
         agent_id = agent_data.get("id")
         name = agent_data.get("name", "")
@@ -229,7 +233,7 @@ class SQLiteMemory(BaseMemory):
             ))
             await db.commit()
 
-    async def get_task(self, task_id: str) -> Optional[TaskRecord]:
+    async def get_task(self, task_id: str) -> TaskRecord | None:
         """Retrieve a task record by its ID."""
         async with self.connect() as db:
             async with db.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)) as cursor:
@@ -300,26 +304,25 @@ class SQLiteMemory(BaseMemory):
             ))
             await db.commit()
 
-    async def get_task_messages(self, task_id: str) -> List[MessageRecord]:
+    async def get_task_messages(self, task_id: str) -> list[MessageRecord]:
         """Retrieve all messages associated with a task ID."""
-        records: List[MessageRecord] = []
-        async with self.connect() as db:
-            async with db.execute(
-                "SELECT * FROM messages WHERE task_id = ? ORDER BY created_at ASC",
-                (task_id,)
-            ) as cursor:
-                rows = await cursor.fetchall()
-                for row in rows:
-                    records.append(MessageRecord(
-                        id=row["id"],
-                        run_id=row["run_id"],
-                        task_id=row["task_id"],
-                        role=row["role"],
-                        agent_id=row["agent_id"],
-                        content=row["content"],
-                        stage=row["stage"],
-                        created_at=datetime.fromisoformat(row["created_at"])
-                    ))
+        records: list[MessageRecord] = []
+        async with self.connect() as db, db.execute(
+            "SELECT * FROM messages WHERE task_id = ? ORDER BY created_at ASC",
+            (task_id,)
+        ) as cursor:
+            rows = await cursor.fetchall()
+            for row in rows:
+                records.append(MessageRecord(
+                    id=row["id"],
+                    run_id=row["run_id"],
+                    task_id=row["task_id"],
+                    role=row["role"],
+                    agent_id=row["agent_id"],
+                    content=row["content"],
+                    stage=row["stage"],
+                    created_at=datetime.fromisoformat(row["created_at"])
+                ))
         return records
 
     async def save_memory(self, memory: MemoryRecord) -> None:
@@ -351,11 +354,11 @@ class SQLiteMemory(BaseMemory):
         self,
         agent_id: str,
         limit: int = 10,
-        memory_type: Optional[str] = None
-    ) -> List[MemoryRecord]:
+        memory_type: str | None = None
+    ) -> list[MemoryRecord]:
         """Retrieve memories strictly scoped to a specific agent_id."""
         query = "SELECT * FROM memories WHERE agent_id = ?"
-        params: List[Any] = [agent_id]
+        params: list[Any] = [agent_id]
 
         if memory_type:
             query += " AND memory_type = ?"
@@ -364,7 +367,7 @@ class SQLiteMemory(BaseMemory):
         query += " ORDER BY importance DESC, created_at DESC LIMIT ?"
         params.append(limit)
 
-        records: List[MemoryRecord] = []
+        records: list[MemoryRecord] = []
         async with self.connect() as db:
             async with db.execute(query, params) as cursor:
                 rows = await cursor.fetchall()
@@ -384,12 +387,12 @@ class SQLiteMemory(BaseMemory):
     async def search_memories(
         self,
         query: str,
-        agent_id: Optional[str] = None,
+        agent_id: str | None = None,
         limit: int = 5
-    ) -> List[MemoryRecord]:
+    ) -> list[MemoryRecord]:
         """Search memory records matching text, optionally filtered by agent_id."""
         sql = "SELECT * FROM memories WHERE content LIKE ?"
-        params: List[Any] = [f"%{query}%"]
+        params: list[Any] = [f"%{query}%"]
 
         if agent_id:
             sql += " AND agent_id = ?"
@@ -398,7 +401,7 @@ class SQLiteMemory(BaseMemory):
         sql += " ORDER BY importance DESC LIMIT ?"
         params.append(limit)
 
-        records: List[MemoryRecord] = []
+        records: list[MemoryRecord] = []
         async with self.connect() as db:
             async with db.execute(sql, params) as cursor:
                 rows = await cursor.fetchall()
@@ -451,7 +454,7 @@ class SQLiteMemory(BaseMemory):
             ))
             await db.commit()
 
-    async def get_strategy(self, task_type: str) -> Optional[StrategyRecord]:
+    async def get_strategy(self, task_type: str) -> StrategyRecord | None:
         """Retrieve the best learned strategy for a specific task type."""
         async with self.connect() as db:
             async with db.execute(
@@ -477,9 +480,9 @@ class SQLiteMemory(BaseMemory):
                     metadata=meta
                 )
 
-    async def list_strategies(self) -> List[StrategyRecord]:
+    async def list_strategies(self) -> list[StrategyRecord]:
         """List all learned strategies."""
-        records: List[StrategyRecord] = []
+        records: list[StrategyRecord] = []
         async with self.connect() as db:
             async with db.execute("SELECT * FROM strategies ORDER BY score DESC") as cursor:
                 rows = await cursor.fetchall()
@@ -523,7 +526,7 @@ class SQLiteMemory(BaseMemory):
             ))
             await db.commit()
 
-    async def get_experiment(self, experiment_id: str) -> Optional[ExperimentRecord]:
+    async def get_experiment(self, experiment_id: str) -> ExperimentRecord | None:
         """Retrieve experiment details by ID."""
         async with self.connect() as db:
             async with db.execute("SELECT * FROM experiments WHERE id = ?", (experiment_id,)) as cursor:

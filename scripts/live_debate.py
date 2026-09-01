@@ -2,13 +2,14 @@
 
 import asyncio
 import sys
+
 from rich.console import Console
+from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.table import Table
-from rich.markdown import Markdown
 
-from app.core.orchestrator import orchestrator
 from app.agents.roles import get_all_specialist_agents
+from app.core.orchestrator import orchestrator
 
 # Configure stdout
 sys.stdout.reconfigure(encoding="utf-8")
@@ -75,7 +76,7 @@ async def run_live_debate(question: str, use_all_agents: bool = True):
         for msg in r.messages:
             color = ROLE_COLORS.get(msg.agent_role, "white")
             target = f" [dim](Targeting: {msg.target_agent_id})[/dim]" if msg.target_agent_id else ""
-            
+
             console.print(Panel(
                 Markdown(msg.content),
                 title=f"[{color}]{msg.agent_role} ({msg.agent_id}){target}[/{color}]",

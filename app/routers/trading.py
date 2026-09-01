@@ -5,10 +5,10 @@ import json
 import time
 from collections import defaultdict
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException, Request, Response, status
+from fastapi import APIRouter, HTTPException, Request, status
 
 from app.agents.registry import agent_registry
 from app.schemas.trading_consult import (
@@ -28,7 +28,7 @@ from app.utils.logger import logger
 router = APIRouter(prefix="/v1/trading", tags=["Trading Consultation"])
 
 # In-memory sliding-window rate limiter: max 20 requests per bot_id per hour (3600s)
-_bot_request_timestamps: Dict[str, List[float]] = defaultdict(list)
+_bot_request_timestamps: dict[str, list[float]] = defaultdict(list)
 RATE_LIMIT_WINDOW_SECONDS = 3600.0
 RATE_LIMIT_MAX_REQUESTS = 20
 
@@ -95,7 +95,7 @@ async def consult_trading_bot(request: Request) -> AIUniverseDecision:
     except Exception as parse_err:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid JSON payload: {str(parse_err)}"
+            detail=f"Invalid JSON payload: {parse_err!s}"
         )
 
     _scan_for_forbidden_keys(raw_json)
@@ -106,7 +106,7 @@ async def consult_trading_bot(request: Request) -> AIUniverseDecision:
     except Exception as val_err:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Schema validation error: {str(val_err)}"
+            detail=f"Schema validation error: {val_err!s}"
         )
 
     # 4. Rate limiting per bot_id
@@ -139,7 +139,7 @@ async def consult_trading_bot(request: Request) -> AIUniverseDecision:
         logger.error("Error executing trading consultation: %s", str(exc))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Consultation orchestration failure: {str(exc)}"
+            detail=f"Consultation orchestration failure: {exc!s}"
         )
 
 

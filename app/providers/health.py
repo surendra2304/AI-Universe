@@ -1,7 +1,8 @@
 """Provider Health Tracking Subsystem for Inference."""
 
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 
@@ -17,9 +18,9 @@ class ProviderHealthReport(BaseModel):
     consecutive_failures: int = 0
     average_latency_seconds: float = 0.0
     last_latency_seconds: float = 0.0
-    last_success_timestamp: Optional[float] = None
-    last_failure_timestamp: Optional[float] = None
-    last_error_message: Optional[str] = None
+    last_success_timestamp: float | None = None
+    last_failure_timestamp: float | None = None
+    last_error_message: str | None = None
     active_keys_count: int = 0
     quarantined_keys_count: int = 0
 
@@ -28,9 +29,9 @@ class ProviderHealthTracker:
     """Tracks latency, success rate, 429 rate limits, and health scores across providers."""
 
     def __init__(self) -> None:
-        self._stats: Dict[str, Dict[str, Any]] = {}
+        self._stats: dict[str, dict[str, Any]] = {}
 
-    def _get_or_create(self, provider_name: str) -> Dict[str, Any]:
+    def _get_or_create(self, provider_name: str) -> dict[str, Any]:
         prov = provider_name.lower().strip()
         if prov not in self._stats:
             self._stats[prov] = {
@@ -122,7 +123,7 @@ class ProviderHealthTracker:
             quarantined_keys_count=stats["quarantined_keys"]
         )
 
-    def get_all_health(self) -> Dict[str, ProviderHealthReport]:
+    def get_all_health(self) -> dict[str, ProviderHealthReport]:
         """Returns health reports for all tracked providers."""
         return {prov: self.get_provider_health(prov) for prov in self._stats.keys()}
 

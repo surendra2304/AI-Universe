@@ -4,21 +4,24 @@ import asyncio
 import json
 import time
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Literal, cast
 from uuid import uuid4
 
 from app.agents.base import Agent
 from app.agents.registry import agent_registry
 from app.config_production import production_config
-from app.core.dag import TaskComplexity
-from app.memory.base import BaseMemory, MemoryRecord, MessageRecord, RunRecord, TaskRecord
+from app.memory.base import (
+    BaseMemory,
+    MemoryRecord,
+    MessageRecord,
+    RunRecord,
+    TaskRecord,
+)
 from app.memory.sqlite import SQLiteMemory
 from app.monitoring import monitor
 from app.optimization import circuit_breaker, concurrency_controller, telemetry_cache
-from app.providers import get_provider
 from app.providers.base import ProviderMessage, ProviderRequest
 from app.providers.gateway import model_gateway
-from app.providers.health import provider_health_tracker
 from app.schemas.trading_consult import (
     AIUniverseDecision,
     ParameterChange,
@@ -27,7 +30,11 @@ from app.schemas.trading_consult import (
     TradingConsultRequest,
 )
 from app.services.experiment_service import experiment_service
-from app.utils.ids import generate_debate_id, generate_message_id, generate_run_id, generate_task_id
+from app.utils.ids import (
+    generate_message_id,
+    generate_run_id,
+    generate_task_id,
+)
 from app.utils.logger import logger
 
 
@@ -48,8 +55,8 @@ class TradingConsultService:
     9. Advisory output only: NEVER executes trades or interfaces with exchange APIs.
     """
 
-    def __init__(self, memory: Optional[BaseMemory] = None) -> None:
-        self.memory = memory or SQLiteMemory()
+    def __init__(self, memory: BaseMemory | None = None) -> None:
+        self.memory: SQLiteMemory = cast(SQLiteMemory, memory) if memory is not None else SQLiteMemory()
         self.registry = agent_registry
 
     def _format_context(self, req: TradingConsultRequest) -> str:
@@ -94,7 +101,8 @@ class TradingConsultService:
             lines.append("")
             lines.append("=== A/B TESTING: CONTROL BASELINE METRICS ===")
             c = req.control_metrics
-            c_wr = c.get('win_rate', 0.0) * 100 if isinstance(c.get('win_rate'), (int, float)) and c.get('win_rate') <= 1.0 else c.get('win_rate', 'N/A')
+            c_val = c.get('win_rate')
+            c_wr = f"{c_val * 100:.1f}" if isinstance(c_val, (int, float)) and c_val <= 1.0 else str(c_val or 'N/A')
             lines.append(f"Control Profit Factor: {c.get('profit_factor', 'N/A')} | Control Win Rate: {c_wr}% | Control Max DD: {c.get('max_drawdown_pct', 'N/A')}%")
             if "total_trades" in c:
                 lines.append(f"Control Total Trades: {c.get('total_trades')}")
@@ -128,7 +136,7 @@ class TradingConsultService:
         round_number: int,
         agent: Agent,
         prompt: str,
-        system_instructions: Optional[str] = None
+        system_instructions: str | None = None
     ) -> str:
         """Invokes a specialist agent using ModelGateway, monitoring provider latency and circuit breakers."""
         monitor.record_agent_participation(agent.id)
@@ -176,8 +184,8 @@ class TradingConsultService:
                 model=resp.model if resp else agent.model_name,
                 stage=stage_name,
                 latency_seconds=latency,
-                input_tokens=resp.prompt_tokens if resp else 0,
-                output_tokens=resp.completion_tokens if resp else 0,
+                prompt_tokens=resp.prompt_tokens if (resp and resp.prompt_tokens is not None) else 0,
+                completion_tokens=resp.completion_tokens if (resp and resp.completion_tokens is not None) else 0,
                 status="completed"
             ))
 
@@ -269,7 +277,7 @@ class TradingConsultService:
     def _compare_treatment_vs_control(
         self,
         req: TradingConsultRequest
-    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    ) -> tuple[str | None, str | None, str | None]:
         """Compares Treatment arm performance against Control baseline metrics."""
         if req.experiment_group != "TREATMENT" or not req.control_metrics:
             if req.experiment_group == "CONTROL":
@@ -288,7 +296,6 @@ class TradingConsultService:
 
         pf_delta = t.profit_factor - c_pf
         wr_delta = (t.win_rate - c_wr) * 100.0
-        dd_delta = t.max_drawdown_pct - c_dd
 
         if t.max_drawdown_pct >= c_dd * 1.5 or t.profit_factor <= c_pf * 0.8:
             status = "UNDERPERFORMING_CONTROL"
@@ -316,7 +323,7 @@ class TradingConsultService:
 
         return status, rationale, improvement
 
-    def _generate_testnet_risk_assessment(self, req: TradingConsultRequest) -> Optional[str]:
+    def _generate_testnet_risk_assessment(self, req: TradingConsultRequest) -> str | None:
         """Generates dedicated testnet risk assessment if operating in TESTNET mode."""
         if req.trading_mode != "TESTNET":
             return None
@@ -325,7 +332,7 @@ class TradingConsultService:
         ts = req.testnet_specific
 
         assessment_parts = [
-            f"TESTNET RISK ASSESSMENT: Operating on live testnet infrastructure with real market depth & orderbook fills."
+            "TESTNET RISK ASSESSMENT: Operating on live testnet infrastructure with real market depth & orderbook fills."
         ]
 
         if ts:
@@ -398,7 +405,7 @@ class TradingConsultService:
             )
 
         # 3. Derive Bounded Recommendations (Max 2, prefer 1)
-        changes: List[ParameterChange] = []
+        changes: list[ParameterChange] = []
         risk_narrative = ""
         regime_narrative = ""
         dissent_narrative = ""
@@ -517,7 +524,7 @@ class TradingConsultService:
             dissent_narrative = "Panel considered parameter adjustments but opted for conservative holding pattern."
 
         bounded_changes = changes[:2]
-        status_val = "RECOMMENDATION" if bounded_changes else "NO_CHANGE"
+        status_val: Literal["RECOMMENDATION", "NO_CHANGE", "INSUFFICIENT_DATA"] = "RECOMMENDATION" if bounded_changes else "NO_CHANGE"
 
         debate_summary = (
             f"Multi-Agent Deliberation:\n"
@@ -567,7 +574,6 @@ class TradingConsultService:
     async def _consult_internal(self, req: TradingConsultRequest) -> AIUniverseDecision:
         """Internal multi-agent debate pipeline."""
         task_id = generate_task_id()
-        session_id = generate_debate_id()
         context_str = self._format_context(req)
 
         # Retrieve specialist agents
@@ -575,7 +581,6 @@ class TradingConsultService:
         strategist = self.registry.get_agent("strategist") or trading_analyst
         critic = self.registry.get_agent("critic") or trading_analyst
         data_analyst = self.registry.get_agent("data_analyst") or trading_analyst
-        synthesizer = self.registry.get_agent("synthesizer") or trading_analyst
 
         # Save initial task record in memory
         task_record = TaskRecord(
@@ -676,7 +681,7 @@ class TradingConsultService:
 
         return decision
 
-    async def get_decision_by_id(self, decision_id: str) -> Optional[AIUniverseDecision]:
+    async def get_decision_by_id(self, decision_id: str) -> AIUniverseDecision | None:
         """Retrieves a past advisory decision from memory."""
         async with self.memory.connect() as db:
             async with db.execute(
@@ -695,29 +700,28 @@ class TradingConsultService:
 
     async def get_testnet_performance(self) -> TestnetPerformanceResponse:
         """Aggregates historical testnet consultations vs paper trading consultations."""
-        testnet_entries: List[Dict[str, Any]] = []
-        paper_entries: List[Dict[str, Any]] = []
+        testnet_entries: list[dict[str, Any]] = []
+        paper_entries: list[dict[str, Any]] = []
 
-        async with self.memory.connect() as db:
-            async with db.execute(
-                "SELECT * FROM tasks WHERE mode = 'trading_consult' AND result IS NOT NULL"
-            ) as cursor:
-                rows = await cursor.fetchall()
-                for r in rows:
-                    meta = json.loads(r["metadata_json"]) if r["metadata_json"] else {}
-                    t_mode = meta.get("trading_mode", "PAPER")
-                    entry = {
-                        "win_rate": meta.get("win_rate", 0.5),
-                        "profit_factor": meta.get("profit_factor", 1.0),
-                        "max_drawdown_pct": meta.get("max_drawdown_pct", 4.0),
-                        "total_trades": meta.get("total_trades", 0)
-                    }
-                    if t_mode == "TESTNET":
-                        testnet_entries.append(entry)
-                    else:
-                        paper_entries.append(entry)
+        async with self.memory.connect() as db, db.execute(
+            "SELECT * FROM tasks WHERE mode = 'trading_consult' AND result IS NOT NULL"
+        ) as cursor:
+            rows = await cursor.fetchall()
+            for r in rows:
+                meta = json.loads(r["metadata_json"]) if r["metadata_json"] else {}
+                t_mode = meta.get("trading_mode", "PAPER")
+                entry = {
+                    "win_rate": meta.get("win_rate", 0.5),
+                    "profit_factor": meta.get("profit_factor", 1.0),
+                    "max_drawdown_pct": meta.get("max_drawdown_pct", 4.0),
+                    "total_trades": meta.get("total_trades", 0)
+                }
+                if t_mode == "TESTNET":
+                    testnet_entries.append(entry)
+                else:
+                    paper_entries.append(entry)
 
-        def _calc_stats(entries: List[Dict[str, Any]]) -> Dict[str, Any]:
+        def _calc_stats(entries: list[dict[str, Any]]) -> dict[str, Any]:
             if not entries:
                 return {
                     "count": 0,

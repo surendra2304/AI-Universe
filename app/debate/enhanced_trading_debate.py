@@ -1,6 +1,7 @@
 """Enhanced Multi-Agent Trading Debate Engine with Specialized Domain Analysts."""
 
-from typing import Any, Dict, List
+from typing import Any
+
 from app.analysis.onchain_analytics import onchain_engine
 from app.analysis.sentiment_analysis import sentiment_engine
 from app.analysis.technical_analysis import ta_engine
@@ -20,10 +21,10 @@ class EnhancedTradingDebateEngine:
     async def conduct_advanced_market_deliberation(
         self,
         symbol: str,
-        candles: List[Dict[str, Any]],
-        news_feed: List[Dict[str, Any]],
-        orderbook: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        candles: list[dict[str, Any]],
+        news_feed: list[dict[str, Any]],
+        orderbook: dict[str, Any]
+    ) -> dict[str, Any]:
         """Runs a 3-round multi-agent market analysis deliberation."""
         # Step 1: Analytics generation
         indicators = ta_engine.calculate_indicators(candles)
@@ -62,9 +63,12 @@ class EnhancedTradingDebateEngine:
         }
 
         # Weighted consensus calculation
-        specialists = [ta_perspective, sent_perspective, onchain_perspective, quant_perspective]
-        total_conf = sum(s["confidence"] for s in specialists)
-        weighted_bias_score = sum((1.0 if s["bias"] == "BULLISH" else (-1.0 if s["bias"] == "BEARISH" else 0.0)) * s["confidence"] for s in specialists) / total_conf
+        specialists: list[dict[str, Any]] = [ta_perspective, sent_perspective, onchain_perspective, quant_perspective]
+        total_conf = sum(float(s.get("confidence", 0.8)) for s in specialists)
+        weighted_bias_score = sum(
+            (1.0 if s.get("bias") == "BULLISH" else (-1.0 if s.get("bias") == "BEARISH" else 0.0)) * float(s.get("confidence", 0.8))
+            for s in specialists
+        ) / (total_conf if total_conf > 0 else 1.0)
 
         overall_consensus = "BULLISH_CONVERGENCE" if weighted_bias_score >= 0.3 else ("BEARISH_DIVERGENCE" if weighted_bias_score <= -0.3 else "NEUTRAL_CONSOLIDATION")
         overall_confidence = round(total_conf / len(specialists), 2)

@@ -1,6 +1,5 @@
 """Unit & Integration Tests for IntelX Deep Research Intelligence Endpoints."""
 
-import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app

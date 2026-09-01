@@ -1,8 +1,9 @@
 """Pydantic schemas for Trading Consultation Subsystem, A/B Testing, and Testnet Support."""
 
 from datetime import datetime
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Literal
 from uuid import uuid4
+
 from pydantic import BaseModel, Field
 
 
@@ -16,7 +17,7 @@ class TradingTelemetry(BaseModel):
     max_drawdown_pct: float = Field(description="Peak-to-trough drawdown percentage")
     consecutive_losses: int = Field(ge=0, description="Current consecutive losing trade count")
     total_trades: int = Field(ge=0, description="Total count of completed trades")
-    sharpe_ratio: Optional[float] = Field(default=None, description="Annualized or period Sharpe ratio")
+    sharpe_ratio: float | None = Field(default=None, description="Annualized or period Sharpe ratio")
 
 
 class StrategyPerformance(BaseModel):
@@ -44,27 +45,27 @@ class TradingConsultRequest(BaseModel):
     """Advisory request submitted by an autonomous trading bot instance."""
     bot_id: str = Field(description="Unique identifier of the consulting bot instance")
     trading_mode: Literal["PAPER", "TESTNET"] = Field(description="Operational mode (only non-live modes allowed)")
-    testnet_specific: Optional[TestnetContext] = Field(
+    testnet_specific: TestnetContext | None = Field(
         default=None,
         description="Testnet-specific live exchange state when operating on testnet"
     )
-    experiment_id: Optional[str] = Field(default=None, description="Optional experiment tracking identifier")
-    experiment_group: Optional[Literal["CONTROL", "TREATMENT"]] = Field(
+    experiment_id: str | None = Field(default=None, description="Optional experiment tracking identifier")
+    experiment_group: Literal["CONTROL", "TREATMENT"] | None = Field(
         default=None,
         description="A/B testing arm identifier (CONTROL or TREATMENT)"
     )
-    control_metrics: Optional[Dict[str, Any]] = Field(
+    control_metrics: dict[str, Any] | None = Field(
         default=None,
         description="Baseline metrics from the control arm for comparison analysis"
     )
     telemetry: TradingTelemetry = Field(description="High-level account and performance telemetry")
-    strategy_performance: List[StrategyPerformance] = Field(default_factory=list, description="Per-strategy performance telemetry")
-    current_parameters: Dict[str, Dict[str, Any]] = Field(
+    strategy_performance: list[StrategyPerformance] = Field(default_factory=list, description="Per-strategy performance telemetry")
+    current_parameters: dict[str, dict[str, Any]] = Field(
         default_factory=dict,
         description="Current live parameters: strategy_name -> parameter_name -> current_value"
     )
-    regime_data: Optional[Dict[str, Any]] = Field(default=None, description="Market regime indicators, volatility, trend state")
-    recent_trades: Optional[List[Dict[str, Any]]] = Field(
+    regime_data: dict[str, Any] | None = Field(default=None, description="Market regime indicators, volatility, trend state")
+    recent_trades: list[dict[str, Any]] | None = Field(
         default=None,
         description="Last 10-20 closed trades with entry, exit, pnl, side, duration"
     )
@@ -94,7 +95,7 @@ class AIUniverseDecision(BaseModel):
         description="Advisory status outcome"
     )
     confidence: float = Field(ge=0.0, le=1.0, description="Confidence score in the recommendation (0.0 to 1.0)")
-    parameter_changes: List[ParameterChange] = Field(
+    parameter_changes: list[ParameterChange] = Field(
         default_factory=list,
         description="Bounded parameter changes (maximum 2, prefer 1)"
     )
@@ -104,20 +105,20 @@ class AIUniverseDecision(BaseModel):
     debate_summary: str = Field(description="Condensed multi-agent deliberation trail across specialists")
     valid_until: str = Field(description="ISO 8601 expiration timestamp for this advisory decision (default 24h)")
     # A/B testing fields
-    comparison_rationale: Optional[str] = Field(
+    comparison_rationale: str | None = Field(
         default=None,
         description="Detailed comparative rationale explaining how this recommendation differs from or relates to the control baseline"
     )
-    expected_improvement: Optional[str] = Field(
+    expected_improvement: str | None = Field(
         default=None,
         description="Quantitative estimate of expected performance improvement based on historical telemetry"
     )
-    treatment_status: Optional[str] = Field(
+    treatment_status: str | None = Field(
         default=None,
         description="Performance status relative to control (e.g., OUTPERFORMING_CONTROL, PARITY, UNDERPERFORMING_CONTROL)"
     )
     # Testnet-specific fields
-    testnet_risk_assessment: Optional[str] = Field(
+    testnet_risk_assessment: str | None = Field(
         default=None,
         description="Testnet-specific capital preservation analysis, margin level evaluation, and position sizing guidelines"
     )
@@ -128,15 +129,15 @@ class AIUniverseDecision(BaseModel):
 class ExperimentStartRequest(BaseModel):
     """Payload to register and launch a new A/B trading experiment."""
     experiment_id: str = Field(description="Unique experiment identifier")
-    hypothesis: Optional[str] = Field(default=None, description="Hypothesis being evaluated in the experiment")
+    hypothesis: str | None = Field(default=None, description="Hypothesis being evaluated in the experiment")
     duration_hours: float = Field(default=72.0, ge=1.0, description="Scheduled duration of the experiment in hours")
-    success_metrics: List[str] = Field(
+    success_metrics: list[str] = Field(
         default_factory=lambda: ["profit_factor", "win_rate", "max_drawdown_pct", "sharpe_ratio"],
         description="Key metrics used to determine the winning arm"
     )
     control_bot_id: str = Field(description="Bot instance identifier assigned to the CONTROL arm")
     treatment_bot_id: str = Field(description="Bot instance identifier assigned to the TREATMENT arm")
-    initial_parameters: Optional[Dict[str, Any]] = Field(
+    initial_parameters: dict[str, Any] | None = Field(
         default_factory=dict,
         description="Baseline parameter configuration for both arms at experiment start"
     )
@@ -148,9 +149,9 @@ class ExperimentConfigResponse(BaseModel):
     status: Literal["ACTIVE", "COMPLETED", "TERMINATED"] = "ACTIVE"
     start_time: str
     duration_hours: float
-    control_config: Dict[str, Any]
-    treatment_config: Dict[str, Any]
-    success_metrics: List[str]
+    control_config: dict[str, Any]
+    treatment_config: dict[str, Any]
+    success_metrics: list[str]
     message: str = "A/B Experiment successfully initialized."
 
 
@@ -161,23 +162,23 @@ class ExperimentStatusResponse(BaseModel):
     start_time: str
     elapsed_hours: float
     duration_hours: float
-    active_arms: List[str]
-    consultations_count: Dict[str, int] = Field(
+    active_arms: list[str]
+    consultations_count: dict[str, int] = Field(
         default_factory=lambda: {"CONTROL": 0, "TREATMENT": 0},
         description="Count of consultations logged per arm"
     )
-    latest_telemetry: Optional[Dict[str, Any]] = None
+    latest_telemetry: dict[str, Any] | None = None
 
 
 class ExperimentResultsResponse(BaseModel):
     """Aggregated results and performance analysis upon experiment completion."""
     experiment_id: str
     status: Literal["ACTIVE", "COMPLETED", "TERMINATED"]
-    winner: Optional[Literal["CONTROL", "TREATMENT", "INCONCLUSIVE"]] = None
+    winner: Literal["CONTROL", "TREATMENT", "INCONCLUSIVE"] | None = None
     duration_hours: float
-    control_summary: Dict[str, Any]
-    treatment_summary: Dict[str, Any]
-    comparison_analysis: Dict[str, Any]
+    control_summary: dict[str, Any]
+    treatment_summary: dict[str, Any]
+    comparison_analysis: dict[str, Any]
     conclusion: str
 
 
@@ -188,15 +189,15 @@ class TestnetPerformanceResponse(BaseModel):
     total_consultations: int
     testnet_consultations: int
     paper_consultations: int
-    testnet_metrics: Dict[str, Any]
-    paper_metrics: Dict[str, Any]
-    drawdown_distribution: Dict[str, Any]
+    testnet_metrics: dict[str, Any]
+    paper_metrics: dict[str, Any]
+    drawdown_distribution: dict[str, Any]
 
 
 class TestnetComparisonResponse(BaseModel):
     """Detailed side-by-side performance and strategy divergence analysis."""
     comparison_timestamp: str
-    testnet_summary: Dict[str, Any]
-    paper_summary: Dict[str, Any]
-    strategy_divergence: List[Dict[str, Any]]
+    testnet_summary: dict[str, Any]
+    paper_summary: dict[str, Any]
+    strategy_divergence: list[dict[str, Any]]
     recommendations_summary: str

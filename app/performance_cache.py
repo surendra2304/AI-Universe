@@ -2,7 +2,8 @@
 
 import asyncio
 import time
-from typing import Any, Callable, Dict, Optional, Tuple
+from collections.abc import Callable
+from typing import Any
 
 
 class MultiLevelCache:
@@ -10,11 +11,11 @@ class MultiLevelCache:
 
     def __init__(self, default_ttl_sec: float = 60.0) -> None:
         self.default_ttl = default_ttl_sec
-        self._memory_cache: Dict[str, Tuple[float, Any]] = {}
+        self._memory_cache: dict[str, tuple[float, Any]] = {}
         self._hits = 0
         self._misses = 0
 
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         """Retrieves an item from cache if not expired."""
         now = time.time()
         if key in self._memory_cache:
@@ -27,11 +28,11 @@ class MultiLevelCache:
         self._misses += 1
         return None
 
-    def set(self, key: str, value: Any, ttl: Optional[float] = None) -> None:
+    def set(self, key: str, value: Any, ttl: float | None = None) -> None:
         """Sets an item with optional specific TTL."""
         self._memory_cache[key] = (time.time(), value)
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Returns cache telemetry."""
         total = self._hits + self._misses
         hit_rate = (self._hits / total * 100.0) if total > 0 else 0.0

@@ -1,17 +1,18 @@
 """Cross-Exchange Liquidity Depth Scoring and Price Impact Simulation."""
 
-from typing import Any, Dict, List
+from typing import Any
 
 
 class CrossExchangeLiquidityIntel:
     """Calculates liquidity depth scores and models market impact across venues."""
 
-    def analyze_asset_liquidity(self, symbol: str = "BTCUSDT") -> Dict[str, Any]:
+    def analyze_asset_liquidity(self, symbol: str = "BTCUSDT") -> dict[str, Any]:
         """Evaluates liquidity depth and estimates slippage on orders."""
         base_asset = symbol.replace("USDT", "").replace("USD", "").upper()
 
         return {
             "symbol": symbol.upper(),
+            "base_asset": base_asset,
             "global_liquidity_score": 92.5,  # 0 to 100
             "liquidity_trend": "DEEPENING",
             "slippage_estimates": {

@@ -1,8 +1,8 @@
 """Outcome Feedback Loop, Cross-Consumer Learning, Confidence Calibration & Strategy Bank."""
 
-import math
 import time
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Literal
+
 from pydantic import BaseModel, Field
 
 from app.routing.self_optimizer import self_optimizing_router
@@ -16,12 +16,12 @@ class DetailedOutcomeReport(BaseModel):
     consumer: ConsumerName
     request_id: str
     outcome: OutcomeStatus
-    detail: Optional[str] = "verification_passed"
-    measured_metrics: Dict[str, Any] = Field(default_factory=dict)
-    task_type: Optional[str] = "code_generation"
-    provider_used: Optional[str] = "gemini"
-    agent_composition: Optional[List[str]] = Field(default_factory=lambda: ["strategist", "critic"])
-    stated_confidence: Optional[float] = 0.85
+    detail: str | None = "verification_passed"
+    measured_metrics: dict[str, Any] = Field(default_factory=dict)
+    task_type: str | None = "code_generation"
+    provider_used: str | None = "gemini"
+    agent_composition: list[str] | None = Field(default_factory=lambda: ["strategist", "critic"])
+    stated_confidence: float | None = 0.85
     timestamp: float = Field(default_factory=time.time)
 
 
@@ -41,7 +41,7 @@ class OutcomeLearningEngine:
     """Tracks downstream success, rolling exponential success rates, and cross-consumer insights."""
 
     def __init__(self) -> None:
-        self.outcome_records: List[DetailedOutcomeReport] = [
+        self.outcome_records: list[DetailedOutcomeReport] = [
             DetailedOutcomeReport(
                 consumer="forge",
                 request_id="init-forge-01",
@@ -91,7 +91,7 @@ class OutcomeLearningEngine:
                 timestamp=time.time() - 900
             )
         ]
-        self.strategy_bank: List[StrategyBankEntry] = [
+        self.strategy_bank: list[StrategyBankEntry] = [
             StrategyBankEntry(
                 pattern_id="PAT-001",
                 task_type="lead_qualification",
@@ -110,7 +110,7 @@ class OutcomeLearningEngine:
             )
         ]
 
-    def record_outcome(self, report: DetailedOutcomeReport) -> Dict[str, Any]:
+    def record_outcome(self, report: DetailedOutcomeReport) -> dict[str, Any]:
         """Ingests outcome and auto-feeds performance metrics into router."""
         self.outcome_records.append(report)
         logger.info("[OUTCOME] Recorded from %s (task: %s): %s", report.consumer, report.task_type, report.outcome)
@@ -132,7 +132,7 @@ class OutcomeLearningEngine:
         self_optimizing_router.adapt_weights_from_outcomes()
         return {"status": "RECORDED", "request_id": report.request_id, "outcome": report.outcome}
 
-    def compute_provider_performance(self) -> Dict[str, Any]:
+    def compute_provider_performance(self) -> dict[str, Any]:
         """Computes rolling success rates with 3x recent weighting."""
         now = time.time()
         providers = ["gemini", "groq", "nvidia", "mistral", "openrouter", "cohere", "huggingface"]
@@ -162,7 +162,7 @@ class OutcomeLearningEngine:
             }
         return stats
 
-    def compute_agent_composition_performance(self) -> Dict[str, Any]:
+    def compute_agent_composition_performance(self) -> dict[str, Any]:
         """Compares solo agents vs multi-agent debate compositions."""
         return {
             "solo_agent_success_rate_pct": 78.4,
@@ -174,7 +174,7 @@ class OutcomeLearningEngine:
             ]
         }
 
-    def get_cross_consumer_insights(self) -> Dict[str, Any]:
+    def get_cross_consumer_insights(self) -> dict[str, Any]:
         """Generates cross-consumer pattern intelligence and weekly quality reports."""
         consumer_stats = {}
         for c in ["trading_bot", "forge", "nexus", "sentinel", "intelx", "futuris", "friday"]:
@@ -200,7 +200,7 @@ class OutcomeLearningEngine:
             "agent_composition_performance": self.compute_agent_composition_performance()
         }
 
-    def get_confidence_calibration(self) -> Dict[str, Any]:
+    def get_confidence_calibration(self) -> dict[str, Any]:
         """Compares stated confidence vs empirical outcomes across bins."""
         return {
             "calibration_curve": [
@@ -212,7 +212,7 @@ class OutcomeLearningEngine:
             "recalibration_policy": "If empirical success falls >15% below stated confidence for a task_type, confidence multiplier is reduced by 0.85x."
         }
 
-    def query_strategy_bank(self, task_type: str, context_query: str) -> List[Dict[str, Any]]:
+    def query_strategy_bank(self, task_type: str, context_query: str) -> list[dict[str, Any]]:
         """Queries matching past successful strategy patterns."""
         now = time.time()
         # Clean expired entries

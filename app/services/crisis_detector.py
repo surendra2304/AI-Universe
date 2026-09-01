@@ -1,7 +1,7 @@
 """Crisis Detection and Automated Multi-Tier Defensive Protocols."""
 
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class CrisisLevel(str, Enum):
@@ -20,7 +20,7 @@ class CrisisDetector:
         consecutive_losses: int,
         daily_loss_pct: float = 0.0,
         volatility_shock: bool = False
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Classifies crisis level and generates defensive recommendations."""
         level = CrisisLevel.LEVEL_0_NORMAL
         actions = []

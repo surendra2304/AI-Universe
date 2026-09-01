@@ -1,8 +1,8 @@
 """FastAPI Router for Enhanced Market Intelligence, Sentiment, On-Chain, and ML Predictions."""
 
 import time
-from typing import Any, Dict, List, Optional
-from fastapi import APIRouter, HTTPException, Query, status
+
+from fastapi import APIRouter, Query, status
 from pydantic import BaseModel, Field
 
 from app.analysis.onchain_analytics import onchain_engine
@@ -19,7 +19,7 @@ enhanced_router = APIRouter(prefix="/v1/trading", tags=["Enhanced Market Intelli
 class PredictionRequest(BaseModel):
     """Payload for ML price trajectory prediction."""
     symbol: str = Field(default="BTCUSDT", description="Target trading symbol")
-    current_price: Optional[float] = Field(default=None, description="Current price (fetched if None)")
+    current_price: float | None = Field(default=None, description="Current price (fetched if None)")
 
 
 @enhanced_router.get("/market/analysis", status_code=status.HTTP_200_OK)

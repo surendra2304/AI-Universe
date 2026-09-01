@@ -1,8 +1,10 @@
 """Alert System and Webhook Dispatcher for Inference Operations."""
 
 import time
-from typing import Any, Dict, List, Literal, Optional
+from typing import Literal
+
 from pydantic import BaseModel, Field
+
 from app.utils.logger import logger
 
 
@@ -20,7 +22,7 @@ class AlertSystem:
     """Manages active operational alerts and dispatches webhook notifications."""
 
     def __init__(self) -> None:
-        self.alerts: List[AlertItem] = [
+        self.alerts: list[AlertItem] = [
             AlertItem(
                 alert_id="ALT-101",
                 category="cost",
@@ -29,7 +31,7 @@ class AlertSystem:
                 description="Current expenditure is at 8% of daily allocated ceiling."
             )
         ]
-        self.webhook_urls: List[str] = []
+        self.webhook_urls: list[str] = []
 
     def register_webhook(self, url: str) -> None:
         if url not in self.webhook_urls:
@@ -60,7 +62,7 @@ class AlertSystem:
         logger.warning("[ALERT %s] %s: %s", severity.upper(), title, description)
         return alert
 
-    def get_alerts(self, unacknowledged_only: bool = False) -> List[AlertItem]:
+    def get_alerts(self, unacknowledged_only: bool = False) -> list[AlertItem]:
         if unacknowledged_only:
             return [a for a in self.alerts if not a.acknowledged]
         return self.alerts

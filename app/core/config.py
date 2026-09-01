@@ -1,8 +1,7 @@
 """Application configuration settings for Inference."""
 
-from typing import Dict, List, Optional
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -26,49 +25,49 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite:///data/universe.db"
 
     # 7 Active Cloud Provider API Keys (Supports single or comma-separated lists)
-    GEMINI_API_KEY: Optional[str] = Field(default=None)
-    GEMINI_API_KEYS: Optional[str] = Field(default=None)
+    GEMINI_API_KEY: str | None = Field(default=None)
+    GEMINI_API_KEYS: str | None = Field(default=None)
 
-    GROQ_API_KEY: Optional[str] = Field(default=None)
-    GROQ_API_KEYS: Optional[str] = Field(default=None)
+    GROQ_API_KEY: str | None = Field(default=None)
+    GROQ_API_KEYS: str | None = Field(default=None)
 
-    MISTRAL_API_KEY: Optional[str] = Field(default=None)
-    MISTRAL_API_KEYS: Optional[str] = Field(default=None)
+    MISTRAL_API_KEY: str | None = Field(default=None)
+    MISTRAL_API_KEYS: str | None = Field(default=None)
 
-    OPENROUTER_API_KEY: Optional[str] = Field(default=None)
-    OPENROUTER_API_KEYS: Optional[str] = Field(default=None)
+    OPENROUTER_API_KEY: str | None = Field(default=None)
+    OPENROUTER_API_KEYS: str | None = Field(default=None)
 
-    COHERE_API_KEY: Optional[str] = Field(default=None)
-    COHERE_API_KEYS: Optional[str] = Field(default=None)
+    COHERE_API_KEY: str | None = Field(default=None)
+    COHERE_API_KEYS: str | None = Field(default=None)
 
-    HUGGINGFACE_API_KEY: Optional[str] = Field(default=None)
-    HUGGINGFACE_API_KEYS: Optional[str] = Field(default=None)
+    HUGGINGFACE_API_KEY: str | None = Field(default=None)
+    HUGGINGFACE_API_KEYS: str | None = Field(default=None)
 
-    NVIDIA_API_KEY: Optional[str] = Field(default=None)
-    NVIDIA_API_KEYS: Optional[str] = Field(default=None)
+    NVIDIA_API_KEY: str | None = Field(default=None)
+    NVIDIA_API_KEYS: str | None = Field(default=None)
 
     # Integration Keys
-    INFERENCE_API_KEY: Optional[str] = Field(default="inference_api")
-    inference_api_KEY: Optional[str] = Field(default=None)
-    FRIDAY_UNIVERSE_API_KEY: Optional[str] = Field(default=None)
-    X_FRIDAY_API_KEY: Optional[str] = Field(default=None)
-    FRIDAY_API_KEY: Optional[str] = Field(default=None)
+    INFERENCE_API_KEY: str | None = Field(default="inference_api")
+    inference_api_KEY: str | None = Field(default=None)
+    FRIDAY_UNIVERSE_API_KEY: str | None = Field(default=None)
+    X_FRIDAY_API_KEY: str | None = Field(default=None)
+    FRIDAY_API_KEY: str | None = Field(default=None)
 
-    def get_friday_api_key(self) -> Optional[str]:
+    def get_friday_api_key(self) -> str | None:
         return self.INFERENCE_API_KEY or self.inference_api_KEY or self.FRIDAY_UNIVERSE_API_KEY or self.X_FRIDAY_API_KEY or self.FRIDAY_API_KEY or "inference_api"
 
     # Operational Budgets & Limits (Unlimited Token Flow Mode)
     MAX_BUDGET: float = Field(default=999999.0, description="Unlimited budget - supplies all available tokens until provider quota exhausted")
     REQUEST_TIMEOUT: float = Field(default=60.0, description="Default timeout in seconds for provider calls")
 
-    def get_provider_keys(self, provider_name: str) -> List[str]:
+    def get_provider_keys(self, provider_name: str) -> list[str]:
         """
         Returns a deduplicated list of non-empty API keys for the specified provider.
         Checks both plural (e.g. GEMINI_API_KEYS) and singular (e.g. GEMINI_API_KEY) variables.
         Supports comma-separated strings in both.
         """
         prov = provider_name.upper().strip()
-        keys: List[str] = []
+        keys: list[str] = []
 
         singular_val = getattr(self, f"{prov}_API_KEY", None)
         plural_val = getattr(self, f"{prov}_API_KEYS", None)

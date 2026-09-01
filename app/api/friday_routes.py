@@ -1,6 +1,7 @@
 """Dedicated API routes and typed contracts for FRIDAY integration."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
@@ -17,9 +18,9 @@ friday_router = APIRouter(
 class FridayRequest(BaseModel):
     """Payload for requests submitted by FRIDAY to Inference."""
     question: str = Field(description="The complex query or task submitted by FRIDAY")
-    context_data: Dict[str, Any] = Field(default_factory=dict, description="FRIDAY's active system/environment context")
-    max_latency: Optional[float] = Field(default=30.0, description="Hard SLA ceiling in seconds")
-    max_budget: Optional[float] = Field(default=None, description="Max cost in USD")
+    context_data: dict[str, Any] = Field(default_factory=dict, description="FRIDAY's active system/environment context")
+    max_latency: float | None = Field(default=30.0, description="Hard SLA ceiling in seconds")
+    max_budget: float | None = Field(default=None, description="Max cost in USD")
     require_evidence: bool = Field(default=True, description="Enforce fact-checking and evidence provenance")
     caller_id: str = Field(default="friday_core", description="Identifier of the FRIDAY caller sub-module")
 
@@ -31,13 +32,13 @@ class FridayResponse(BaseModel):
     answer: str
     mode_used: str
     confidence: float = Field(ge=0.0, le=1.0)
-    unresolved_disagreements: List[str] = Field(default_factory=list, description="Surviving technical dissent for FRIDAY decision-making")
-    key_evidence: List[str] = Field(default_factory=list, description="Verified empirical claims and evidence")
-    agents_used: List[str]
-    models_used: List[str]
+    unresolved_disagreements: list[str] = Field(default_factory=list, description="Surviving technical dissent for FRIDAY decision-making")
+    key_evidence: list[str] = Field(default_factory=list, description="Verified empirical claims and evidence")
+    agents_used: list[str]
+    models_used: list[str]
     latency_seconds: float
     total_tokens: int
-    provenance: Dict[str, Any] = Field(default_factory=dict, description="Audit trail and deliberation lineage")
+    provenance: dict[str, Any] = Field(default_factory=dict, description="Audit trail and deliberation lineage")
 
 
 @friday_router.post("/ask", response_model=FridayResponse, status_code=status.HTTP_200_OK)
@@ -81,7 +82,7 @@ async def friday_ask(request: FridayRequest) -> FridayResponse:
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"FRIDAY task orchestration failed: {str(exc)}"
+            detail=f"FRIDAY task orchestration failed: {exc!s}"
         )
 
 
@@ -129,7 +130,7 @@ async def friday_debate(request: FridayRequest) -> FridayResponse:
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"FRIDAY debate orchestration failed: {str(exc)}"
+            detail=f"FRIDAY debate orchestration failed: {exc!s}"
         )
 
 
@@ -141,7 +142,7 @@ class AgentMetadata(BaseModel):
     purpose: str
     provider: str
     model: str
-    strengths: List[str] = Field(default_factory=list)
+    strengths: list[str] = Field(default_factory=list)
     status: str = "active"
 
 
@@ -150,12 +151,12 @@ class FridayInfoResponse(BaseModel):
     platform: str = "Inference"
     version: str = "2.0.0"
     total_specialists: int
-    active_cloud_providers: List[str]
-    agents: List[AgentMetadata]
+    active_cloud_providers: list[str]
+    agents: list[AgentMetadata]
 
 
-@friday_router.get("/agents", response_model=List[AgentMetadata], status_code=status.HTTP_200_OK)
-async def list_friday_agents() -> List[AgentMetadata]:
+@friday_router.get("/agents", response_model=list[AgentMetadata], status_code=status.HTTP_200_OK)
+async def list_friday_agents() -> list[AgentMetadata]:
     """
     Returns the live catalog of all 10 specialist agents, their cloud providers, and assigned models.
     Enables FRIDAY to query exact agent models without hallucination.
@@ -205,9 +206,9 @@ async def get_friday_info() -> FridayInfoResponse:
 
 class FridayStatusResponse(BaseModel):
     """Administrative status response returning live active agents, configured providers, and available models."""
-    active_agents: List[str] = Field(description="List of active agent roles currently registered")
-    configured_providers: List[str] = Field(description="List of provider names with valid API keys loaded from .env")
-    available_models: List[str] = Field(description="List of specific model names mapped to active agents and providers")
+    active_agents: list[str] = Field(description="List of active agent roles currently registered")
+    configured_providers: list[str] = Field(description="List of provider names with valid API keys loaded from .env")
+    available_models: list[str] = Field(description="List of specific model names mapped to active agents and providers")
 
 
 @friday_router.get("/status", response_model=FridayStatusResponse, status_code=status.HTTP_200_OK)

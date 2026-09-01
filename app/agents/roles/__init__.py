@@ -4,12 +4,11 @@ Each agent is configured with a hyper-specialized list of provider models and ca
 The primary (1st) model is used for standard tasks; alternate models are used for complex or fallback tasks.
 """
 
-from typing import List
 from app.agents.base import Agent, AgentModelConfig
 from app.agents.registry import agent_registry
 
 
-def get_all_specialist_agents() -> List[Agent]:
+def get_all_specialist_agents() -> list[Agent]:
     """
     Returns the list of 10 configured specialist agents with exact specialized model lists
     and capability tags.

@@ -1,7 +1,7 @@
 """Comprehensive Production Observability, Alerting, and System Health Telemetry."""
 
 import time
-from typing import Any, Dict, List
+from typing import Any
 
 
 class ObservabilityCollector:
@@ -11,7 +11,7 @@ class ObservabilityCollector:
         self.start_time = time.time()
         self.request_count = 0
         self.error_count = 0
-        self.active_alerts: List[Dict[str, Any]] = []
+        self.active_alerts: list[dict[str, Any]] = []
 
     def record_request(self, duration_sec: float, is_error: bool = False) -> None:
         """Records an incoming request duration and error state."""
@@ -19,7 +19,7 @@ class ObservabilityCollector:
         if is_error:
             self.error_count += 1
 
-    def get_observability_snapshot(self) -> Dict[str, Any]:
+    def get_observability_snapshot(self) -> dict[str, Any]:
         """Returns consolidated production observability snapshot."""
         now = time.time()
         uptime_sec = round(now - self.start_time, 2)

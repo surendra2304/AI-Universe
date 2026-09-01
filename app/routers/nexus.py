@@ -1,7 +1,12 @@
 """FastAPI Router for Nexus Intelligence Endpoints."""
 
 from fastapi import APIRouter, HTTPException, Path, status
-from app.services.nexus_intelligence import IntelligenceRequest, IntelligenceResponse, nexus_intelligence_service
+
+from app.services.nexus_intelligence import (
+    IntelligenceRequest,
+    IntelligenceResponse,
+    nexus_intelligence_service,
+)
 
 nexus_router = APIRouter(prefix="/v1/nexus", tags=["Nexus Intelligence"])
 

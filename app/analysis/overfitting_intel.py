@@ -1,7 +1,7 @@
 """Overfitting Detection Intelligence: Deflated Sharpe Ratio, PBO, and Fragility Tests."""
 
 import math
-from typing import Any, Dict, List
+from typing import Any
 
 
 class OverfittingIntelligenceEngine:
@@ -14,7 +14,7 @@ class OverfittingIntelligenceEngine:
         backtest_profit_factor: float,
         total_trades: int,
         num_trials_tested: int = 50
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calculates Deflated Sharpe Ratio (DSR), Probability of Backtest Overfitting (PBO), and emits verdict."""
         # 1. Deflated Sharpe Ratio heuristic (Bailey, Borwein, López de Prado, Zhu 2014)
         # Expected max Sharpe under null hypothesis of no alpha given num_trials

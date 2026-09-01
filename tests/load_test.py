@@ -1,13 +1,11 @@
 """Concurrent Load Testing and Performance SLA Verification Suite."""
 
-import math
 import time
-from typing import List
-import pytest
+
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.monitoring import monitor, _percentile
+from app.monitoring import _percentile
 
 client = TestClient(app)
 
@@ -54,7 +52,7 @@ def test_concurrent_load_and_p95_sla():
     Verifies that p95 response time is strictly < 30 seconds.
     """
     total_requests = 100
-    latencies: List[float] = []
+    latencies: list[float] = []
 
     def make_request(idx: int) -> float:
         # Alternate scenarios

@@ -2,4 +2,3 @@
 
 class MemoryRetriever:
     """Retrieves scoped memories for agents, tasks, and system history."""
-    pass

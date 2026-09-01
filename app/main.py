@@ -1,6 +1,7 @@
 """Main FastAPI application entrypoint for Inference."""
 
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
@@ -10,7 +11,6 @@ from app.agents.software_specialists import register_software_specialists
 from app.api.friday_routes import friday_router
 from app.api.routes import router as api_router
 from app.config_production import production_config
-from app.core.config import settings
 from app.core.orchestrator import orchestrator
 from app.health import health_router
 from app.middleware.rate_limiter import EnhancedRateLimiterMiddleware

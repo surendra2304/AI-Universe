@@ -1,10 +1,8 @@
 """Comprehensive Production API Security Middleware, Authentication, and Threat Hardening."""
 
-import hashlib
-import hmac
 import time
-from typing import Dict, Optional, Set
-from fastapi import Header, HTTPException, Request, Response, status
+
+from fastapi import Request, Response, status
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
@@ -16,21 +14,21 @@ class APISecurityManager:
 
     def __init__(self) -> None:
         # Default production API keys
-        self._valid_api_keys: Set[str] = {
+        self._valid_api_keys: set[str] = {
             "aiu_live_sec_9948271049281726",
             "aiu_trading_bot_primary_key_2026",
             "aiu_friday_integration_key_2026",
             "test_api_key"
         }
         # Rate limit tracking: ip -> list of timestamps
-        self._rate_limits: Dict[str, list] = {}
+        self._rate_limits: dict[str, list] = {}
         self._rate_limit_max_requests = 120  # per minute
         self._rate_limit_window = 60.0  # seconds
 
         # Suspicious / Blocked IPs
-        self._blocked_ips: Set[str] = set()
+        self._blocked_ips: set[str] = set()
 
-    def validate_api_key(self, api_key: Optional[str]) -> bool:
+    def validate_api_key(self, api_key: str | None) -> bool:
         """Validates bearer API key."""
         if not api_key:
             return False

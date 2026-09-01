@@ -1,21 +1,21 @@
 """Prediction Performance and Calibration Tracking Engine."""
 
 import time
-from typing import Any, Dict, List
+from typing import Any
 
 
 class PredictionTrackingEngine:
     """Tracks out-of-sample directional prediction accuracy and reliability calibration."""
 
     def __init__(self) -> None:
-        self.history: List[Dict[str, Any]] = [
+        self.history: list[dict[str, Any]] = [
             {"timestamp": time.time() - 86400 * 3, "symbol": "BTCUSDT", "direction": "BULLISH", "confidence": 0.82, "actual_outcome": "CORRECT"},
             {"timestamp": time.time() - 86400 * 2, "symbol": "BTCUSDT", "direction": "BULLISH", "confidence": 0.78, "actual_outcome": "CORRECT"},
             {"timestamp": time.time() - 86400 * 1, "symbol": "ETHUSDT", "direction": "BEARISH", "confidence": 0.71, "actual_outcome": "INCORRECT"},
             {"timestamp": time.time() - 3600 * 12, "symbol": "BTCUSDT", "direction": "BULLISH", "confidence": 0.85, "actual_outcome": "CORRECT"}
         ]
 
-    def get_source_accuracy_report(self) -> Dict[str, Any]:
+    def get_source_accuracy_report(self) -> dict[str, Any]:
         """Calculates historical accuracy across sub-components."""
         total = len(self.history)
         correct = sum(1 for p in self.history if p["actual_outcome"] == "CORRECT")

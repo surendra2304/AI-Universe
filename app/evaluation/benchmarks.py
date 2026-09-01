@@ -1,6 +1,6 @@
 """Golden Benchmark Dataset for Inference Quality Control."""
 
-from typing import List, Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -9,13 +9,13 @@ class BenchmarkTestCase(BaseModel):
     id: str
     domain: str = Field(description="architecture, coding, debugging, security, reasoning, fact_checking")
     question: str
-    expected_key_concepts: List[str] = Field(description="Core concepts or keywords that MUST be present")
-    required_dissent_or_tradeoffs: List[str] = Field(description="Key trade-offs or failure modes that must be identified")
+    expected_key_concepts: list[str] = Field(description="Core concepts or keywords that MUST be present")
+    required_dissent_or_tradeoffs: list[str] = Field(description="Key trade-offs or failure modes that must be identified")
     ideal_mode: str = Field(default="debate", description="Expected ideal execution mode")
     minimum_expected_score: float = Field(default=0.80, ge=0.0, le=1.0)
 
 
-GOLDEN_BENCHMARK_SUITE: List[BenchmarkTestCase] = [
+GOLDEN_BENCHMARK_SUITE: list[BenchmarkTestCase] = [
     BenchmarkTestCase(
         id="bench_001_arch",
         domain="architecture",
@@ -109,7 +109,7 @@ GOLDEN_BENCHMARK_SUITE: List[BenchmarkTestCase] = [
 ]
 
 
-def get_benchmark_by_id(bench_id: str) -> Optional[BenchmarkTestCase]:
+def get_benchmark_by_id(bench_id: str) -> BenchmarkTestCase | None:
     """Retrieve a golden benchmark case by its ID."""
     for b in GOLDEN_BENCHMARK_SUITE:
         if b.id == bench_id:

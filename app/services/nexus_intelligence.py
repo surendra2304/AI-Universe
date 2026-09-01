@@ -20,12 +20,12 @@ Specification Highlights:
 """
 
 import time
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Literal
+
 from pydantic import BaseModel, Field
 
 from app.analytics.usage_analytics import usage_analytics
 from app.routing.consumer_router import consumer_router
-from app.utils.logger import logger
 
 TaskType = Literal[
     "lead_qualification",
@@ -48,11 +48,11 @@ IntelligenceMode = Literal["fast", "review", "debate"]
 
 
 class EvidenceItem(BaseModel):
-    id: Optional[str] = None
+    id: str | None = None
     claim: str
     trust_label: TrustLabel = "verified_telemetry"
-    source: Optional[str] = None
-    timestamp: Optional[float] = Field(default_factory=time.time)
+    source: str | None = None
+    timestamp: float | None = Field(default_factory=time.time)
 
 
 class BudgetSpec(BaseModel):
@@ -64,11 +64,11 @@ class IntelligenceRequest(BaseModel):
     request_id: str
     task_type: TaskType
     goal: str
-    context: Dict[str, Any] = Field(default_factory=dict)
-    evidence: List[EvidenceItem] = Field(default_factory=list)
-    constraints: List[str] = Field(default_factory=list)
-    required_output: List[str] = Field(default_factory=list)
-    budget: Optional[BudgetSpec] = Field(default_factory=BudgetSpec)
+    context: dict[str, Any] = Field(default_factory=dict)
+    evidence: list[EvidenceItem] = Field(default_factory=list)
+    constraints: list[str] = Field(default_factory=list)
+    required_output: list[str] = Field(default_factory=list)
+    budget: BudgetSpec | None = Field(default_factory=BudgetSpec)
     mode: IntelligenceMode = "fast"
 
 
@@ -76,7 +76,7 @@ class RecommendedAction(BaseModel):
     action: str
     priority: Literal["HIGH", "MEDIUM", "LOW"] = "MEDIUM"
     rationale: str
-    owner: Optional[str] = None
+    owner: str | None = None
 
 
 class IntelligenceResponse(BaseModel):
@@ -84,18 +84,18 @@ class IntelligenceResponse(BaseModel):
     decision: str
     confidence: float = Field(..., ge=0.0, le=1.0)
     summary: str
-    key_evidence: List[str]
-    provenance: Dict[str, Any]
-    unresolved_disagreements: List[str] = Field(default_factory=list)
-    recommended_actions: List[RecommendedAction] = Field(default_factory=list)
-    safety_notes: List[str] = Field(default_factory=list)
+    key_evidence: list[str]
+    provenance: dict[str, Any]
+    unresolved_disagreements: list[str] = Field(default_factory=list)
+    recommended_actions: list[RecommendedAction] = Field(default_factory=list)
+    safety_notes: list[str] = Field(default_factory=list)
     expires_at: float
 
 
 class NexusIntelligenceService:
     """Nexus multi-mode decision engine with persistent provenance ledger."""
 
-    TASK_AGENT_MAPPING: Dict[str, List[str]] = {
+    TASK_AGENT_MAPPING: dict[str, list[str]] = {
         "lead_qualification": ["strategist", "data_analyst"],
         "conversion_diagnosis": ["data_analyst", "debugger", "critic"],
         "incident_analysis": ["debugger", "security_analyst", "critic"],
@@ -106,9 +106,9 @@ class NexusIntelligenceService:
     }
 
     def __init__(self) -> None:
-        self.provenance_store: Dict[str, Dict[str, Any]] = {}
+        self.provenance_store: dict[str, dict[str, Any]] = {}
 
-    def _evaluate_trust_weight(self, evidence: List[EvidenceItem]) -> float:
+    def _evaluate_trust_weight(self, evidence: list[EvidenceItem]) -> float:
         """Computes weighted trust factor based on evidence trust labels."""
         if not evidence:
             return 0.75
@@ -151,7 +151,7 @@ class NexusIntelligenceService:
             decision = f"PROCEED_WITH_{req.task_type.upper()}"
             summary = f"Fast-path decision by {primary_agent.capitalize()} specialist for goal: {req.goal}."
             confidence = round(min(0.95, 0.85 * evidence_trust), 2)
-            disagreements: List[str] = []
+            disagreements: list[str] = []
             rounds_conducted = 1
             agents_consulted = [primary_agent]
 
@@ -162,7 +162,7 @@ class NexusIntelligenceService:
             rounds_conducted = 1
             decision = f"VALIDATED_{req.task_type.upper()}"
             summary = f"Primary analysis by {primary_agent.capitalize()} subjected to adversarial review by Critic."
-            
+
             # Simulated critique outcome
             has_ambiguity = any(e.trust_label in ("untrusted_user_input", "inferred_profile") for e in req.evidence)
             if has_ambiguity:
@@ -260,7 +260,7 @@ class NexusIntelligenceService:
 
         return response
 
-    def get_provenance(self, request_id: str) -> Optional[Dict[str, Any]]:
+    def get_provenance(self, request_id: str) -> dict[str, Any] | None:
         return self.provenance_store.get(request_id)
 
 

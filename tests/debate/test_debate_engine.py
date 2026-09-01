@@ -1,11 +1,12 @@
 """Unit and mock tests for the Real-Time Multi-Agent Collaboration Engine."""
 
+from unittest.mock import AsyncMock, patch
+
 import pytest
 import pytest_asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
 from fastapi.testclient import TestClient
 
-from app.agents.debate import CollaborationEngine, DebateEngine
+from app.agents.debate import CollaborationEngine
 from app.agents.registry import agent_registry
 from app.agents.roles import register_all_specialists
 from app.core.orchestrator import orchestrator
@@ -70,8 +71,9 @@ async def test_targeted_rebuttal_on_severe_conflict(collab_env):
     engine, memory = collab_env
 
     async def mock_execute_conflict(provider_name, request, **kwargs):
-        content_query = request.messages[0].content
-        if "evaluate the specialist proposals" in content_query:
+        content_query = request.messages[0].content if request.messages else ""
+        stage_name = kwargs.get("stage_name", "")
+        if "Specialist Analysis:" in content_query or stage_name == "consensus_synthesis" or "evaluate the specialist proposals" in content_query:
             return ProviderResponse(
                 content="CONFLICT_DETECTED: Fundamental architectural clash between Architect (shared memory) and Security Analyst (process sandboxing).",
                 model="command-r7b-12-2024",

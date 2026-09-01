@@ -1,24 +1,27 @@
 """Debugging Intelligence Service for FORGE's automated recovery engine."""
 
 import time
-from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel, Field
 
-from app.providers.unified_manager import UnifiedExecutionRequest, unified_provider_manager
+from app.providers.unified_manager import (
+    UnifiedExecutionRequest,
+    unified_provider_manager,
+)
 
 
 class DebugRequest(BaseModel):
     error: str = Field(..., description="Error message or exception string")
     traceback: str = Field(default="", description="Full stack trace")
     code_context: str = Field(..., description="Relevant code snippet where error occurred")
-    attempted_fixes: List[str] = Field(default_factory=list, description="Prior failed fix attempts to avoid repeats")
-    verification_failure: Optional[str] = Field(default="", description="Test output or assertion error")
+    attempted_fixes: list[str] = Field(default_factory=list, description="Prior failed fix attempts to avoid repeats")
+    verification_failure: str | None = Field(default="", description="Test output or assertion error")
 
 
 class DebugResponse(BaseModel):
     root_cause: str
     fix_strategy: str
-    patch_code: Optional[str] = None
+    patch_code: str | None = None
     confidence: float
     latency_ms: float
 

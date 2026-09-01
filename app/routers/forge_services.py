@@ -1,6 +1,7 @@
 """FastAPI Router for Core FORGE Intelligence Services (Generate, Plan, Review, Debug, Tests)."""
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, status
+
 from app.services.architecture_planning import (
     ArchitecturePlanRequest,
     ArchitecturePlanResponse,

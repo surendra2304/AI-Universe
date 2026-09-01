@@ -1,7 +1,6 @@
 """Machine Learning Ensemble Price Prediction and Uncertainty Engine."""
 
-import math
-from typing import Any, Dict, List
+from typing import Any
 
 
 class PricePredictionModel:
@@ -10,10 +9,10 @@ class PricePredictionModel:
     def predict_price_trajectory(
         self,
         current_price: float,
-        indicators: Dict[str, Any],
-        sentiment: Dict[str, Any],
-        onchain: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        indicators: dict[str, Any],
+        sentiment: dict[str, Any],
+        onchain: dict[str, Any]
+    ) -> dict[str, Any]:
         """Generates multi-horizon price trajectory forecast with confidence intervals."""
         rsi = indicators.get("rsi_14", 50.0)
         macd_hist = indicators.get("macd", {}).get("histogram", 0.0)

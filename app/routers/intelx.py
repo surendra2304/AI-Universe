@@ -1,6 +1,7 @@
 """FastAPI Router for IntelX Deep Research Intelligence Endpoints."""
 
 from fastapi import APIRouter, HTTPException, Path, status
+
 from app.services.intelx_intelligence import (
     IntelXResearchRequest,
     IntelXResearchResponse,

@@ -1,7 +1,8 @@
 """Temporal Reasoning Engine: Time-Aware Pattern Detection, Trend Analysis, and Consistency Checking."""
 
 import time
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -14,7 +15,7 @@ class TimeSeriesPoint(BaseModel):
 class TemporalPatternResult(BaseModel):
     trend: Literal["UPWARD", "DOWNWARD", "STABLE", "VOLATILE"]
     seasonality_detected: bool = False
-    changepoints: List[float] = Field(default_factory=list)
+    changepoints: list[float] = Field(default_factory=list)
     confidence: float = 0.85
     summary: str
 
@@ -23,12 +24,12 @@ class TemporalReasoningEngine:
     """Analyzes temporal context, trends, seasonality, changepoints, and validates temporal recommendation consistency."""
 
     def __init__(self) -> None:
-        self.recommendation_history: Dict[str, List[Dict[str, Any]]] = {}
+        self.recommendation_history: dict[str, list[dict[str, Any]]] = {}
 
     def analyze_temporal_series(
         self,
-        time_series: List[TimeSeriesPoint],
-        temporal_context_note: Optional[str] = None
+        time_series: list[TimeSeriesPoint],
+        temporal_context_note: str | None = None
     ) -> TemporalPatternResult:
         """Evaluates trend, changepoint anomalies, and seasonality over time series data."""
         if not time_series:
@@ -44,6 +45,7 @@ class TemporalReasoningEngine:
         first, last = values[0], values[-1]
         delta_pct = ((last - first) / max(0.0001, abs(first))) * 100.0
 
+        trend: Literal["UPWARD", "DOWNWARD", "STABLE", "VOLATILE"]
         if delta_pct > 10.0:
             trend = "UPWARD"
         elif delta_pct < -10.0:
@@ -75,7 +77,7 @@ class TemporalReasoningEngine:
         context_key: str,
         new_decision: str,
         current_rationale: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Ensures recommendations do not contradict earlier recommendations without explicit explanation."""
         history = self.recommendation_history.get(context_key, [])
         if not history:

@@ -1,7 +1,8 @@
 """Usage Analytics Engine for Multi-Consumer Tracking (FORGE, Trading Bot, FRIDAY, Human)."""
 
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 
@@ -23,7 +24,7 @@ class UsageAnalyticsEngine:
     """Aggregates per-request tokens, latency, cost attribution, and daily ceiling budgets."""
 
     def __init__(self) -> None:
-        self.records: List[RequestAnalyticsRecord] = [
+        self.records: list[RequestAnalyticsRecord] = [
             RequestAnalyticsRecord(consumer="forge", service="generate-code", provider="groq", tokens_in=500, tokens_out=800, total_tokens=1300, latency_ms=32.4, success=True, confidence=0.92, cost_usd=0.00065),
             RequestAnalyticsRecord(consumer="forge", service="plan-architecture", provider="nvidia", tokens_in=800, tokens_out=1200, total_tokens=2000, latency_ms=85.1, success=True, confidence=0.95, cost_usd=0.00100),
             RequestAnalyticsRecord(consumer="trading_bot", service="trading_consult", provider="groq", tokens_in=400, tokens_out=600, total_tokens=1000, latency_ms=45.0, success=True, confidence=0.88, cost_usd=0.00050),
@@ -60,7 +61,7 @@ class UsageAnalyticsEngine:
             )
         )
 
-    def get_overview(self) -> Dict[str, Any]:
+    def get_overview(self) -> dict[str, Any]:
         total_calls = len(self.records)
         total_tokens = sum(r.total_tokens for r in self.records)
         total_cost = sum(r.cost_usd for r in self.records)
@@ -76,7 +77,7 @@ class UsageAnalyticsEngine:
             "ceiling_alert_active": (total_cost / max(0.1, self.daily_budget_usd)) >= self.alert_threshold_pct
         }
 
-    def get_consumer_breakdown(self, consumer_id: str) -> Dict[str, Any]:
+    def get_consumer_breakdown(self, consumer_id: str) -> dict[str, Any]:
         c_records = [r for r in self.records if r.consumer.lower() == consumer_id.lower()]
         total_calls = len(c_records)
         return {
@@ -87,7 +88,7 @@ class UsageAnalyticsEngine:
             "success_rate_pct": round((sum(1 for r in c_records if r.success) / max(1, total_calls)) * 100.0, 1)
         }
 
-    def get_service_breakdown(self, service_name: str) -> Dict[str, Any]:
+    def get_service_breakdown(self, service_name: str) -> dict[str, Any]:
         s_records = [r for r in self.records if r.service.lower() == service_name.lower()]
         total_calls = len(s_records)
         return {
@@ -97,7 +98,7 @@ class UsageAnalyticsEngine:
             "avg_latency_ms": round((sum(r.latency_ms for r in s_records) / max(1, total_calls)), 2)
         }
 
-    def get_providers_comparison(self) -> Dict[str, Any]:
+    def get_providers_comparison(self) -> dict[str, Any]:
         providers = ["gemini", "groq", "mistral", "openrouter", "nvidia", "cohere", "huggingface"]
         res = {}
         for p in providers:

@@ -1,13 +1,14 @@
 """Task router module for classifying problem complexity, budget constraints, and selecting specialist agents."""
 
 import re
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 from app.core.policies import SystemPolicies
 from app.utils.logger import logger
 
-DEBATE_TRIGGERS: List[str] = [
+DEBATE_TRIGGERS: list[str] = [
     "compare", "tradeoff", "trade-off", "vs", "versus", "architecture",
     "design", "debate", "should i", "which is better", "evaluate", "critique",
     "pros and cons", "alternatives"
@@ -30,9 +31,9 @@ class RoutingDecision(BaseModel):
     """Result of task complexity, budget evaluation, and agent allocation analysis."""
     mode: str = Field(description="fast, review, or debate")
     reason: str = Field(description="Explanation of routing rationale")
-    selected_agent_ids: List[str] = Field(description="Ordered list of agent IDs assigned to the task")
+    selected_agent_ids: list[str] = Field(description="Ordered list of agent IDs assigned to the task")
     degraded: bool = Field(default=False, description="Whether degradation was applied due to budget/latency")
-    telemetry: Dict[str, Any] = Field(default_factory=dict, description="Telemetry metrics for future learning")
+    telemetry: dict[str, Any] = Field(default_factory=dict, description="Telemetry metrics for future learning")
 
 
 class TaskRouter:
@@ -46,7 +47,7 @@ class TaskRouter:
                 return agent_id
         return "researcher"
 
-    def select_review_pair(self, question: str) -> List[str]:
+    def select_review_pair(self, question: str) -> list[str]:
         """Select two complementary agents for Review mode."""
         primary = self.detect_domain_specialist(question)
         if primary == "coder":
@@ -64,10 +65,10 @@ class TaskRouter:
         else:
             return [primary, "critic"]
 
-    def select_debate_panel(self, question: str, max_agents: int = 5) -> List[str]:
+    def select_debate_panel(self, question: str, max_agents: int = 5) -> list[str]:
         """Assemble a diverse panel of 3-5 specialists for structured debate."""
         primary = self.detect_domain_specialist(question)
-        panel: List[str] = []
+        panel: list[str] = []
 
         # Always include the primary domain specialist
         panel.append(primary)
@@ -84,7 +85,7 @@ class TaskRouter:
 
         return panel[:max_agents]
 
-    def classify_mode(self, question: str, requested_mode: str = "auto") -> Tuple[str, str]:
+    def classify_mode(self, question: str, requested_mode: str = "auto") -> tuple[str, str]:
         """
         Determines the candidate execution mode (fast, review, debate).
         Returns a tuple of (selected_mode, reason).
@@ -112,9 +113,9 @@ class TaskRouter:
         candidate_mode: str,
         reason: str,
         question: str,
-        max_budget: Optional[float] = None,
-        max_latency: Optional[float] = None
-    ) -> Tuple[str, str, bool]:
+        max_budget: float | None = None,
+        max_latency: float | None = None
+    ) -> tuple[str, str, bool]:
         """
         Applies budget, latency, and triviality guardrails to prevent excessive API costs.
         Gracefully degrades Debate -> Review -> Fast when limits are tight.
@@ -184,15 +185,15 @@ class TaskRouter:
         question: str,
         requested_mode: str = "auto",
         max_agents: int = 5,
-        max_budget: Optional[float] = None,
-        max_latency: Optional[float] = None
+        max_budget: float | None = None,
+        max_latency: float | None = None
     ) -> RoutingDecision:
         """
         Full routing decision returning mode, reason, selected agents, and telemetry.
         Evaluates problem domain and enforces budget/latency guardrails.
         """
         candidate_mode, initial_reason = self.classify_mode(question, requested_mode)
-        
+
         final_mode, final_reason, degraded = self.apply_budget_and_latency_guardrails(
             candidate_mode=candidate_mode,
             reason=initial_reason,

@@ -1,13 +1,13 @@
 """Alternative Data Aggregation Engine (News NLP, Social Spikes, On-Chain Whales, Macro)."""
 
 import time
-from typing import Any, Dict, List
+from typing import Any
 
 
 class AlternativeDataEngine:
     """Ingests and normalizes alternative data feeds for alpha generation."""
 
-    def get_consolidated_alternative_data(self, asset: str = "BTC") -> Dict[str, Any]:
+    def get_consolidated_alternative_data(self, asset: str = "BTC") -> dict[str, Any]:
         """Provides consolidated sentiment, social spikes, on-chain flows, and macro indicators."""
         clean_asset = asset.upper().replace("USDT", "").replace("USD", "")
 

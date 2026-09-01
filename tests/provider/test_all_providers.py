@@ -1,16 +1,18 @@
 """Unit and mock tests for all 6 non-Gemini provider adapters (Groq, Mistral, OpenRouter, Cohere, HuggingFace, NVIDIA)."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+
 from app.providers import get_provider
 from app.providers.base import ProviderMessage, ProviderRequest
-from app.providers.openai_compatible import OpenAICompatibleProvider
-from app.providers.groq import GroqProvider
-from app.providers.mistral import MistralProvider
-from app.providers.openrouter import OpenRouterProvider
 from app.providers.cohere import CohereProvider
+from app.providers.groq import GroqProvider
 from app.providers.huggingface import HuggingFaceProvider
+from app.providers.mistral import MistralProvider
 from app.providers.nvidia import NvidiaProvider
+from app.providers.openai_compatible import OpenAICompatibleProvider
+from app.providers.openrouter import OpenRouterProvider
 
 
 @pytest.mark.parametrize("provider_name,cls,default_model", [

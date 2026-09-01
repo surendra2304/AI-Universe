@@ -1,13 +1,13 @@
 """Advanced Technical Analysis Engine with 50+ Indicators, Patterns, and Multi-Timeframe Alignment."""
 
 import math
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 
 class TechnicalAnalysisEngine:
     """Calculates Trend, Momentum, Volatility, Volume indicators and detects chart patterns."""
 
-    def calculate_indicators(self, candles: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def calculate_indicators(self, candles: list[dict[str, Any]]) -> dict[str, Any]:
         """Calculates indicators across price history."""
         if not candles or len(candles) < 14:
             return {}
@@ -19,10 +19,10 @@ class TechnicalAnalysisEngine:
         n = len(closes)
 
         # 1. Moving Averages (SMA & EMA)
-        def _sma(series: List[float], period: int) -> float:
+        def _sma(series: list[float], period: int) -> float:
             return sum(series[-period:]) / period if len(series) >= period else series[-1]
 
-        def _ema(series: List[float], period: int) -> float:
+        def _ema(series: list[float], period: int) -> float:
             if len(series) < period:
                 return series[-1]
             multiplier = 2 / (period + 1)
@@ -78,9 +78,9 @@ class TechnicalAnalysisEngine:
         tr_list = []
         for i in range(1, len(candles)):
             h = highs[i]
-            l = lows[i]
+            low_val = lows[i]
             prev_c = closes[i - 1]
-            tr = max(h - l, abs(h - prev_c), abs(l - prev_c))
+            tr = max(h - low_val, abs(h - prev_c), abs(low_val - prev_c))
             tr_list.append(tr)
         atr_14 = sum(tr_list[-14:]) / 14 if len(tr_list) >= 14 else (highs[-1] - lows[-1])
 
@@ -143,7 +143,7 @@ class TechnicalAnalysisEngine:
             "market_regime": "TRENDING_BULL" if closes[-1] > sma_50 and rsi > 55 else ("TRENDING_BEAR" if closes[-1] < sma_50 and rsi < 45 else "RANGING_CONSOLIDATION")
         }
 
-    def detect_patterns(self, candles: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def detect_patterns(self, candles: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Identifies classic chart formations (Double Bottom, Bull Flag, Breakout, Head & Shoulders)."""
         if len(candles) < 30:
             return []

@@ -1,8 +1,6 @@
 """FastAPI Router for Cross-Market Intelligence, Correlations, Regime, and Venue Liquidity."""
 
-import time
-from typing import Any, Dict, List, Optional
-from fastapi import APIRouter, HTTPException, Path, Query, status
+from fastapi import APIRouter, Path, status
 from pydantic import BaseModel, Field
 
 from app.analysis.cross_asset import cross_asset_engine
@@ -15,7 +13,7 @@ multi_market_router = APIRouter(prefix="/v1/market", tags=["Cross-Market Intelli
 
 
 class PortfolioAnalysisRequest(BaseModel):
-    positions: Dict[str, float] = Field(
+    positions: dict[str, float] = Field(
         default={"BTCUSDT": 15000.0, "ETHUSDT": 8000.0, "SOLUSDT": 3000.0},
         description="Dictionary mapping asset symbol to USD notional value"
     )

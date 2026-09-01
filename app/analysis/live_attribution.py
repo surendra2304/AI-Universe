@@ -1,6 +1,6 @@
 """Live Capital Performance Attribution and Slippage Disparity Analytics."""
 
-from typing import Any, Dict, List
+from typing import Any
 
 
 class LiveAttributionEngine:
@@ -8,9 +8,9 @@ class LiveAttributionEngine:
 
     def evaluate_live_attribution(
         self,
-        live_trades: List[Dict[str, Any]],
-        testnet_metrics: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        live_trades: list[dict[str, Any]],
+        testnet_metrics: dict[str, Any]
+    ) -> dict[str, Any]:
         """Calculates live vs testnet alpha retention, execution drag, and strategy reliability scores."""
         total_live_pnl = sum(t.get("pnl", 0.0) for t in live_trades)
         total_slippage_usd = sum(abs(t.get("expected_price", 0.0) - t.get("fill_price", 0.0)) * t.get("qty", 0.0) for t in live_trades)
@@ -28,6 +28,7 @@ class LiveAttributionEngine:
 
         return {
             "total_live_trades": total_trades,
+            "total_live_pnl_usd": round(total_live_pnl, 2),
             "live_win_rate": round(live_win_rate, 2),
             "testnet_win_rate": round(testnet_win_rate, 2),
             "total_slippage_usd": round(total_slippage_usd, 2),

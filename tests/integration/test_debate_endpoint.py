@@ -1,7 +1,8 @@
 """Integration tests for the /debate FastAPI endpoint and Orchestrator debate workflow."""
 
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import AsyncMock, patch
 from fastapi.testclient import TestClient
 
 from app.core.orchestrator import orchestrator

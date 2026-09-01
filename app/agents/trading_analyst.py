@@ -8,20 +8,21 @@ STRICT SAFETY CONSTRAINTS:
 - Only analyze data, engage in debate/consultation, and return structured recommendations.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 from pydantic import BaseModel, Field
 
-from app.agents.base import Agent, AgentModelConfig, AgentResponse
+from app.agents.base import Agent, AgentModelConfig
 
 
 class AIUniverseDecision(BaseModel):
     """Structured decision output containing trading strategy recommendations."""
     recommendation: str = Field(description="Actionable parameter recommendation (e.g. 'Tighten Stop Loss to 0.4%')")
     confidence: float = Field(default=0.85, ge=0.0, le=1.0, description="Confidence in this advice")
-    evidence: List[str] = Field(default_factory=list, description="Empirical metrics and calculations supporting advice")
+    evidence: list[str] = Field(default_factory=list, description="Empirical metrics and calculations supporting advice")
     risk_assessment: str = Field(default="", description="Evaluation of current drawdown, risk, and downside exposure")
-    suggested_parameters: Dict[str, Any] = Field(default_factory=dict, description="Recommended key-value parameter changes")
-    dissent_or_alternatives: List[str] = Field(default_factory=list, description="Alternative viewpoints or counter-risks")
+    suggested_parameters: dict[str, Any] = Field(default_factory=dict, description="Recommended key-value parameter changes")
+    dissent_or_alternatives: list[str] = Field(default_factory=list, description="Alternative viewpoints or counter-risks")
 
 
 class TradingAnalyst:
@@ -30,7 +31,7 @@ class TradingAnalyst:
     def __init__(self, agent_id: str = "trading_analyst") -> None:
         self.agent_id = agent_id
 
-    def evaluate_performance(self, metrics: Dict[str, Any]) -> AIUniverseDecision:
+    def evaluate_performance(self, metrics: dict[str, Any]) -> AIUniverseDecision:
         """
         Evaluates trading metrics (win rate, profit factor, consecutive losses, max drawdown)
         and derives algorithmic parameter adjustments with clear evidence.
@@ -41,8 +42,8 @@ class TradingAnalyst:
         max_drawdown = float(metrics.get("max_drawdown", metrics.get("drawdown_pct", 0.0)))
         total_trades = int(metrics.get("total_trades", metrics.get("closed_trades", 0)))
         unrealized_pnl = float(metrics.get("unrealized_pnl", 0.0))
-        
-        evidence: List[str] = []
+
+        evidence: list[str] = []
         evidence.append(f"Win Rate: {win_rate:.1f}% across {total_trades} closed trades")
         evidence.append(f"Profit Factor: {profit_factor:.2f}")
         evidence.append(f"Max Drawdown: {max_drawdown:.2f}%")
@@ -50,8 +51,8 @@ class TradingAnalyst:
         if unrealized_pnl != 0.0:
             evidence.append(f"Active Unrealized PnL: ${unrealized_pnl:,.2f} USDT")
 
-        suggested_params: Dict[str, Any] = {}
-        alternatives: List[str] = []
+        suggested_params: dict[str, Any] = {}
+        alternatives: list[str] = []
 
         # Decision Logic:
         # Case 1: High Drawdown or excessive consecutive losses -> Capital Preservation

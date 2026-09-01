@@ -1,7 +1,8 @@
 """Provider Pool Optimizer with task specialization, health-aware load balancing, and demotion."""
 
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 from app.utils.logger import logger
 
 
@@ -10,7 +11,7 @@ class ProviderPoolOptimizer:
 
     def __init__(self) -> None:
         # Task type -> Best providers ranked
-        self.specializations: Dict[str, List[str]] = {
+        self.specializations: dict[str, list[str]] = {
             "code_generation": ["groq", "openrouter", "gemini", "mistral"],
             "architecture": ["nvidia", "gemini", "groq", "openrouter"],
             "debugging": ["groq", "openrouter", "gemini", "mistral"],
@@ -18,9 +19,9 @@ class ProviderPoolOptimizer:
             "documentation": ["cohere", "gemini", "openrouter", "mistral"],
         }
         # Provider demotions: provider -> demoted_until_timestamp
-        self._demotions: Dict[str, float] = {}
-        self._consecutive_failures: Dict[str, int] = {}
-        self._performance: Dict[str, Dict[str, Any]] = {
+        self._demotions: dict[str, float] = {}
+        self._consecutive_failures: dict[str, int] = {}
+        self._performance: dict[str, dict[str, Any]] = {
             p: {"successes": 10, "failures": 0, "avg_latency_ms": 250.0}
             for p in ["gemini", "groq", "mistral", "openrouter", "nvidia", "cohere", "huggingface"]
         }
@@ -56,7 +57,7 @@ class ProviderPoolOptimizer:
                 self._demotions[provider] = time.time() + 3600.0
                 logger.warning("Provider %s demoted for 1 hour after 3 consecutive failures.", provider)
 
-    def get_performance_report(self) -> Dict[str, Any]:
+    def get_performance_report(self) -> dict[str, Any]:
         """Returns comprehensive performance metrics per provider."""
         return {
             "provider_stats": self._performance,

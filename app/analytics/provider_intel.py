@@ -1,12 +1,12 @@
 """Provider Performance Intelligence and Failure Matrix Engine."""
 
-from typing import Any, Dict, List
+from typing import Any
 
 
 class ProviderPerformanceIntelligence:
     """Analyzes provider performance matrices across services, failure patterns, and generates routing recommendations."""
 
-    def get_performance_matrix(self) -> Dict[str, Any]:
+    def get_performance_matrix(self) -> dict[str, Any]:
         return {
             "provider_service_matrix": {
                 "groq": {"code_generation": {"success_rate_pct": 98.2, "avg_latency_ms": 35.0, "confidence": 0.93}, "trading_consult": {"success_rate_pct": 97.5, "avg_latency_ms": 42.0, "confidence": 0.91}},

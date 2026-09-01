@@ -1,10 +1,14 @@
 """Automated Test Generation Service for FORGE."""
 
 import time
-from typing import Any, Dict, List, Literal, Optional
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
-from app.providers.unified_manager import UnifiedExecutionRequest, unified_provider_manager
+from app.providers.unified_manager import (
+    UnifiedExecutionRequest,
+    unified_provider_manager,
+)
 
 
 class TestGenerationRequest(BaseModel):
@@ -13,7 +17,7 @@ class TestGenerationRequest(BaseModel):
     test_framework: Literal["pytest", "jest", "playwright"] = Field(
         default="pytest", description="Testing framework target"
     )
-    coverage_targets: List[str] = Field(
+    coverage_targets: list[str] = Field(
         default_factory=list, description="Target functions, classes, or edge cases to cover"
     )
 

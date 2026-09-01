@@ -1,10 +1,14 @@
 """Architecture Planning Service for FORGE."""
 
 import time
-from typing import Any, Dict, List, Literal, Optional
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
-from app.providers.unified_manager import UnifiedExecutionRequest, unified_provider_manager
+from app.providers.unified_manager import (
+    UnifiedExecutionRequest,
+    unified_provider_manager,
+)
 
 
 class ArchitecturePlanRequest(BaseModel):
@@ -12,20 +16,20 @@ class ArchitecturePlanRequest(BaseModel):
     project_type: Literal["cli", "web", "api", "script", "dashboard"] = Field(
         default="api", description="Category of software artifact"
     )
-    constraints: List[str] = Field(default_factory=list, description="Performance, security, or deployment constraints")
-    preferences: List[str] = Field(default_factory=list, description="Preferred frameworks or libraries")
+    constraints: list[str] = Field(default_factory=list, description="Performance, security, or deployment constraints")
+    preferences: list[str] = Field(default_factory=list, description="Preferred frameworks or libraries")
 
 
 class FileManifestEntry(BaseModel):
     filename: str
     purpose: str
-    dependencies: List[str] = Field(default_factory=list)
+    dependencies: list[str] = Field(default_factory=list)
 
 
 class ArchitecturePlanResponse(BaseModel):
     architecture_spec: str
-    file_manifest: List[FileManifestEntry]
-    tech_stack: List[str]
+    file_manifest: list[FileManifestEntry]
+    tech_stack: list[str]
     confidence: float
     latency_ms: float
 
@@ -67,7 +71,7 @@ class ArchitecturePlanningService:
             latency_ms=elapsed_ms
         )
 
-    def _determine_tech_stack(self, ptype: str, prefs: List[str]) -> List[str]:
+    def _determine_tech_stack(self, ptype: str, prefs: list[str]) -> list[str]:
         if prefs:
             return prefs
         defaults = {
@@ -79,7 +83,7 @@ class ArchitecturePlanningService:
         }
         return defaults.get(ptype, ["Python", "FastAPI"])
 
-    def _generate_default_manifest(self, ptype: str) -> List[FileManifestEntry]:
+    def _generate_default_manifest(self, ptype: str) -> list[FileManifestEntry]:
         if ptype == "api":
             return [
                 FileManifestEntry(filename="app/main.py", purpose="FastAPI application entrypoint", dependencies=["app/routes.py", "app/config.py"]),

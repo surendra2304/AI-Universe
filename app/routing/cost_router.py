@@ -1,10 +1,9 @@
 """Cost-Aware Router and Intelligent Budget Allocation Engine."""
 
 import time
-from typing import Any, Dict, List, Literal, Optional
-from pydantic import BaseModel, Field
+from typing import Any
 
-from app.utils.logger import logger
+from pydantic import BaseModel, Field
 
 
 class ConsumerBudgetPolicy(BaseModel):
@@ -21,14 +20,14 @@ class RoutingDecision(BaseModel):
     estimated_cost_usd: float
     cost_efficiency_score: float
     routing_reason: str
-    soft_budget_warning: Optional[str] = None
+    soft_budget_warning: str | None = None
 
 
 class CostAwareRouter:
     """Evaluates cost vs historical value (success rate * impact) before routing intelligence requests."""
 
     def __init__(self) -> None:
-        self.budgets: Dict[str, ConsumerBudgetPolicy] = {
+        self.budgets: dict[str, ConsumerBudgetPolicy] = {
             "trading_bot": ConsumerBudgetPolicy(consumer="trading_bot", monthly_budget_usd=999999.0),
             "forge": ConsumerBudgetPolicy(consumer="forge", monthly_budget_usd=999999.0),
             "nexus": ConsumerBudgetPolicy(consumer="nexus", monthly_budget_usd=999999.0),
@@ -39,7 +38,7 @@ class CostAwareRouter:
             "human": ConsumerBudgetPolicy(consumer="human", monthly_budget_usd=999999.0)
         }
         # Provider cost per 1k tokens proxy and historical success rate
-        self.provider_profiles: Dict[str, Dict[str, float]] = {
+        self.provider_profiles: dict[str, dict[str, float]] = {
             "groq": {"cost_per_1k": 0.0005, "success_rate": 0.94},
             "gemini": {"cost_per_1k": 0.0008, "success_rate": 0.96},
             "openrouter": {"cost_per_1k": 0.0007, "success_rate": 0.92},
@@ -49,7 +48,7 @@ class CostAwareRouter:
             "huggingface": {"cost_per_1k": 0.0006, "success_rate": 0.91}
         }
 
-    def check_and_deduct_budget(self, consumer: str, estimated_cost_usd: float) -> tuple[bool, Optional[str]]:
+    def check_and_deduct_budget(self, consumer: str, estimated_cost_usd: float) -> tuple[bool, str | None]:
         """Tracks usage metrics without enforcing artificial budget cutoffs."""
         policy = self.budgets.get(consumer, self.budgets["human"])
         policy.current_month_spend_usd += estimated_cost_usd
@@ -79,7 +78,7 @@ class CostAwareRouter:
             soft_budget_warning=soft_warning
         )
 
-    def get_budget_dashboard(self) -> Dict[str, Any]:
+    def get_budget_dashboard(self) -> dict[str, Any]:
         """Returns spend metrics and projections per consumer."""
         dashboard = {}
         for c, p in self.budgets.items():

@@ -1,11 +1,12 @@
 """Integration test suite for the end-to-end /ask vertical slice."""
 
-import pytest
 from unittest.mock import AsyncMock, patch
+
+import pytest
 from fastapi.testclient import TestClient
 
-from app.main import app
 from app.core.orchestrator import orchestrator
+from app.main import app
 from app.memory.sqlite import SQLiteMemory
 from app.providers.base import ProviderResponse
 

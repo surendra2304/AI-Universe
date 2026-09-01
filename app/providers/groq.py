@@ -1,6 +1,6 @@
 """Groq LLM Provider Adapter."""
 
-from typing import Optional
+
 from app.core.config import settings
 from app.providers.openai_compatible import OpenAICompatibleProvider
 
@@ -20,8 +20,8 @@ class GroqProvider(OpenAICompatibleProvider):
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        default_model: Optional[str] = None,
+        api_key: str | None = None,
+        default_model: str | None = None,
         timeout: float = 60.0
     ) -> None:
         super().__init__(

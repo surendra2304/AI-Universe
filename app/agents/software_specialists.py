@@ -10,12 +10,12 @@ Includes:
 - DevOps Engineer
 """
 
-from typing import List
+
 from app.agents.base import Agent, AgentModelConfig
 from app.agents.registry import agent_registry
 
 
-def get_software_specialist_agents() -> List[Agent]:
+def get_software_specialist_agents() -> list[Agent]:
     """Returns the dedicated software engineering specialist agents for FORGE."""
     return [
         Agent(

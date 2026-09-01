@@ -1,8 +1,10 @@
 """Unit tests for SQLite persistent memory storage."""
 
+from datetime import datetime
+
 import pytest
 import pytest_asyncio
-from datetime import datetime
+
 from app.memory.base import MemoryRecord, RunRecord, TaskRecord
 from app.memory.sqlite import SQLiteMemory
 

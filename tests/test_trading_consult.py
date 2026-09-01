@@ -3,14 +3,13 @@
 import asyncio
 import json
 import os
+
 import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
 from app.schemas.trading_consult import (
     AIUniverseDecision,
-    ParameterChange,
-    StrategyPerformance,
     TradingConsultRequest,
     TradingTelemetry,
 )
@@ -252,7 +251,6 @@ async def test_timeout_handling(monkeypatch):
 
     async def mock_slow_consult(req):
         await asyncio.sleep(2.0)
-        return None
 
     # Temporarily monkeypatch timeout or method with a very short timeout
     original_consult = trading.trading_consult_service.consult

@@ -11,35 +11,35 @@ Features:
 """
 
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 from app.analytics.usage_analytics import usage_analytics
 from app.routing.consumer_router import consumer_router
-from app.utils.logger import logger
 
 
 class StatisticalForecastInput(BaseModel):
-    metric_name: Optional[str] = "target_metric"
+    metric_name: str | None = "target_metric"
     point_estimate: float
-    confidence_interval: List[float] = Field(..., min_length=2, max_length=2, description="[lower_bound, upper_bound]")
-    probability: Optional[float] = Field(default=0.80, ge=0.0, le=1.0)
+    confidence_interval: list[float] = Field(..., min_length=2, max_length=2, description="[lower_bound, upper_bound]")
+    probability: float | None = Field(default=0.80, ge=0.0, le=1.0)
     model_used: str = Field(description="e.g. ARIMA, Prophet, GARCH, MonteCarlo")
 
 
 class FuturisEnhanceRequest(BaseModel):
     request_id: str
     statistical_forecast: StatisticalForecastInput
-    target_context: Dict[str, Any] = Field(default_factory=dict)
-    contextual_factors: List[str] = Field(default_factory=list)
-    question: Optional[str] = "Given this forecast and context, what risks or drivers should be considered?"
+    target_context: dict[str, Any] = Field(default_factory=dict)
+    contextual_factors: list[str] = Field(default_factory=list)
+    question: str | None = "Given this forecast and context, what risks or drivers should be considered?"
 
 
 class EnhancedAssessmentPayload(BaseModel):
-    key_risks: List[str]
-    contextual_drivers: List[str]
-    uncertainty_factors: List[str]
-    qualitative_adjustments: List[str]
+    key_risks: list[str]
+    contextual_drivers: list[str]
+    uncertainty_factors: list[str]
+    qualitative_adjustments: list[str]
 
 
 class FuturisEnhanceResponse(BaseModel):
@@ -49,16 +49,16 @@ class FuturisEnhanceResponse(BaseModel):
         ...,
         description="Factor to adjust statistical CI (+0.10 widens interval due to high qualitative risk, -0.05 narrows)"
     )
-    dissent: List[str] = Field(default_factory=list)
+    dissent: list[str] = Field(default_factory=list)
     grounded_forecast_summary: str
-    provenance: Dict[str, Any] = Field(default_factory=dict)
+    provenance: dict[str, Any] = Field(default_factory=dict)
 
 
 class StatisticalGroundingEngine:
     """Provides statistical grounding context to other consumers (Trading, Sentinel, FORGE, Nexus)."""
 
     def __init__(self) -> None:
-        self.cached_forecasts: Dict[str, StatisticalForecastInput] = {
+        self.cached_forecasts: dict[str, StatisticalForecastInput] = {
             "volatility_btc": StatisticalForecastInput(
                 metric_name="volatility_btc",
                 point_estimate=0.045,
@@ -82,7 +82,7 @@ class StatisticalGroundingEngine:
             )
         }
 
-    def get_grounding_context(self, metric_key: str) -> Optional[Dict[str, Any]]:
+    def get_grounding_context(self, metric_key: str) -> dict[str, Any] | None:
         """Retrieves active statistical forecast grounding for a specific consumer metric."""
         forecast = self.cached_forecasts.get(metric_key)
         if not forecast:
@@ -101,7 +101,7 @@ class FuturisEnhancementService:
     """Specialized qualitative enhancement service for Futuris statistical models."""
 
     def __init__(self) -> None:
-        self.provenance_store: Dict[str, Dict[str, Any]] = {}
+        self.provenance_store: dict[str, dict[str, Any]] = {}
         self.grounding_engine = StatisticalGroundingEngine()
 
     async def enhance_forecast(self, req: FuturisEnhanceRequest) -> FuturisEnhanceResponse:
@@ -133,6 +133,8 @@ class FuturisEnhancementService:
             "Strong structural adoption trend providing baseline support above lower CI.",
             "Historical seasonal uplift aligned with current projection trajectory."
         ]
+        if context:
+            contextual_drivers.append(f"Target context alignment: {str(context)[:120]}.")
 
         uncertainty_factors = [
             f"Confidence band spread of +/- {round(ci_width / 2.0, 2)} reflects elevated input variance.",
@@ -140,7 +142,7 @@ class FuturisEnhancementService:
         ]
 
         qualitative_adjustments = [
-            f"Qualitative recommendation: Widen forecast target bands by +8% to account for external volatility.",
+            "Qualitative recommendation: Widen forecast target bands by +8% to account for external volatility.",
             "Apply conservative risk bounds if downstream execution depends on upper percentile bounds."
         ]
 
@@ -207,7 +209,7 @@ class FuturisEnhancementService:
 
         return response
 
-    def get_provenance(self, request_id: str) -> Optional[Dict[str, Any]]:
+    def get_provenance(self, request_id: str) -> dict[str, Any] | None:
         return self.provenance_store.get(request_id)
 
 

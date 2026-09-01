@@ -1,6 +1,7 @@
 """FastAPI Router for Sentinel Security Intelligence Endpoints."""
 
 from fastapi import APIRouter, HTTPException, Path, status
+
 from app.services.sentinel_intelligence import (
     SentinelAnalysisRequest,
     SentinelAnalysisResponse,

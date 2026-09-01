@@ -1,6 +1,5 @@
 """Production Health and Prometheus Metrics Endpoints."""
 
-import time
 from fastapi import APIRouter, Response, status
 
 from app.agents.registry import agent_registry

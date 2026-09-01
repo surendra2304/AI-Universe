@@ -1,6 +1,5 @@
 """Learned routing and orchestration strategy store."""
 
-from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 from app.memory.base import BaseMemory, StrategyRecord
@@ -13,7 +12,7 @@ class RecommendedStrategy(BaseModel):
     """Strategy recommendation for a new query based on historical empirical outcomes."""
     task_type: str
     recommended_mode: str = Field(description="fast, review, debate")
-    recommended_agents: List[str]
+    recommended_agents: list[str]
     recommended_provider: str = "gemini"
     recommended_model: str = "gemini-2.5-flash"
     confidence: float = Field(ge=0.0, le=1.0)
@@ -25,14 +24,14 @@ class RecommendedStrategy(BaseModel):
 class StrategyStore:
     """Saves, updates, and retrieves learned orchestration patterns and agent compositions."""
 
-    def __init__(self, memory: Optional[BaseMemory] = None) -> None:
+    def __init__(self, memory: BaseMemory | None = None) -> None:
         self.memory = memory or SQLiteMemory()
 
     async def save_learned_pattern(
         self,
         task_type: str,
         mode: str,
-        agents: List[str],
+        agents: list[str],
         score: float,
         provider: str = "gemini",
         model: str = "gemini-2.5-flash"
@@ -70,7 +69,7 @@ class StrategyStore:
         self,
         task_type: str,
         complexity: str = "auto"
-    ) -> Optional[RecommendedStrategy]:
+    ) -> RecommendedStrategy | None:
         """Queries historical outcomes to recommend the optimal mode and specialist panel."""
         strat = await self.memory.get_strategy(task_type)
         if strat and strat.score >= 0.75:

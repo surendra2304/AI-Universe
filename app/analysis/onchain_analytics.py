@@ -1,13 +1,13 @@
 """On-Chain Analytics Engine for Network Metrics, Whale Movements, and Exchange Inflows."""
 
 import time
-from typing import Any, Dict, List
+from typing import Any
 
 
 class OnChainAnalyticsEngine:
     """Computes blockchain network health, smart money whale transfers, and holder distribution."""
 
-    def get_onchain_metrics(self, symbol: str = "BTC") -> Dict[str, Any]:
+    def get_onchain_metrics(self, symbol: str = "BTC") -> dict[str, Any]:
         """Provides on-chain data with deterministic real-world baselines."""
         return {
             "symbol": symbol.upper(),

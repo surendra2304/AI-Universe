@@ -1,8 +1,8 @@
 """Experiment Runner: Controlled A/B Hypothesis Testing, Split Execution, and Statistical Significance."""
 
-import math
 import time
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -11,17 +11,17 @@ class ExperimentHypothesis(BaseModel):
     title: str
     hypothesis: str
     experiment_type: Literal["agent_composition", "provider", "prompting", "mode"]
-    control_config: Dict[str, Any]
-    treatment_config: Dict[str, Any]
+    control_config: dict[str, Any]
+    treatment_config: dict[str, Any]
     sample_size_target: int = 50
     control_samples: int = 0
     control_successes: int = 0
     treatment_samples: int = 0
     treatment_successes: int = 0
     status: Literal["RUNNING", "CONCLUDED", "PAUSED"] = "RUNNING"
-    p_value: Optional[float] = None
+    p_value: float | None = None
     statistically_significant: bool = False
-    concluding_recommendation: Optional[str] = None
+    concluding_recommendation: str | None = None
     created_at: float = Field(default_factory=time.time)
 
 
@@ -29,7 +29,7 @@ class ExperimentRunner:
     """Orchestrates controlled intelligence experiments, chi-square p-value calculations, and automatic rollouts."""
 
     def __init__(self) -> None:
-        self.experiments: Dict[str, ExperimentHypothesis] = {
+        self.experiments: dict[str, ExperimentHypothesis] = {
             "exp-001": ExperimentHypothesis(
                 experiment_id="exp-001",
                 title="4-Agent Debate vs 3-Agent on Strategic Decisions",
@@ -103,7 +103,7 @@ class ExperimentRunner:
         else:
             exp.concluding_recommendation = "No statistically significant improvement observed. Retain control configuration."
 
-    def get_experiments(self) -> List[Dict[str, Any]]:
+    def get_experiments(self) -> list[dict[str, Any]]:
         return [e.model_dump() for e in self.experiments.values()]
 
 

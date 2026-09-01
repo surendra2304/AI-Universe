@@ -1,6 +1,6 @@
 """Market Stress Intelligence and Historical Crisis Scenario Testing."""
 
-from typing import Any, Dict, List
+from typing import Any
 
 
 class StressIntelligenceEngine:
@@ -11,7 +11,7 @@ class StressIntelligenceEngine:
         bid_ask_spread_pct: float,
         cross_asset_correlation: float,
         volatility_atr_pct: float
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calculates aggregate stress index."""
         # Baseline score: 0 to 100
         stress_score = 0.0
@@ -33,7 +33,7 @@ class StressIntelligenceEngine:
             "advisory_guidance": "REDUCE_EXPOSURE_AND_PAUSE_OPTIMIZATION" if stress_score >= 70 else ("MONITOR_CLOSELY" if stress_score >= 35 else "NORMAL_TRADING_CONDITIONS")
         }
 
-    def run_historical_stress_test(self, portfolio_equity: float, active_notional: float) -> Dict[str, Any]:
+    def run_historical_stress_test(self, portfolio_equity: float, active_notional: float) -> dict[str, Any]:
         """Simulates portfolio impact under classic historical market shock scenarios."""
         scenarios = [
             {

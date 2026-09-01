@@ -1,15 +1,8 @@
 """Tests for Nexus Intelligence Endpoints and Mode-Based Routing."""
 
-import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.services.nexus_intelligence import (
-    BudgetSpec,
-    EvidenceItem,
-    IntelligenceRequest,
-    nexus_intelligence_service,
-)
 
 client = TestClient(app)
 

@@ -1,16 +1,15 @@
 """Provider factory and registry for Inference (7 Verified Free Cloud Providers)."""
 
-from typing import Dict, Type
 from app.providers.base import BaseLLMProvider
+from app.providers.cohere import CohereProvider
 from app.providers.gemini import GeminiProvider
 from app.providers.groq import GroqProvider
-from app.providers.mistral import MistralProvider
-from app.providers.openrouter import OpenRouterProvider
-from app.providers.cohere import CohereProvider
 from app.providers.huggingface import HuggingFaceProvider
+from app.providers.mistral import MistralProvider
 from app.providers.nvidia import NvidiaProvider
+from app.providers.openrouter import OpenRouterProvider
 
-_PROVIDER_MAP: Dict[str, Type[BaseLLMProvider]] = {
+_PROVIDER_MAP: dict[str, type[BaseLLMProvider]] = {
     "gemini": GeminiProvider,
     "groq": GroqProvider,
     "mistral": MistralProvider,
@@ -20,7 +19,7 @@ _PROVIDER_MAP: Dict[str, Type[BaseLLMProvider]] = {
     "nvidia": NvidiaProvider,
 }
 
-_PROVIDER_CACHE: Dict[str, BaseLLMProvider] = {}
+_PROVIDER_CACHE: dict[str, BaseLLMProvider] = {}
 
 
 def get_provider(name: str = "gemini", **kwargs) -> BaseLLMProvider:
@@ -43,12 +42,12 @@ def get_provider(name: str = "gemini", **kwargs) -> BaseLLMProvider:
 
 __all__ = [
     "BaseLLMProvider",
+    "CohereProvider",
     "GeminiProvider",
     "GroqProvider",
-    "MistralProvider",
-    "OpenRouterProvider",
-    "CohereProvider",
     "HuggingFaceProvider",
+    "MistralProvider",
     "NvidiaProvider",
+    "OpenRouterProvider",
     "get_provider",
 ]

@@ -1,6 +1,7 @@
 """FastAPI Router for Unified Provider Execution serving Trading and Software Engineering."""
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, status
+
 from app.providers.unified_manager import (
     UnifiedExecutionRequest,
     UnifiedExecutionResponse,

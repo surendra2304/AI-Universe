@@ -1,12 +1,12 @@
 """Cross-Asset Correlation Engine, Rolling Window Matrix, and Concentration Risk Warning."""
 
-from typing import Any, Dict, List
+from typing import Any
 
 
 class CrossAssetCorrelationEngine:
     """Computes correlation matrices across crypto assets, BTC Dominance, S&P 500, Gold, and DXY."""
 
-    def get_correlation_matrix(self) -> Dict[str, Any]:
+    def get_correlation_matrix(self) -> dict[str, Any]:
         """Returns multi-window rolling cross-asset correlation matrix."""
         assets = ["BTC", "ETH", "SOL", "BNB", "SP500", "GOLD", "DXY"]
 
@@ -29,7 +29,7 @@ class CrossAssetCorrelationEngine:
             "dxy_index": 103.8
         }
 
-    def analyze_portfolio_correlation(self, positions: Dict[str, float]) -> Dict[str, Any]:
+    def analyze_portfolio_correlation(self, positions: dict[str, float]) -> dict[str, Any]:
         """Calculates portfolio correlation to BTC and evaluates concentration risk."""
         total_val = sum(positions.values())
         if total_val == 0:

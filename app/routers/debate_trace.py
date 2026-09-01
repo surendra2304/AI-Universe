@@ -1,6 +1,7 @@
 """FastAPI Router for Enhanced Debate Protocol and Reasoning Chain Explainability."""
 
 from fastapi import APIRouter, HTTPException, Path, status
+
 from app.debate.enhanced_debate_protocol import enhanced_debate_engine
 
 debate_router = APIRouter(prefix="/v1", tags=["Debate Protocol & Explainability"])

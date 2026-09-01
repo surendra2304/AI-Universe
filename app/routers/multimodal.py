@@ -1,6 +1,7 @@
 """FastAPI Router for Multi-Modal Intelligence, Temporal Analysis, and Counterfactual Reasoning."""
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, status
+
 from app.services.multimodal_intelligence import (
     MultiModalIntelligenceRequest,
     MultiModalIntelligenceResponse,

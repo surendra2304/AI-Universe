@@ -1,6 +1,5 @@
 """Unit & Integration Tests for Sentinel Security Intelligence Endpoints."""
 
-import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -108,8 +107,11 @@ def test_sentinel_provenance_retrieval():
 
 def test_threat_context_and_remediation_reasoning():
     """Tests ThreatContextEngine and RemediationReasoningEngine components."""
+    from app.intelligence.remediation import (
+        SecurityOutcomeRecord,
+        remediation_reasoning_engine,
+    )
     from app.intelligence.threat_context import threat_context_engine
-    from app.intelligence.remediation import remediation_reasoning_engine, SecurityOutcomeRecord
 
     # 1. Threat context enrichment
     enriched = threat_context_engine.enrich_context(

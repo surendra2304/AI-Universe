@@ -1,8 +1,7 @@
 """Deep Learning Sequence & Volatility Forecasting Models (LSTM/Transformer Ensembles)."""
 
 import math
-import time
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class DeepLearningPricePredictor:
@@ -12,9 +11,9 @@ class DeepLearningPricePredictor:
         self,
         symbol: str,
         current_price: float,
-        recent_returns: List[float],
+        recent_returns: list[float],
         volatility_atr_pct: float = 0.015
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Generates multi-horizon directional probabilities and volatility forecasts."""
         # 1. Feature extraction from sequential returns
         seq_len = len(recent_returns)

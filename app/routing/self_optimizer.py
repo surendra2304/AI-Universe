@@ -1,7 +1,8 @@
 """Self-Optimizing Routing Engine with Outcome Weight Feedback and Diversity Preservation."""
 
 import time
-from typing import Any, Dict, List
+from typing import Any
+
 from app.analytics.outcomes import consumer_outcome_tracker
 
 
@@ -9,16 +10,16 @@ class SelfOptimizingRouter:
     """Dynamically adapts provider selection weights based on verified downstream build outcomes."""
 
     def __init__(self) -> None:
-        self.provider_weights: Dict[str, Dict[str, float]] = {
+        self.provider_weights: dict[str, dict[str, float]] = {
             "code_generation": {"groq": 0.45, "gemini": 0.35, "openrouter": 0.20},
             "architecture": {"nvidia": 0.50, "gemini": 0.35, "groq": 0.15},
             "trading_consult": {"groq": 0.50, "gemini": 0.30, "openrouter": 0.20}
         }
-        self.optimization_logs: List[Dict[str, Any]] = [
+        self.optimization_logs: list[dict[str, Any]] = [
             {"timestamp": time.time() - 7200, "service": "code_generation", "action": "INCREASED_GROQ_WEIGHT", "rationale": "98% verification pass rate observed from FORGE builds."}
         ]
 
-    def get_routing_status(self) -> Dict[str, Any]:
+    def get_routing_status(self) -> dict[str, Any]:
         """Returns current dynamic routing weights and audit logs."""
         return {
             "active_weights": self.provider_weights,

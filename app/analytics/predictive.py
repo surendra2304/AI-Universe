@@ -1,14 +1,15 @@
 """Predictive Provider Analytics: Rate Limit Forecasting and Cost Projections."""
 
 import time
-from typing import Any, Dict, List
+from typing import Any
+
 from app.analytics.usage_analytics import usage_analytics
 
 
 class PredictiveProviderManager:
     """Forecasts rate limit breaches, projected daily/monthly expenditure, and recommends pre-emptive shifting."""
 
-    def generate_forecasts(self) -> Dict[str, Any]:
+    def generate_forecasts(self) -> dict[str, Any]:
         overview = usage_analytics.get_overview()
         daily_cost = overview["total_cost_usd"]
 

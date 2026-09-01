@@ -1,12 +1,10 @@
 """Unit tests for in-process CLI commands (ask, debate, experiment)."""
 
-import pytest
 from unittest.mock import AsyncMock, patch
+
 from typer.testing import CliRunner
 
 from app.cli import cli_app
-from app.core.orchestrator import OrchestrationResult
-from app.memory.base import ExperimentRecord
 from app.providers.base import ProviderResponse
 
 runner = CliRunner()

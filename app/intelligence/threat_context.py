@@ -1,25 +1,25 @@
 """Threat Context Engine: Enriches security intelligence with campaigns, CVE exploit trends, and industry patterns."""
 
-import time
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 
 class ThreatCampaignInfo(BaseModel):
     campaign_name: str
-    targeted_technologies: List[str]
+    targeted_technologies: list[str]
     threat_actor_group: str
-    observed_ttp: List[str]
-    industry_relevance: List[str]
+    observed_ttp: list[str]
+    industry_relevance: list[str]
     severity: str = "HIGH"
 
 
 class EnrichedThreatContext(BaseModel):
-    detected_technologies: List[str]
+    detected_technologies: list[str]
     exposure_level: str
-    active_threat_campaigns: List[ThreatCampaignInfo]
-    cve_exploitation_trends: Dict[str, Dict[str, Any]]
-    industry_threat_patterns: List[str]
+    active_threat_campaigns: list[ThreatCampaignInfo]
+    cve_exploitation_trends: dict[str, dict[str, Any]]
+    industry_threat_patterns: list[str]
     geographic_threat_context: str
     threat_elevation_factor: float = Field(default=1.0, description="Multiplier for environmental risk")
 
@@ -28,7 +28,7 @@ class ThreatContextEngine:
     """Enriches Sentinel security scans with real-time threat campaigns, exploit telemetry, and industry patterns."""
 
     def __init__(self) -> None:
-        self.known_campaigns: List[ThreatCampaignInfo] = [
+        self.known_campaigns: list[ThreatCampaignInfo] = [
             ThreatCampaignInfo(
                 campaign_name="Operation ShadowAPI",
                 targeted_technologies=["FastAPI", "Nginx", "Node.js", "Python"],
@@ -49,14 +49,14 @@ class ThreatContextEngine:
 
     def enrich_context(
         self,
-        technologies: List[str],
+        technologies: list[str],
         exposure_level: str,
-        cve_matches: List[str],
-        industry: Optional[str] = "fintech",
-        region: Optional[str] = "global"
+        cve_matches: list[str],
+        industry: str | None = "fintech",
+        region: str | None = "global"
     ) -> EnrichedThreatContext:
         """Correlates target asset stack with active exploitation campaigns and CVE trends."""
-        matched_campaigns: List[ThreatCampaignInfo] = []
+        matched_campaigns: list[ThreatCampaignInfo] = []
         tech_set = {t.lower() for t in technologies}
 
         for camp in self.known_campaigns:
@@ -65,7 +65,7 @@ class ThreatContextEngine:
                 matched_campaigns.append(camp)
 
         # Build CVE exploitation trends
-        cve_trends: Dict[str, Dict[str, Any]] = {}
+        cve_trends: dict[str, dict[str, Any]] = {}
         for cve in cve_matches:
             cve_trends[cve] = {
                 "in_the_wild_exploitation": True if "2026" in cve or "AUTH" in cve else False,

@@ -1,7 +1,6 @@
 """FastAPI Router for Tenant Key Governance, Multi-Tenant Budgets, Prometheus Metrics, and Degradation."""
 
-from typing import Any, Dict, Optional
-from fastapi import APIRouter, HTTPException, Path, Query, status
+from fastapi import APIRouter, HTTPException, Path, status
 from pydantic import BaseModel
 
 from app.governance.circuit_breaker import circuit_breaker_manager

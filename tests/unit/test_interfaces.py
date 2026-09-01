@@ -1,18 +1,11 @@
 """Unit tests for Core Foundation abstract interfaces and data contracts."""
 
-import pytest
-from app.providers.base import (
-    BaseLLMProvider,
-    ProviderMessage,
-    ProviderRequest,
-    ProviderResponse,
-    ProviderCapabilities
-)
-from app.memory.base import BaseMemory, MemoryRecord, TaskRecord, RunRecord
-from app.agents.base import Agent, BaseAgentRegistry
+from app.agents.base import Agent
 from app.agents.registry import InMemoryAgentRegistry
-from app.core.orchestrator import BaseOrchestrator, OrchestrationRequest, OrchestrationResult
-from app.evaluation.evaluator import BaseEvaluator, EvaluationReport, EvaluationScore
+from app.core.orchestrator import OrchestrationRequest
+from app.evaluation.evaluator import EvaluationReport, EvaluationScore
+from app.memory.base import MemoryRecord, TaskRecord
+from app.providers.base import ProviderMessage, ProviderRequest, ProviderResponse
 
 
 def test_provider_models():

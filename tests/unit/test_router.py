@@ -1,8 +1,7 @@
 """Unit tests for the Task Router, budget/latency degradation, and policy engine."""
 
-import pytest
 from app.agents.router import router
-from app.core.policies import ProviderSwitchingPolicy, SwitchReason, SystemPolicies
+from app.core.policies import ProviderSwitchingPolicy, SwitchReason
 
 
 def test_router_domain_detection():

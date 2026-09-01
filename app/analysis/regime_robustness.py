@@ -1,6 +1,6 @@
 """Market Regime Robustness Analysis and Whipsaw Transition Stress Testing."""
 
-from typing import Any, Dict, List
+from typing import Any
 
 
 class RegimeRobustnessEngine:
@@ -9,8 +9,8 @@ class RegimeRobustnessEngine:
     def test_regime_robustness(
         self,
         strategy_name: str,
-        regime_metrics: Dict[str, Dict[str, float]]
-    ) -> Dict[str, Any]:
+        regime_metrics: dict[str, dict[str, float]]
+    ) -> dict[str, Any]:
         """Calculates multi-regime consistency, worst-regime performance, and whipsaw transition score."""
         # Default representative metrics if missing
         if not regime_metrics:

@@ -1,6 +1,5 @@
 """Production Configuration for Inference."""
 
-from typing import Dict, List
 from pydantic_settings import BaseSettings
 
 
@@ -29,7 +28,7 @@ class ProductionConfig(BaseSettings):
     MAX_REQUEST_SIZE_BYTES: int = 1024 * 1024  # 1MB
 
     # Provider Fallback Chain Optimization (Free-Tier Prioritized)
-    PROVIDER_PRIORITY: List[str] = [
+    PROVIDER_PRIORITY: list[str] = [
         "gemini",
         "groq",
         "mistral",

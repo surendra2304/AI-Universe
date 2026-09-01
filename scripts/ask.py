@@ -3,12 +3,13 @@
 import asyncio
 import sys
 import time
+
 from rich.console import Console
+from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.table import Table
-from rich.markdown import Markdown
 
-from app.core.orchestrator import orchestrator, OrchestrationRequest
+from app.core.orchestrator import OrchestrationRequest, orchestrator
 
 # Configure stdout
 sys.stdout.reconfigure(encoding="utf-8")

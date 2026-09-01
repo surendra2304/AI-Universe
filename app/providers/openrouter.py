@@ -1,7 +1,7 @@
 """OpenRouter LLM Provider Adapter with Dynamic Capability-Based Model Discovery."""
 
 import time
-from typing import Dict, List, Optional
+
 import httpx
 
 from app.core.config import settings
@@ -10,7 +10,7 @@ from app.providers.openai_compatible import OpenAICompatibleProvider
 from app.utils.logger import logger
 
 # Capability-to-model preference mapping for OpenRouter free tier
-CAPABILITY_KEYWORDS: Dict[str, List[str]] = {
+CAPABILITY_KEYWORDS: dict[str, list[str]] = {
     "coding": ["code", "coder", "python", "qwen", "deepseek", "dev", "starcoder", "codellama"],
     "reasoning": ["nemotron", "r1", "reasoning", "qwen", "llama-3.3", "llama-3.1", "instruct"],
     "research": ["llama", "mistral", "nemotron", "gemma", "phi"],
@@ -20,7 +20,7 @@ CAPABILITY_KEYWORDS: Dict[str, List[str]] = {
 }
 
 # Verified reliable default fallback free models on OpenRouter
-FALLBACK_FREE_MODELS: Dict[str, str] = {
+FALLBACK_FREE_MODELS: dict[str, str] = {
     "coding": "nvidia/nemotron-3.5-lightning:free",
     "reasoning": "nvidia/nemotron-3.5-lightning:free",
     "research": "nvidia/nemotron-3.5-lightning:free",
@@ -45,8 +45,8 @@ class OpenRouterProvider(OpenAICompatibleProvider):
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        default_model: Optional[str] = None,
+        api_key: str | None = None,
+        default_model: str | None = None,
         timeout: float = 60.0
     ) -> None:
         super().__init__(
@@ -61,11 +61,11 @@ class OpenRouterProvider(OpenAICompatibleProvider):
                 "X-Title": "Inference"
             }
         )
-        self._cached_free_models: List[str] = []
+        self._cached_free_models: list[str] = []
         self._cache_timestamp: float = 0.0
         self._cache_ttl_seconds: float = 300.0  # 5 minutes
 
-    async def fetch_available_free_models(self) -> List[str]:
+    async def fetch_available_free_models(self) -> list[str]:
         """Fetch all currently available :free models directly from OpenRouter API."""
         now = time.time()
         if self._cached_free_models and (now - self._cache_timestamp) < self._cache_ttl_seconds:

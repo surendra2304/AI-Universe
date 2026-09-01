@@ -1,7 +1,8 @@
 """Cohere LLM Provider Adapter."""
 
 import time
-from typing import AsyncIterator, List, Optional
+from collections.abc import AsyncIterator
+
 import httpx
 
 from app.core.config import settings
@@ -15,7 +16,7 @@ from app.providers.base import (
 from app.utils.logger import logger
 
 COHERE_DEFAULT_MODEL = "command-r7b-12-2024"
-COHERE_SUPPORTED_MODELS: List[str] = [
+COHERE_SUPPORTED_MODELS: list[str] = [
     "command-r7b-12-2024",
     "command-r-08-2024",
     "command-light",
@@ -28,7 +29,7 @@ class CohereProvider(BaseLLMProvider):
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
+        api_key: str | None = None,
         default_model: str = COHERE_DEFAULT_MODEL,
         timeout: float = 60.0
     ) -> None:

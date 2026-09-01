@@ -1,8 +1,6 @@
 """FastAPI Router for Ecosystem Intelligence, Continuous Learning, Meta-Intelligence, and Ecosystem Consultations."""
 
-import time
-from typing import Any, Dict, List, Optional
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, status
 from pydantic import BaseModel, Field
 
 from app.intelligence.meta_intel import meta_intelligence
@@ -13,11 +11,11 @@ ecosystem_router = APIRouter(prefix="/v1/ecosystem", tags=["Ecosystem Intelligen
 
 
 class EcosystemConsultRequest(BaseModel):
-    portfolio_positions: Dict[str, float] = Field(
+    portfolio_positions: dict[str, float] = Field(
         default={"BTCUSDT": 20000.0, "ETHUSDT": 10000.0, "SOLUSDT": 4000.0},
         description="Active portfolio USD notional positions"
     )
-    active_strategies: List[str] = Field(
+    active_strategies: list[str] = Field(
         default=["ADX_EMA_Trend", "Bollinger_Reversion", "ML_Ensemble"],
         description="List of currently executing strategies"
     )

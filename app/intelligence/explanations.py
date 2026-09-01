@@ -1,6 +1,7 @@
 """Explanation Generation Engine: Multi-Audience Summaries and Plain-Language Citations."""
 
-from typing import Any, Dict, List, Literal, Optional
+from typing import Literal
+
 from pydantic import BaseModel
 
 
@@ -8,7 +9,7 @@ class AudienceExplanation(BaseModel):
     brief: str
     standard: str
     detailed: str
-    evidence_citations: List[str]
+    evidence_citations: list[str]
     target_audience: Literal["executive", "standard", "technical"] = "standard"
 
 
@@ -19,15 +20,15 @@ class ExplanationGenerationEngine:
         self,
         decision: str,
         goal: str,
-        key_evidence: List[str],
-        unresolved_disagreements: List[str],
+        key_evidence: list[str],
+        unresolved_disagreements: list[str],
         confidence: float,
         audience: str = "standard"
     ) -> AudienceExplanation:
         citations = [f"[Ref-{i+1}] {ev}" for i, ev in enumerate(key_evidence[:4])]
 
         brief = f"Recommendation is {decision} for {goal} based on {len(key_evidence)} verified signals ({int(confidence*100)}% confidence)."
-        
+
         standard = (
             f"We recommend proceeding with {decision}. This is supported by verified evidence including: "
             f"{'; '.join(citations[:2])}. "

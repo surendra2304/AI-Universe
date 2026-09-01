@@ -1,13 +1,12 @@
 """Meta-Intelligence Layer: Self-Assessment, Agent Contribution Scoring, and Failure Pattern Analysis."""
 
-from typing import Any, Dict, List
-from app.learning.continuous_learning import continuous_learning_engine
+from typing import Any
 
 
 class MetaIntelligenceEngine:
     """Evaluates the platform's internal intelligence quality, calibration accuracy, and failure modes."""
 
-    def generate_meta_intelligence_report(self) -> Dict[str, Any]:
+    def generate_meta_intelligence_report(self) -> dict[str, Any]:
         """Provides a self-reflective meta-assessment of all Inference intelligence components."""
         return {
             "meta_intelligence_quality_score": 94.8,  # 0 to 100

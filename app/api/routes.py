@@ -1,11 +1,11 @@
 """FastAPI API routes for Inference."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 
 from app.core.orchestrator import OrchestrationRequest, orchestrator
-
 
 router = APIRouter()
 
@@ -16,9 +16,9 @@ class AskRequest(BaseModel):
     mode: str = Field(default="auto", description="auto, fast, review, debate")
     max_agents: int = Field(default=5, ge=1, le=10)
     require_evidence: bool = Field(default=True)
-    max_budget: Optional[float] = Field(default=None, description="Max budget in USD for this task")
-    max_latency: Optional[float] = Field(default=None, description="Max desired latency in seconds")
-    context_data: Dict[str, Any] = Field(default_factory=dict)
+    max_budget: float | None = Field(default=None, description="Max budget in USD for this task")
+    max_latency: float | None = Field(default=None, description="Max desired latency in seconds")
+    context_data: dict[str, Any] = Field(default_factory=dict)
 
 
 class AskResponse(BaseModel):
@@ -28,13 +28,13 @@ class AskResponse(BaseModel):
     answer: str
     mode_used: str
     provider: str
-    models_used: List[str]
-    agents_used: List[str]
+    models_used: list[str]
+    agents_used: list[str]
     confidence: float
     latency_seconds: float
     total_tokens: int
-    unresolved_disagreements: List[str] = Field(default_factory=list)
-    key_evidence: List[str] = Field(default_factory=list)
+    unresolved_disagreements: list[str] = Field(default_factory=list)
+    key_evidence: list[str] = Field(default_factory=list)
 
 
 class DebateRequest(BaseModel):
@@ -42,9 +42,9 @@ class DebateRequest(BaseModel):
     question: str = Field(description="The question or proposal to debate")
     max_agents: int = Field(default=5, ge=2, le=10)
     require_evidence: bool = Field(default=True)
-    max_budget: Optional[float] = Field(default=None, description="Max budget in USD for this debate")
-    max_latency: Optional[float] = Field(default=None, description="Max desired latency in seconds")
-    context_data: Dict[str, Any] = Field(default_factory=dict)
+    max_budget: float | None = Field(default=None, description="Max budget in USD for this debate")
+    max_latency: float | None = Field(default=None, description="Max desired latency in seconds")
+    context_data: dict[str, Any] = Field(default_factory=dict)
 
 
 class DebateResponse(BaseModel):
@@ -53,11 +53,11 @@ class DebateResponse(BaseModel):
     run_id: str
     answer: str
     mode_used: str = "debate"
-    agents_used: List[str]
-    models_used: List[str]
+    agents_used: list[str]
+    models_used: list[str]
     confidence: float
-    unresolved_disagreements: List[str] = Field(default_factory=list)
-    key_evidence: List[str] = Field(default_factory=list)
+    unresolved_disagreements: list[str] = Field(default_factory=list)
+    key_evidence: list[str] = Field(default_factory=list)
     total_tokens: int = 0
     latency_seconds: float = 0.0
 
@@ -100,7 +100,7 @@ async def ask_question(request: AskRequest) -> AskResponse:
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Task orchestration failed: {str(exc)}"
+            detail=f"Task orchestration failed: {exc!s}"
         )
 
 
@@ -141,7 +141,7 @@ async def trigger_debate(request: DebateRequest) -> DebateResponse:
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Debate orchestration failed: {str(exc)}"
+            detail=f"Debate orchestration failed: {exc!s}"
         )
 
 
@@ -179,9 +179,9 @@ async def list_public_agents():
 class ExperimentTriggerRequest(BaseModel):
     """Payload to trigger an experiment run via API."""
     experiment_type: str = Field(description="benchmark_suite, baseline_vs_debate, model_comparison")
-    question: Optional[str] = None
-    target_benchmarks: Optional[List[str]] = None
-    providers_to_test: Optional[List[str]] = None
+    question: str | None = None
+    target_benchmarks: list[str] | None = None
+    providers_to_test: list[str] | None = None
 
 
 @router.post("/experiments", status_code=status.HTTP_200_OK)
@@ -214,7 +214,7 @@ async def trigger_experiment(request: ExperimentTriggerRequest):
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Experiment execution failed: {str(exc)}"
+            detail=f"Experiment execution failed: {exc!s}"
         )
 
 

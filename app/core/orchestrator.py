@@ -1,14 +1,14 @@
 """Orchestrator core module for Dynamic DAG task coordination and execution."""
 
-import asyncio
 import time
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 from app.agents.base import Agent
-from app.agents.debate import CollaborationEngine, DebateEngine, debate_engine
+from app.agents.debate import CollaborationEngine
 from app.agents.registry import agent_registry
 from app.agents.roles import register_all_specialists
 from app.agents.router import router as task_router
@@ -17,7 +17,6 @@ from app.learning.performance import PerformanceTracker
 from app.learning.strategy_store import StrategyStore
 from app.memory.base import BaseMemory, TaskRecord
 from app.memory.sqlite import SQLiteMemory
-from app.providers.health import provider_health_tracker
 from app.utils.ids import generate_task_id
 from app.utils.logger import logger
 
@@ -28,9 +27,9 @@ class OrchestrationRequest(BaseModel):
     mode: str = Field(default="auto", description="auto, fast, review, debate")
     max_agents: int = Field(default=5, ge=1, le=10)
     require_evidence: bool = True
-    max_budget: Optional[float] = Field(default=None, description="Max budget in USD for this task")
-    max_latency: Optional[float] = Field(default=None, description="Max desired latency in seconds")
-    context_data: Dict[str, Any] = Field(default_factory=dict)
+    max_budget: float | None = Field(default=None, description="Max budget in USD for this task")
+    max_latency: float | None = Field(default=None, description="Max desired latency in seconds")
+    context_data: dict[str, Any] = Field(default_factory=dict)
 
 
 class OrchestrationResult(BaseModel):
@@ -41,11 +40,11 @@ class OrchestrationResult(BaseModel):
     answer: str
     mode_used: str
     provider_used: str = "multi_provider"
-    agents_used: List[str]
-    models_used: List[str]
+    agents_used: list[str]
+    models_used: list[str]
     confidence: float = Field(ge=0.0, le=1.0)
-    unresolved_disagreements: List[str] = Field(default_factory=list)
-    key_evidence: List[str] = Field(default_factory=list)
+    unresolved_disagreements: list[str] = Field(default_factory=list)
+    key_evidence: list[str] = Field(default_factory=list)
     complexity: str = "simple"
     total_tokens: int = 0
     total_latency_seconds: float = 0.0
@@ -57,17 +56,14 @@ class BaseOrchestrator(ABC):
     @abstractmethod
     async def process_task(self, request: OrchestrationRequest) -> OrchestrationResult:
         """Execute full end-to-end task routing, reasoning/debate, and answer synthesis."""
-        pass
 
     @abstractmethod
     async def cancel_task(self, task_id: str) -> bool:
         """Cancel an in-flight orchestration task."""
-        pass
 
     @abstractmethod
-    async def get_task_status(self, task_id: str) -> Optional[Dict[str, Any]]:
+    async def get_task_status(self, task_id: str) -> dict[str, Any] | None:
         """Retrieve live execution progress and state of an ongoing or completed task."""
-        pass
 
 
 class Orchestrator(BaseOrchestrator):
@@ -75,7 +71,7 @@ class Orchestrator(BaseOrchestrator):
 
     def __init__(
         self,
-        memory: Optional[BaseMemory] = None,
+        memory: BaseMemory | None = None,
     ) -> None:
         self.memory = memory or SQLiteMemory()
         self.router = task_router
@@ -83,14 +79,14 @@ class Orchestrator(BaseOrchestrator):
         self.debate_engine = CollaborationEngine(memory=self.memory, registry=self.registry)
         self.strategy_store = StrategyStore(memory=self.memory)
         self.performance_tracker = PerformanceTracker(memory=self.memory)
-        
+
         # Ensure all 10 specialist roles are registered
         register_all_specialists()
 
     def build_execution_dag(
         self,
         question: str,
-        participating_agents: List[Agent],
+        participating_agents: list[Agent],
         complexity: TaskComplexity
     ) -> ExecutionDAG:
         """
@@ -159,10 +155,14 @@ class Orchestrator(BaseOrchestrator):
         mode_used = decision.mode
         route_reason = decision.reason
         selected_agent_ids = decision.selected_agent_ids
-        participating_agents = [
-            self.registry.get_agent(aid) for aid in selected_agent_ids
-            if self.registry.get_agent(aid)
+        participating_agents: list[Agent] = [
+            a for aid in selected_agent_ids
+            if (a := self.registry.get_agent(aid)) is not None
         ]
+        if not participating_agents:
+            fallback_agent = self.registry.get_agent("researcher") or self.registry.get_agent("synthesizer")
+            if fallback_agent:
+                participating_agents = [fallback_agent]
 
         # 3. Create initial task record in SQLite with telemetry metadata
         task_record = TaskRecord(
@@ -172,7 +172,7 @@ class Orchestrator(BaseOrchestrator):
             status="running",
             metadata={
                 "route_reason": route_reason,
-                "selected_agents": selected_agent_ids,
+                "selected_agents": [a.id for a in participating_agents],
                 "complexity": complexity.value,
                 "routing_telemetry": decision.telemetry,
                 "learned_strategy_applied": bool(learned_strat),
@@ -191,7 +191,7 @@ class Orchestrator(BaseOrchestrator):
                         break
                     agent = self.registry.get_agent(cid)
                     if agent and agent.id not in existing_ids:
-                        participating_agents = participating_agents + [agent]
+                        participating_agents.append(agent)
                         existing_ids.append(agent.id)
 
             # 4. Build Dynamic DAG for execution
@@ -267,7 +267,7 @@ class Orchestrator(BaseOrchestrator):
             return True
         return False
 
-    async def get_task_status(self, task_id: str) -> Optional[Dict[str, Any]]:
+    async def get_task_status(self, task_id: str) -> dict[str, Any] | None:
         """Retrieve task details and progress."""
         task = await self.memory.get_task(task_id)
         return task.model_dump() if task else None

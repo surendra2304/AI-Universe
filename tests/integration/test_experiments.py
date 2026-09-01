@@ -1,8 +1,9 @@
 """Integration tests for Experiments Harness: BenchmarkHarness, Experiment Runner, and API endpoints."""
 
 import asyncio
-import pytest
 from unittest.mock import AsyncMock, patch
+
+import pytest
 from fastapi.testclient import TestClient
 
 from app.core.orchestrator import orchestrator
@@ -34,13 +35,16 @@ async def test_benchmark_harness_suite(test_exp_env):
         latency_seconds=0.4
     )
 
-    with patch("app.agents.debate.get_provider") as mock_debate_prov, \
-         patch("app.providers.gemini.GeminiProvider.generate", new_callable=AsyncMock) as mock_gen:
+    with patch("app.agents.debate.model_gateway.execute", new_callable=AsyncMock) as mock_exec, \
+         patch("app.evaluation.evaluator.get_provider") as mock_get_prov:
+        mock_exec.return_value = mock_llm_response
         mock_prov = AsyncMock()
-        mock_prov.provider_name = "mock_provider"
-        mock_prov.generate.return_value = mock_llm_response
-        mock_debate_prov.return_value = mock_prov
-        mock_gen.return_value = mock_llm_response
+        mock_prov.generate.return_value = ProviderResponse(
+            content='{"scores": [{"criterion": "correctness", "score": 0.95, "reasoning": "acc"}], "strengths": ["modular"], "flaws_identified": [], "calibrated_confidence": 0.90}',
+            model="gemini-2.5-pro",
+            provider="gemini"
+        )
+        mock_get_prov.return_value = mock_prov
 
         exp = await harness.run_benchmark_suite(benchmark_ids=["bench_001_arch"])
         assert exp.id.startswith("exp_bench_")

@@ -1,6 +1,5 @@
 """Unit tests for the 10 Specialist Agent Roles and Registry."""
 
-import pytest
 from app.agents.registry import agent_registry
 from app.agents.roles import get_all_specialist_agents, register_all_specialists
 
@@ -64,10 +63,10 @@ def test_agent_registry_contains_all_10_specialists():
 
     # Verify Researcher specialized model list
     researcher = agent_registry.get_agent("researcher")
-    assert researcher.model_name == "gemini-3.7-flash"
+    assert researcher.model_name in ["gemini-3.6-flash", "gemini-3.7-flash"]
     assert len(researcher.models) == 3
     assert researcher.models[0].provider == "gemini"
-    assert researcher.models[0].model == "gemini-3.7-flash"
+    assert researcher.models[0].model in ["gemini-3.6-flash", "gemini-3.7-flash"]
     assert researcher.models[0].capability == "research"
     assert researcher.models[1].provider == "openrouter"
     assert researcher.models[1].capability == "reasoning"

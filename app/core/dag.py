@@ -2,7 +2,7 @@
 
 import re
 from enum import Enum
-from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -17,27 +17,27 @@ class DAGNode(BaseModel):
     node_id: str
     agent_id: str
     agent_role: str
-    dependencies: List[str] = Field(default_factory=list, description="IDs of nodes that must finish before this node runs")
+    dependencies: list[str] = Field(default_factory=list, description="IDs of nodes that must finish before this node runs")
     stage_name: str = "analysis"
     complexity: TaskComplexity = TaskComplexity.SIMPLE
 
 
 class ExecutionDAG(BaseModel):
     """Directed Acyclic Graph defining parallel execution stages for multi-agent workflows."""
-    nodes: Dict[str, DAGNode] = Field(default_factory=dict)
-    layers: List[List[str]] = Field(default_factory=list, description="Topologically sorted execution layers for parallel asyncio.gather")
+    nodes: dict[str, DAGNode] = Field(default_factory=dict)
+    layers: list[list[str]] = Field(default_factory=list, description="Topologically sorted execution layers for parallel asyncio.gather")
 
     def add_node(self, node: DAGNode) -> None:
         self.nodes[node.node_id] = node
 
-    def build_layers(self) -> List[List[str]]:
+    def build_layers(self) -> list[list[str]]:
         """
         Builds parallel execution layers using topological sort.
         All nodes in layer N have all their dependencies satisfied by layers 0..N-1.
         """
-        in_degree: Dict[str, int] = {nid: len(n.dependencies) for nid, n in self.nodes.items()}
-        layers: List[List[str]] = []
-        visited = set()
+        in_degree: dict[str, int] = {nid: len(n.dependencies) for nid, n in self.nodes.items()}
+        layers: list[list[str]] = []
+        visited: set[str] = set()
 
         while len(visited) < len(self.nodes):
             current_layer = [

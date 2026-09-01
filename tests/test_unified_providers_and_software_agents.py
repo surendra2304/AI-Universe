@@ -6,7 +6,10 @@ from fastapi.testclient import TestClient
 from app.agents.registry import agent_registry
 from app.agents.software_specialists import get_software_specialist_agents
 from app.main import app
-from app.providers.unified_manager import UnifiedExecutionRequest, unified_provider_manager
+from app.providers.unified_manager import (
+    UnifiedExecutionRequest,
+    unified_provider_manager,
+)
 
 client = TestClient(app)
 

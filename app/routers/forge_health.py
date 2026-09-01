@@ -1,11 +1,11 @@
 """FastAPI Router for FORGE Health, Capabilities, and Admin Telemetry."""
 
 import time
-from typing import Any, Dict, List, Optional
-from fastapi import APIRouter, HTTPException, Query, status
+
+from fastapi import APIRouter, Query, status
 
 from app.providers.pool_optimizer import provider_pool_optimizer
-from app.routing.consumer_router import consumer_router
+from app.routing.consumer_router import ConsumerType, consumer_router
 
 forge_health_router = APIRouter(tags=["FORGE Health & Admin"])
 
@@ -46,7 +46,7 @@ async def get_forge_capabilities():
 
 
 @forge_health_router.get("/v1/admin/usage", status_code=status.HTTP_200_OK)
-async def get_consumer_usage(consumer: Optional[str] = Query(default=None, description="forge, trading_bot, friday, human")):
+async def get_consumer_usage(consumer: ConsumerType | None = Query(default=None, description="forge, trading_bot, friday, human")):
     """Returns token and call usage metrics per consumer."""
     return consumer_router.get_usage(consumer)
 

@@ -1,13 +1,14 @@
 """Remediation Reasoning Engine: Dependency-Aware Ordering, Blast Radius, Quick Wins, and Regression Risk."""
 
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Literal
+
 from pydantic import BaseModel, Field
 
 
 class RemediationPlanItem(BaseModel):
     priority_order: int
     primary_finding_id: str
-    dependent_finding_ids: List[str] = Field(default_factory=list, description="Findings automatically resolved by this fix")
+    dependent_finding_ids: list[str] = Field(default_factory=list, description="Findings automatically resolved by this fix")
     title: str
     remediation_action: str
     quick_win: bool = False
@@ -23,33 +24,34 @@ class SecurityOutcomeRecord(BaseModel):
     remediation_applied: str
     verified_resolved: bool
     rescan_timestamp: float
-    notes: Optional[str] = None
+    notes: str | None = None
 
 
 class RemediationReasoningEngine:
     """Evaluates dependencies, blast radius, quick-wins, and regression risks to generate optimal fix sequences."""
 
     def __init__(self) -> None:
-        self.security_outcomes: Dict[str, List[SecurityOutcomeRecord]] = {}
+        self.security_outcomes: dict[str, list[SecurityOutcomeRecord]] = {}
 
     def plan_remediations(
         self,
-        findings: List[Dict[str, Any]],
+        findings: list[dict[str, Any]],
         exposure_level: str
-    ) -> List[RemediationPlanItem]:
+    ) -> list[RemediationPlanItem]:
         """Generates dependency-aware prioritized remediation plan."""
-        plan: List[RemediationPlanItem] = []
+        plan: list[RemediationPlanItem] = []
 
         # Categorize findings by impact and effort
         for idx, f in enumerate(findings):
             fid = f.get("finding_id", f"F-{idx+1:02d}")
             title = f.get("title", "Generic Finding")
             severity = f.get("severity", "MEDIUM")
-            desc = f.get("description", "")
 
             is_header_or_config = "header" in title.lower() or "config" in title.lower() or "banner" in title.lower()
             is_auth_or_arch = "auth" in title.lower() or "architecture" in title.lower() or "injection" in title.lower()
 
+            reg_risk: Literal["LOW", "MEDIUM", "HIGH"]
+            effort: Literal["QUICK_WIN", "MODERATE", "SIGNIFICANT_REFACTOR"]
             if is_header_or_config:
                 effort = "QUICK_WIN"
                 quick_win = True
@@ -67,9 +69,12 @@ class RemediationReasoningEngine:
                 risk_red = 25.0
 
             # Dependency grouping: TLS/Header fixes resolve related information disclosures
-            dependent_ids = []
+            dependent_ids: list[str] = []
             if "tls" in title.lower() or "header" in title.lower():
-                dependent_ids = [other.get("finding_id") for other in findings if "banner" in other.get("title", "").lower() and other.get("finding_id") != fid]
+                dependent_ids = [
+                    str(other.get("finding_id")) for other in findings
+                    if "banner" in str(other.get("title", "")).lower() and other.get("finding_id") != fid and other.get("finding_id") is not None
+                ]
 
             blast_radius = 1 + len(dependent_ids)
 
@@ -101,7 +106,7 @@ class RemediationReasoningEngine:
             self.security_outcomes[outcome.request_id] = []
         self.security_outcomes[outcome.request_id].append(outcome)
 
-    def get_security_learning_metrics(self) -> Dict[str, Any]:
+    def get_security_learning_metrics(self) -> dict[str, Any]:
         """Calculates remediation effectiveness statistics."""
         total_rescans = sum(len(records) for records in self.security_outcomes.values())
         total_resolved = sum(sum(1 for r in records if r.verified_resolved) for records in self.security_outcomes.values())

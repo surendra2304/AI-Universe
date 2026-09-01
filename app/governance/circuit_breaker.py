@@ -1,8 +1,10 @@
 """Graceful Degradation Matrix and Circuit Breaker Governance."""
 
 import time
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Literal
+
 from pydantic import BaseModel, Field
+
 from app.utils.logger import logger
 
 
@@ -19,7 +21,7 @@ class ProviderCircuitBreakerManager:
     """Manages 5-failure circuit breaker trips, 60s cooldowns, and graceful degradation."""
 
     def __init__(self) -> None:
-        self.breakers: Dict[str, CircuitBreakerState] = {
+        self.breakers: dict[str, CircuitBreakerState] = {
             p: CircuitBreakerState(provider=p)
             for p in ["gemini", "groq", "mistral", "openrouter", "nvidia", "cohere", "huggingface"]
         }
@@ -53,7 +55,7 @@ class ProviderCircuitBreakerManager:
             return False
         return True
 
-    def get_circuit_statuses(self) -> Dict[str, Any]:
+    def get_circuit_statuses(self) -> dict[str, Any]:
         return {
             p: {
                 "state": b.state,

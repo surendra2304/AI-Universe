@@ -1,7 +1,7 @@
 """Python SDK Client for Inference Multi-Agent Intelligence Platform."""
 
-import time
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 import httpx
 from pydantic import BaseModel, Field
 
@@ -10,28 +10,28 @@ class IntelligenceRequest(BaseModel):
     request_id: str
     task_type: str
     goal: str
-    context: Dict[str, Any] = Field(default_factory=dict)
-    evidence: List[Dict[str, Any]] = Field(default_factory=list)
+    context: dict[str, Any] = Field(default_factory=dict)
+    evidence: list[dict[str, Any]] = Field(default_factory=list)
     mode: str = "fast"
 
 
 class AIUniverseClient:
     """Typed client for interacting with Inference intelligence endpoints."""
 
-    def __init__(self, base_url: str = "http://localhost:8000", api_key: Optional[str] = None, timeout: float = 30.0) -> None:
+    def __init__(self, base_url: str = "http://localhost:8000", api_key: str | None = None, timeout: float = 30.0) -> None:
         self.base_url = base_url.rstrip("/")
         self.headers = {"Content-Type": "application/json"}
         if api_key:
             self.headers["Authorization"] = f"Bearer {api_key}"
         self.client = httpx.Client(base_url=self.base_url, headers=self.headers, timeout=timeout)
 
-    def query_nexus_intelligence(self, request: IntelligenceRequest) -> Dict[str, Any]:
+    def query_nexus_intelligence(self, request: IntelligenceRequest) -> dict[str, Any]:
         """Queries Nexus decision intelligence endpoint."""
         resp = self.client.post("/v1/nexus/intelligence", json=request.model_dump())
         resp.raise_for_status()
         return resp.json()
 
-    def generate_code(self, file_type: str, filename: str, context: Dict[str, Any], requirements: Optional[List[str]] = None) -> Dict[str, Any]:
+    def generate_code(self, file_type: str, filename: str, context: dict[str, Any], requirements: list[str] | None = None) -> dict[str, Any]:
         """Queries FORGE code generation endpoint."""
         payload = {
             "file_type": file_type,
@@ -43,7 +43,7 @@ class AIUniverseClient:
         resp.raise_for_status()
         return resp.json()
 
-    def enhance_statistical_forecast(self, request_id: str, statistical_forecast: Dict[str, Any], target_context: Optional[Dict[str, Any]] = None, contextual_factors: Optional[List[str]] = None, question: Optional[str] = None) -> Dict[str, Any]:
+    def enhance_statistical_forecast(self, request_id: str, statistical_forecast: dict[str, Any], target_context: dict[str, Any] | None = None, contextual_factors: list[str] | None = None, question: str | None = None) -> dict[str, Any]:
         """Queries Futuris statistical forecast enhancement endpoint."""
         payload = {
             "request_id": request_id,
@@ -56,7 +56,7 @@ class AIUniverseClient:
         resp.raise_for_status()
         return resp.json()
 
-    def query_intelx_research(self, request_id: str, role: str, context: Dict[str, Any], evidence_with_spans: Optional[List[Dict[str, Any]]] = None, constraints: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def query_intelx_research(self, request_id: str, role: str, context: dict[str, Any], evidence_with_spans: list[dict[str, Any]] | None = None, constraints: dict[str, Any] | None = None) -> dict[str, Any]:
         """Queries IntelX deep research intelligence endpoint."""
         payload = {
             "request_id": request_id,
@@ -69,7 +69,7 @@ class AIUniverseClient:
         resp.raise_for_status()
         return resp.json()
 
-    def query_sentinel_analysis(self, request_id: str, analysis_type: str, target_context: Dict[str, Any], findings: Optional[List[Dict[str, Any]]] = None, threat_intel: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def query_sentinel_analysis(self, request_id: str, analysis_type: str, target_context: dict[str, Any], findings: list[dict[str, Any]] | None = None, threat_intel: dict[str, Any] | None = None) -> dict[str, Any]:
         """Queries Sentinel cybersecurity intelligence endpoint."""
         payload = {
             "request_id": request_id,
@@ -82,7 +82,7 @@ class AIUniverseClient:
         resp.raise_for_status()
         return resp.json()
 
-    def report_outcome(self, consumer: str, request_id: str, outcome: str, detail: Optional[str] = None, metrics: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def report_outcome(self, consumer: str, request_id: str, outcome: str, detail: str | None = None, metrics: dict[str, Any] | None = None) -> dict[str, Any]:
         """Reports downstream verification or execution outcome for self-optimization."""
         payload = {
             "consumer": consumer,

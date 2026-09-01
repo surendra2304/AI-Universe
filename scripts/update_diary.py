@@ -2,15 +2,15 @@
 import os
 import re
 from datetime import datetime
-import sys
+
 
 def main():
     today = datetime.now().strftime('%Y-%m-%d')
     diary_file = f"diary/{today}.md"
-    
+
     if not os.path.exists('diary'):
         os.makedirs('diary')
-        
+
     if not os.path.exists(diary_file):
         with open(diary_file, 'w', encoding='utf-8') as f:
             f.write(f"# AI UNIVERSE — {today}\n\n")
@@ -46,7 +46,7 @@ def main():
     if os.path.exists('AI_UNIVERSE_DIARY.md'):
         with open('AI_UNIVERSE_DIARY.md', 'r', encoding='utf-8') as f:
             content = f.read()
-            
+
         nav_entry = f"- [{today}](diary/{today}.md)"
         if nav_entry not in content:
             content = re.sub(
@@ -57,7 +57,7 @@ def main():
             with open('AI_UNIVERSE_DIARY.md', 'w', encoding='utf-8') as f:
                 f.write(content)
             print(f"Added {today} to AI_UNIVERSE_DIARY.md navigation.")
-            
+
     print("\nRemember to never commit secrets or .env variables to the diary.")
 
 if __name__ == '__main__':

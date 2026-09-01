@@ -1,6 +1,7 @@
 """Cross-Market Multi-Agent Debate Engine with Macro, Liquidity, and Correlation Specialists."""
 
-from typing import Any, Dict, List
+from typing import Any
+
 from app.analysis.cross_asset import cross_asset_engine
 from app.analysis.liquidity_intel import liquidity_intel
 from app.analysis.market_regime_intel import regime_intel
@@ -9,7 +10,7 @@ from app.analysis.market_regime_intel import regime_intel
 class MultiMarketDebateEngine:
     """Deliberates cross-venue arbitrage, global liquidity conditions, and portfolio concentration."""
 
-    def conduct_cross_market_debate(self, portfolio_positions: Dict[str, float]) -> Dict[str, Any]:
+    def conduct_cross_market_debate(self, portfolio_positions: dict[str, float]) -> dict[str, Any]:
         """Runs multi-agent market deliberation."""
         corr_data = cross_asset_engine.analyze_portfolio_correlation(portfolio_positions)
         reg_data = regime_intel.classify_market_regime()

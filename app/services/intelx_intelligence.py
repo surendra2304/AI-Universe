@@ -15,12 +15,12 @@ Quality Controls:
 """
 
 import time
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Literal
+
 from pydantic import BaseModel, Field
 
 from app.analytics.usage_analytics import usage_analytics
 from app.routing.consumer_router import consumer_router
-from app.utils.logger import logger
 
 IntelXRole = Literal[
     "planner",
@@ -43,7 +43,7 @@ class RetrievedDocument(BaseModel):
 
 
 class ExtractedClaimSpan(BaseModel):
-    claim_id: Optional[str] = None
+    claim_id: str | None = None
     claim: str
     verbatim_span: str
     document_source: str
@@ -52,39 +52,39 @@ class ExtractedClaimSpan(BaseModel):
 
 class IntelXResearchContext(BaseModel):
     question: str
-    subquestions: List[str] = Field(default_factory=list)
-    retrieved_documents: List[RetrievedDocument] = Field(default_factory=list)
-    extracted_claims: List[ExtractedClaimSpan] = Field(default_factory=list)
+    subquestions: list[str] = Field(default_factory=list)
+    retrieved_documents: list[RetrievedDocument] = Field(default_factory=list)
+    extracted_claims: list[ExtractedClaimSpan] = Field(default_factory=list)
 
 
 class ResearchConstraints(BaseModel):
-    max_tokens: Optional[int] = Field(default=2000)
-    temperature: Optional[float] = Field(default=0.2)
+    max_tokens: int | None = Field(default=2000)
+    temperature: float | None = Field(default=0.2)
 
 
 class IntelXResearchRequest(BaseModel):
     request_id: str
     role: IntelXRole
     context: IntelXResearchContext
-    evidence_with_spans: List[ExtractedClaimSpan] = Field(default_factory=list)
-    constraints: Optional[ResearchConstraints] = Field(default_factory=ResearchConstraints)
+    evidence_with_spans: list[ExtractedClaimSpan] = Field(default_factory=list)
+    constraints: ResearchConstraints | None = Field(default_factory=ResearchConstraints)
 
 
 class IntelXResearchResponse(BaseModel):
     request_id: str
     role: IntelXRole
-    response: Dict[str, Any] = Field(description="Role-appropriate structured output")
+    response: dict[str, Any] = Field(description="Role-appropriate structured output")
     confidence: float = Field(..., ge=0.0, le=1.0)
-    key_evidence_used: List[str] = Field(default_factory=list, description="Verbatim spans and evidence items used")
-    dissent: List[str] = Field(default_factory=list, description="Dissent from verifier or critic debate passes")
-    source_independence_flags: List[str] = Field(default_factory=list)
-    provenance: Dict[str, Any] = Field(default_factory=dict)
+    key_evidence_used: list[str] = Field(default_factory=list, description="Verbatim spans and evidence items used")
+    dissent: list[str] = Field(default_factory=list, description="Dissent from verifier or critic debate passes")
+    source_independence_flags: list[str] = Field(default_factory=list)
+    provenance: dict[str, Any] = Field(default_factory=dict)
 
 
 class IntelXIntelligenceService:
     """Specialized deep research and claim verification engine for IntelX."""
 
-    ROLE_AGENT_MAPPING: Dict[str, List[str]] = {
+    ROLE_AGENT_MAPPING: dict[str, list[str]] = {
         "planner": ["strategist"],
         "extractor": ["coder"],
         "verifier": ["fact_checker", "critic"],
@@ -94,20 +94,19 @@ class IntelXIntelligenceService:
     }
 
     def __init__(self) -> None:
-        self.provenance_store: Dict[str, Dict[str, Any]] = {}
+        self.provenance_store: dict[str, dict[str, Any]] = {}
 
     def _detect_syndication_and_credibility(
         self,
-        evidence: List[ExtractedClaimSpan]
-    ) -> tuple[float, List[str], List[str]]:
+        evidence: list[ExtractedClaimSpan]
+    ) -> tuple[float, list[str], list[str]]:
         """Detects syndicated sources and computes credibility weight."""
         if not evidence:
             return 0.80, [], []
 
-        domains = [e.document_source.lower() for e in evidence]
         syndication_flags = []
         # Check for duplicated spans across different sources
-        spans_seen: Dict[str, str] = {}
+        spans_seen: dict[str, str] = {}
         for e in evidence:
             cleaned_span = e.verbatim_span.strip().lower()
             if cleaned_span in spans_seen and spans_seen[cleaned_span] != e.document_source:
@@ -136,8 +135,8 @@ class IntelXIntelligenceService:
         evidence_pool = req.evidence_with_spans or req.context.extracted_claims
         credibility_factor, syndication_flags, key_evidence_used = self._detect_syndication_and_credibility(evidence_pool)
 
-        dissent: List[str] = []
-        role_output: Dict[str, Any] = {}
+        dissent: list[str] = []
+        role_output: dict[str, Any] = {}
         confidence = credibility_factor
 
         # Role-specific execution logic
@@ -270,7 +269,7 @@ class IntelXIntelligenceService:
 
         return response
 
-    def get_provenance(self, request_id: str) -> Optional[Dict[str, Any]]:
+    def get_provenance(self, request_id: str) -> dict[str, Any] | None:
         return self.provenance_store.get(request_id)
 
 

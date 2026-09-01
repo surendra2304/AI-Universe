@@ -1,7 +1,8 @@
 """Unified API Provider Manager for centralized execution across all 7 verified free providers."""
 
 import time
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Literal
+
 from pydantic import BaseModel, Field
 
 from app.agents.registry import agent_registry
@@ -16,12 +17,12 @@ class UnifiedExecutionRequest(BaseModel):
         default="auto",
         description="Target provider name or 'auto' for intelligent capability matching"
     )
-    agent_role: Optional[str] = Field(
+    agent_role: str | None = Field(
         default="system_architect",
         description="Specialist agent role or ID (e.g. trading_analyst, system_architect, code_generator, etc.)"
     )
     prompt: str = Field(..., description="Prompt or task instruction to execute")
-    context: Dict[str, Any] = Field(default_factory=dict, description="Additional structured context or parameters")
+    context: dict[str, Any] = Field(default_factory=dict, description="Additional structured context or parameters")
     max_tokens: int = Field(default=2000, ge=50, le=8192, description="Max output tokens")
     temperature: float = Field(default=0.7, ge=0.0, le=2.0, description="Sampling temperature")
 
@@ -34,7 +35,7 @@ class UnifiedExecutionResponse(BaseModel):
     content: str
     latency_ms: float
     timestamp: float
-    token_usage: Dict[str, int] = Field(default_factory=dict)
+    token_usage: dict[str, int] = Field(default_factory=dict)
     status: str = "success"
 
 
@@ -64,7 +65,7 @@ class UnifiedProviderManager:
             agent = agent_registry.get_agent(req.agent_role.lower())
 
         # Determine target provider and model
-        target_provider = req.provider
+        target_provider: str = req.provider
         target_model = None
         system_prompt = "You are a helpful AI specialist in Inference."
 

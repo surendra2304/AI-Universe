@@ -1,12 +1,9 @@
 """Production Deployment and Pre-flight Verification Script for AI Universe."""
 
-import os
-import sys
-import time
 import subprocess
+import sys
 from datetime import datetime
 
-import httpx
 from fastapi.testclient import TestClient
 
 from app.config_production import production_config

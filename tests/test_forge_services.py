@@ -1,10 +1,8 @@
 """Tests for FORGE-supporting Intelligence Services."""
 
-import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.routing.consumer_router import consumer_router
 
 client = TestClient(app)
 
