@@ -43,7 +43,8 @@ class CodeGenerationService:
         self._cache_ttl = 3600.0  # 1 hour TTL
 
     def _get_cache_key(self, req: CodeGenerationRequest) -> str:
-        raw = f"{req.filename}:{req.file_type}:{req.requirements}:{req.language_features}"
+        goal = str(req.context.get("project_goal", ""))
+        raw = f"{goal}:{req.filename}:{req.file_type}:{req.requirements}:{req.language_features}"
         return hashlib.sha256(raw.encode()).hexdigest()
 
     async def generate_code(self, req: CodeGenerationRequest) -> CodeGenerationResponse:
@@ -67,7 +68,7 @@ class CodeGenerationService:
             agent_role="code_generator",
             prompt=prompt,
             context=self._prune_context(req.context),
-            max_tokens=4000,
+            max_tokens=8000,
             temperature=0.2
         )
 
@@ -118,10 +119,11 @@ class CodeGenerationService:
         feat_list = ", ".join(req.language_features) if req.language_features else "Standard"
 
         return (
-            f"Generate complete, production-ready code for file: `{req.filename}` ({req.file_type}).\n"
+            f"Generate complete, production-ready, fully closed code for file: `{req.filename}` ({req.file_type}).\n"
             f"Standards: {guide}\n"
             f"Language Features: {feat_list}\n"
             f"Specific Requirements:\n{req_list}\n\n"
+            "Keep the implementation modular, focused, and under 400 lines with zero truncated blocks.\n"
             "Return ONLY the runnable source code."
         )
 

@@ -46,8 +46,8 @@ class UnifiedProviderManager:
     ROLE_PROVIDER_MAPPING = {
         "trading_analyst": ("groq", "openai/gpt-oss-120b"),
         "requirements_analyst": ("gemini", "gemini-3.6-flash"),
-        "system_architect": ("nvidia", "nvidia/nemotron-3-ultra-550b-a55b"),
-        "code_generator": ("groq", "openai/gpt-oss-120b"),
+        "system_architect": ("gemini", "gemini-3.6-flash"),
+        "code_generator": ("gemini", "gemini-3.6-flash"),
         "code_reviewer": ("openrouter", "deepseek/deepseek-v4-flash:free"),
         "test_generator": ("gemini", "gemini-3.6-flash"),
         "documentation_writer": ("cohere", "command-a-plus-05-2026"),
