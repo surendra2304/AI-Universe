@@ -337,7 +337,8 @@ class CollaborationEngine:
         question: str,
         participating_agents: list[Agent] | None = None,
         require_evidence: bool = True,
-        complexity: TaskComplexity = TaskComplexity.SIMPLE
+        complexity: TaskComplexity = TaskComplexity.SIMPLE,
+        cancellation_event: asyncio.Event | None = None,
     ) -> CollaborationResult:
         """
         Executes the Real-Time Parallel Collaboration Protocol with Complexity & Health awareness:
@@ -346,6 +347,9 @@ class CollaborationEngine:
         3. If aligned: Instant Merged Synthesis.
         4. If severe conflict: Targeted Rebuttal round between conflicting specialists.
         """
+        if cancellation_event and cancellation_event.is_set():
+            raise asyncio.CancelledError(f"Task {task_id} was cancelled before collaboration.")
+
         session_id = generate_debate_id()
         start_total_time = time.perf_counter()
         total_tokens = 0

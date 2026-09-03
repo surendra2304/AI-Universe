@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 class ProviderHealthReport(BaseModel):
     """Health metrics and operational status for an individual provider."""
+
     provider_name: str
     is_healthy: bool
     health_score: float = Field(ge=0.0, le=1.0, description="Health score between 0.0 (dead) and 1.0 (perfect)")
@@ -46,7 +47,7 @@ class ProviderHealthTracker:
                 "last_failure": None,
                 "last_error": None,
                 "active_keys": 0,
-                "quarantined_keys": 0
+                "quarantined_keys": 0,
             }
         return self._stats[prov]
 
@@ -60,12 +61,7 @@ class ProviderHealthTracker:
         stats["last_success"] = time.time()
 
     def record_failure(
-        self,
-        provider_name: str,
-        error: str,
-        is_429: bool = False,
-        is_503: bool = False,
-        latency_seconds: float = 0.0
+        self, provider_name: str, error: str, is_429: bool = False, is_503: bool = False, latency_seconds: float = 0.0
     ) -> None:
         """Record a failed provider request with specific error classifications."""
         stats = self._get_or_create(provider_name)
@@ -120,7 +116,7 @@ class ProviderHealthTracker:
             last_failure_timestamp=stats["last_failure"],
             last_error_message=stats["last_error"],
             active_keys_count=stats["active_keys"],
-            quarantined_keys_count=stats["quarantined_keys"]
+            quarantined_keys_count=stats["quarantined_keys"],
         )
 
     def get_all_health(self) -> dict[str, ProviderHealthReport]:

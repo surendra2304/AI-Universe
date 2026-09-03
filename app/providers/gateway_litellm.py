@@ -1,4 +1,5 @@
-﻿"""LiteLLM selection/fallback helpers for Inference's ModelGateway."""
+"""LiteLLM selection/fallback helpers for Inference's ModelGateway."""
+
 from __future__ import annotations
 
 import json
@@ -46,12 +47,14 @@ async def execute_via_litellm(
     resolved = request.model or ""
     resolved = resolve_model(resolved)
     sanitized_extra = sanitize_litellm_params(request.extra_params)
-    updated = request.model_copy(update={
-        "model": resolved,
-        "extra_params": {
-            **sanitized_extra,
-            "timeout": request.extra_params.get("timeout", settings.LITELLM_DEFAULT_TIMEOUT),
-        },
-    })
+    updated = request.model_copy(
+        update={
+            "model": resolved,
+            "extra_params": {
+                **sanitized_extra,
+                "timeout": request.extra_params.get("timeout", settings.LITELLM_DEFAULT_TIMEOUT),
+            },
+        }
+    )
     provider = LiteLLMProvider(api_key=api_key)
     return await provider.generate(updated)

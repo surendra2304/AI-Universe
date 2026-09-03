@@ -93,10 +93,14 @@ class ProductionSecurityMiddleware(BaseHTTPMiddleware):
         try:
             response: Response = await call_next(request)
         except Exception as exc:
-            correlation_id = str(uuid.uuid4())
+            correlation_id = (
+                request.headers.get("X-Correlation-ID")
+                or request.headers.get("X-Request-ID")
+                or str(uuid.uuid4())
+            )
             logger.error(
                 "Unhandled exception [correlation_id=%s] on %s %s: %s",
-                correlation_id, request.method, request.url, str(exc), exc_info=True
+                correlation_id, request.method, request.url.path, str(exc), exc_info=True
             )
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -104,7 +108,8 @@ class ProductionSecurityMiddleware(BaseHTTPMiddleware):
                     "error_code": "INTERNAL_SERVER_ERROR",
                     "message": "An internal server error occurred.",
                     "correlation_id": correlation_id
-                }
+                },
+                headers={"X-Correlation-ID": correlation_id}
             )
 
         # 3. Add Production Security Headers

@@ -153,3 +153,10 @@ A local-first, multi-agent intelligence platform where specialist AI agents coll
 
 
 
+- 💡 **Deep Architecture Upgrade & Production Runtime Hardening (INFERENCE_DEEP_UPGRADE_2026-09-03)**:
+  - **Base Provider Contracts**: Pydantic validators enforcing valid roles, bounded message lengths (1-256), and max token limits (1-128,000).
+  - **LiteLLM Adapter Hardening**: Protected parameter filtering preventing `extra_params` override, model-aware capabilities, and active health checks.
+  - **Safe KeyPool & Non-Blocking Token Bucket**: Thread-safe credential pooling failing closed when all credentials are quarantined, and mutex-free token bucket sleeping in `ProviderRateLimiter`.
+  - **Cooperative Cancellation & DAG Execution**: Propagated cancellation tokens across debate and DAG stages, ensuring cancelled status can never be overwritten by completed.
+  - **HTTP Middleware & Telemetry**: Removed unconditional localhost rate limit bypass, bounded LRU storage, correlation ID propagation in 500 responses, and new `/health/providers`, `/models`, `/metrics/runtime` endpoints.
+  - 📊 **Verification**: 219 / 219 tests passed (100% pass rate in 78.65s); 0 mypy errors across 219 source files; 0 ruff lint violations.

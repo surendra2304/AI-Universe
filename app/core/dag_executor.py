@@ -78,9 +78,13 @@ class DAGExecutor:
         self,
         node_id: str,
         node_runner: Callable[[DAGNode, Dict[str, Any]], Coroutine[Any, Any, Any]],
-        max_retries: int = 1
+        max_attempts: int = 2,
+        max_retries: Optional[int] = None
     ) -> NodeExecutionResult:
-        """Executes an individual node with timeout, retry, and cancellation check."""
+        """Executes an individual node with timeout, retry limit, and cooperative cancellation."""
+        if max_retries is not None:
+            max_attempts = max(1, max_retries + 1)
+
         node = self.dag.nodes[node_id]
         node_start = time.perf_counter()
 
@@ -110,7 +114,19 @@ class DAGExecutor:
             self.results[node_id] = res
             return res
 
-        for attempt in range(1, max_retries + 1):
+        for attempt in range(1, max_attempts + 1):
+            if self.cancellation_event.is_set():
+                latency = time.perf_counter() - node_start
+                res = NodeExecutionResult(
+                    node_id=node_id,
+                    status="cancelled",
+                    latency_seconds=latency,
+                    error="Node cancelled during execution",
+                    attempt_count=attempt
+                )
+                self.results[node_id] = res
+                return res
+
             try:
                 output = await asyncio.wait_for(
                     node_runner(node, dep_outputs),
@@ -138,7 +154,7 @@ class DAGExecutor:
                 self.results[node_id] = res
                 return res
             except Exception as exc:
-                if attempt == max_retries:
+                if attempt >= max_attempts:
                     latency = time.perf_counter() - node_start
                     res = NodeExecutionResult(
                         node_id=node_id,

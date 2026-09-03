@@ -4,6 +4,7 @@ This adapter keeps Inference's internal ProviderRequest/ProviderResponse contrac
 while delegating normalized LLM transport to LiteLLM. It intentionally does not
 replace Inference's gateway policies (health, budgets, telemetry, fallback).
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -19,6 +20,17 @@ from app.providers.base import (
     UsageEstimate,
 )
 from app.providers.errors import normalize_provider_exception
+
+PROTECTED_FIELDS = {
+    "model",
+    "messages",
+    "temperature",
+    "max_tokens",
+    "stream",
+    "response_format",
+    "api_key",
+    "timeout",
+}
 
 
 class LiteLLMProvider(BaseLLMProvider):
@@ -42,8 +54,7 @@ class LiteLLMProvider(BaseLLMProvider):
         if request.system_instruction:
             messages.append({"role": "system", "content": request.system_instruction})
         messages.extend(
-            {"role": m.role, "content": m.content, **({"name": m.name} if m.name else {})}
-            for m in request.messages
+            {"role": m.role, "content": m.content, **({"name": m.name} if m.name else {})} for m in request.messages
         )
         return messages
 
@@ -54,9 +65,7 @@ class LiteLLMProvider(BaseLLMProvider):
         try:
             import litellm  # type: ignore[import-not-found,import-untyped]
         except ImportError as exc:
-            raise RuntimeError(
-                "LiteLLM integration is enabled but the 'litellm' package is not installed."
-            ) from exc
+            raise RuntimeError("LiteLLM integration is enabled but the 'litellm' package is not installed.") from exc
 
         started = time.perf_counter()
         kwargs: dict[str, Any] = {
@@ -75,7 +84,8 @@ class LiteLLMProvider(BaseLLMProvider):
                     "strict": True,
                 },
             }
-        kwargs.update(request.extra_params)
+        safe_extra = {k: v for k, v in request.extra_params.items() if k not in PROTECTED_FIELDS}
+        kwargs.update(safe_extra)
 
         if self._api_key:
             kwargs["api_key"] = self._api_key
@@ -115,9 +125,7 @@ class LiteLLMProvider(BaseLLMProvider):
         try:
             import litellm  # type: ignore[import-not-found,import-untyped]
         except ImportError as exc:
-            raise RuntimeError(
-                "LiteLLM integration is enabled but the 'litellm' package is not installed."
-            ) from exc
+            raise RuntimeError("LiteLLM integration is enabled but the 'litellm' package is not installed.") from exc
 
         kwargs: dict[str, Any] = {
             "model": request.model,
@@ -129,7 +137,8 @@ class LiteLLMProvider(BaseLLMProvider):
             kwargs["max_tokens"] = request.max_tokens
         if self._api_key:
             kwargs["api_key"] = self._api_key
-        kwargs.update(request.extra_params)
+        safe_extra = {k: v for k, v in request.extra_params.items() if k not in PROTECTED_FIELDS}
+        kwargs.update(safe_extra)
 
         try:
             response = await litellm.acompletion(**kwargs)
@@ -144,10 +153,7 @@ class LiteLLMProvider(BaseLLMProvider):
             raise normalize_provider_exception(exc, provider=self._provider_name, model=request.model) from exc
 
     def estimate_usage(self, request: ProviderRequest) -> UsageEstimate:
-        text = "\n".join(
-            [request.system_instruction or ""]
-            + [m.content for m in request.messages]
-        )
+        text = "\n".join([request.system_instruction or ""] + [m.content for m in request.messages])
         estimated_prompt = max(1, len(text) // 4)
         completion = request.max_tokens or 1024
         return UsageEstimate(
@@ -156,18 +162,40 @@ class LiteLLMProvider(BaseLLMProvider):
             estimated_total_tokens=estimated_prompt + completion,
         )
 
-    def capabilities(self) -> ProviderCapabilities:
+    def capabilities(self, model: str | None = None) -> ProviderCapabilities:
+        ctx = 128000
+        supports_tools = True
+        supports_json = True
+        if model:
+            m = model.lower()
+            if "llama-3" in m:
+                ctx = 8192 if "8b" in m else 131072
+            elif "claude" in m:
+                ctx = 200000
+            elif "gpt-4" in m or "gpt-4o" in m:
+                ctx = 128000
+            elif "deepseek" in m:
+                ctx = 64000
+                supports_tools = "tool" in m or "chat" in m
+            elif "embedding" in m:
+                ctx = 8192
+                supports_tools = False
+                supports_json = False
         return ProviderCapabilities(
             provider_name=self._provider_name,
-            supported_models=[],
+            supported_models=[model] if model else [],
             supports_streaming=True,
-            supports_structured_output=True,
+            supports_structured_output=supports_json,
             supports_system_instructions=True,
-            supports_tool_calling=True,
-            max_context_window=1_000_000,
+            supports_tool_calling=supports_tools,
+            max_context_window=ctx,
             rate_limits={},
         )
 
     async def health(self) -> bool:
-        # Health is delegated to Inference's provider health tracker.
+        from app.providers.health import provider_health_tracker
+
+        snapshot = provider_health_tracker.get_provider_health(self._provider_name)
+        if snapshot:
+            return bool(snapshot.is_healthy)
         return True

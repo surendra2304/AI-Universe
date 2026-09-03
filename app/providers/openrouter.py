@@ -16,7 +16,7 @@ CAPABILITY_KEYWORDS: dict[str, list[str]] = {
     "research": ["llama", "mistral", "nemotron", "gemma", "phi"],
     "analysis": ["nemotron", "llama-3.3", "qwen", "mistral"],
     "security": ["mistral", "llama-3.3", "nemotron", "guard"],
-    "general": ["nemotron-3.5-lightning:free", "llama", "mistral"]
+    "general": ["nemotron-3.5-lightning:free", "llama", "mistral"],
 }
 
 # Verified reliable default fallback free models on OpenRouter
@@ -26,7 +26,7 @@ FALLBACK_FREE_MODELS: dict[str, str] = {
     "research": "nvidia/nemotron-3.5-lightning:free",
     "analysis": "nvidia/nemotron-3.5-lightning:free",
     "security": "nvidia/nemotron-3.5-lightning:free",
-    "general": "nvidia/nemotron-3.5-lightning:free"
+    "general": "nvidia/nemotron-3.5-lightning:free",
 }
 
 
@@ -40,15 +40,10 @@ class OpenRouterProvider(OpenAICompatibleProvider):
         "liquid/lfm-2.5-2.6b:free",
         "poolside/laguna-s-2.1:free",
         "dots-studio/dots-3-note-preview:free",
-        "meta-llama/llama-3.3-70b-instruct"
+        "meta-llama/llama-3.3-70b-instruct",
     ]
 
-    def __init__(
-        self,
-        api_key: str | None = None,
-        default_model: str | None = None,
-        timeout: float = 60.0
-    ) -> None:
+    def __init__(self, api_key: str | None = None, default_model: str | None = None, timeout: float = 60.0) -> None:
         super().__init__(
             provider_name="openrouter",
             base_url=self.BASE_URL,
@@ -56,10 +51,7 @@ class OpenRouterProvider(OpenAICompatibleProvider):
             default_model=default_model or self.DEFAULT_MODEL,
             supported_models=self.SUPPORTED_MODELS,
             timeout=timeout,
-            extra_headers={
-                "HTTP-Referer": "https://github.com/surendra2304/Inference",
-                "X-Title": "Inference"
-            }
+            extra_headers={"HTTP-Referer": "https://github.com/surendra2304/Inference", "X-Title": "Inference"},
         )
         self._cached_free_models: list[str] = []
         self._cache_timestamp: float = 0.0
@@ -82,11 +74,10 @@ class OpenRouterProvider(OpenAICompatibleProvider):
                 if resp.status_code == 200:
                     data = resp.json().get("data", [])
                     free_models = [
-                        m["id"] for m in data
-                        if m.get("id", "").endswith(":free") or (
-                            m.get("pricing", {}).get("prompt") == "0" and
-                            m.get("pricing", {}).get("completion") == "0"
-                        )
+                        m["id"]
+                        for m in data
+                        if m.get("id", "").endswith(":free")
+                        or (m.get("pricing", {}).get("prompt") == "0" and m.get("pricing", {}).get("completion") == "0")
                     ]
                     if free_models:
                         self._cached_free_models = free_models

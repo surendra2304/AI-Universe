@@ -1,6 +1,5 @@
 """HuggingFace Inference API LLM Provider Adapter."""
 
-
 from app.core.config import settings
 from app.providers.openai_compatible import OpenAICompatibleProvider
 
@@ -18,10 +17,7 @@ class HuggingFaceProvider(OpenAICompatibleProvider):
     """HuggingFace Serverless Inference adapter via high-performance router."""
 
     def __init__(
-        self,
-        api_key: str | None = None,
-        default_model: str = HUGGINGFACE_DEFAULT_MODEL,
-        timeout: float = 60.0
+        self, api_key: str | None = None, default_model: str = HUGGINGFACE_DEFAULT_MODEL, timeout: float = 60.0
     ) -> None:
         key = api_key or settings.HUGGINGFACE_API_KEY
         super().__init__(
@@ -30,5 +26,5 @@ class HuggingFaceProvider(OpenAICompatibleProvider):
             api_key=key,
             default_model=default_model,
             supported_models=HUGGINGFACE_SUPPORTED_MODELS,
-            timeout=timeout
+            timeout=timeout,
         )

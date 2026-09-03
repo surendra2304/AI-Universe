@@ -61,10 +61,21 @@ async def detailed_health():
 
 @health_router.get("/health/providers", status_code=status.HTTP_200_OK)
 async def provider_health():
-    """Provider-specific health, success rates, and latency."""
+    """Provider-specific health, success rates, latency, and key pool status."""
+    from app.providers.gateway import model_gateway
+
+    active_keys = {
+        prov: {
+            "total_keys": pool.total_keys_count,
+            "active_keys": pool.get_active_keys_count(),
+            "quarantined_keys": pool.get_quarantined_keys_count(),
+        }
+        for prov, pool in model_gateway.key_pools.items()
+    }
     return {
         "providers": monitor.get_provider_health(),
-        "priority_chain": production_config.PROVIDER_PRIORITY
+        "priority_chain": production_config.PROVIDER_PRIORITY,
+        "key_pools": active_keys,
     }
 
 

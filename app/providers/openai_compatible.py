@@ -29,7 +29,7 @@ class OpenAICompatibleProvider(BaseLLMProvider):
         default_model: str,
         supported_models: list[str],
         timeout: float = 60.0,
-        extra_headers: dict[str, str] | None = None
+        extra_headers: dict[str, str] | None = None,
     ) -> None:
         self._provider_name = provider_name
         self.base_url = base_url.rstrip("/")
@@ -67,7 +67,7 @@ class OpenAICompatibleProvider(BaseLLMProvider):
             supports_structured_output=True,
             supports_system_instructions=True,
             supports_tool_calling=True,
-            max_context_window=128000
+            max_context_window=128000,
         )
 
     def estimate_usage(self, request: ProviderRequest) -> UsageEstimate:
@@ -83,7 +83,7 @@ class OpenAICompatibleProvider(BaseLLMProvider):
             estimated_prompt_tokens=prompt_tokens,
             estimated_completion_tokens=max_completion,
             estimated_total_tokens=prompt_tokens + max_completion,
-            estimated_cost_usd=round(cost, 6)
+            estimated_cost_usd=round(cost, 6),
         )
 
     def _build_payload(self, request: ProviderRequest) -> dict[str, Any]:
@@ -111,10 +111,7 @@ class OpenAICompatibleProvider(BaseLLMProvider):
         return payload
 
     def _get_headers(self) -> dict[str, str]:
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.api_key}"
-        }
+        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {self.api_key}"}
         headers.update(self.extra_headers)
         return headers
 
@@ -124,10 +121,7 @@ class OpenAICompatibleProvider(BaseLLMProvider):
             raise ValueError(f"{self._provider_name.upper()}_API_KEY is not configured.")
 
         url = f"{self.base_url}/chat/completions"
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {active_key}"
-        }
+        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {active_key}"}
         headers.update(self.extra_headers)
         payload = self._build_payload(request)
         model = payload["model"]
@@ -141,16 +135,25 @@ class OpenAICompatibleProvider(BaseLLMProvider):
                 latency = time.perf_counter() - start_time
 
                 if response.status_code in (429, 503):
-                    logger.warning("%s transient error (%d) encountered on model %s; cooling down for 2.0s", self._provider_name, response.status_code, model)
+                    logger.warning(
+                        "%s transient error (%d) encountered on model %s; cooling down for 2.0s",
+                        self._provider_name,
+                        response.status_code,
+                        model,
+                    )
                     await asyncio.sleep(2.0)
                     if response.status_code == 429:
                         raise RuntimeError(f"{self._provider_name.capitalize()} rate limit exceeded (HTTP 429).")
                     else:
-                        raise RuntimeError(f"{self._provider_name.capitalize()} service unavailable (HTTP 503): {response.text}")
+                        raise RuntimeError(
+                            f"{self._provider_name.capitalize()} service unavailable (HTTP 503): {response.text}"
+                        )
                 elif response.status_code != 200:
                     error_msg = response.text
                     logger.error("%s API error (%d): %s", self._provider_name, response.status_code, error_msg)
-                    raise RuntimeError(f"{self._provider_name.capitalize()} API returned HTTP {response.status_code}: {error_msg}")
+                    raise RuntimeError(
+                        f"{self._provider_name.capitalize()} API returned HTTP {response.status_code}: {error_msg}"
+                    )
 
                 data = response.json()
                 choices = data.get("choices", [])
@@ -161,7 +164,7 @@ class OpenAICompatibleProvider(BaseLLMProvider):
                         provider=self._provider_name,
                         latency_seconds=latency,
                         finish_reason="empty",
-                        raw_response=data
+                        raw_response=data,
                     )
 
                 content = choices[0].get("message", {}).get("content", "")
@@ -181,14 +184,18 @@ class OpenAICompatibleProvider(BaseLLMProvider):
                     total_tokens=total_tokens,
                     latency_seconds=round(latency, 4),
                     finish_reason=finish_reason,
-                    raw_response=data
+                    raw_response=data,
                 )
         except httpx.TimeoutException as exc:
             logger.error("%s request timed out after %.1fs", self._provider_name, self.timeout)
-            raise TimeoutError(f"{self._provider_name.capitalize()} API request timed out after {self.timeout}s") from exc
+            raise TimeoutError(
+                f"{self._provider_name.capitalize()} API request timed out after {self.timeout}s"
+            ) from exc
         except httpx.RequestError as exc:
             logger.error("%s network request failure: %s", self._provider_name, type(exc).__name__)
-            raise RuntimeError(f"{self._provider_name.capitalize()} network connection error: {type(exc).__name__}") from exc
+            raise RuntimeError(
+                f"{self._provider_name.capitalize()} network connection error: {type(exc).__name__}"
+            ) from exc
 
     async def stream(self, request: ProviderRequest) -> AsyncIterator[str]:
         if not self.api_key:
@@ -204,7 +211,9 @@ class OpenAICompatibleProvider(BaseLLMProvider):
                 async with client.stream("POST", url, headers=headers, json=payload) as stream_resp:
                     if stream_resp.status_code != 200:
                         error_body = await stream_resp.aread()
-                        raise RuntimeError(f"{self._provider_name.capitalize()} streaming failed: {error_body.decode('utf-8')}")
+                        raise RuntimeError(
+                            f"{self._provider_name.capitalize()} streaming failed: {error_body.decode('utf-8')}"
+                        )
 
                     async for line in stream_resp.aiter_lines():
                         if line.startswith("data: "):
@@ -223,7 +232,9 @@ class OpenAICompatibleProvider(BaseLLMProvider):
                                 continue
         except httpx.RequestError as exc:
             logger.error("%s streaming connection failure: %s", self._provider_name, type(exc).__name__)
-            raise RuntimeError(f"{self._provider_name.capitalize()} streaming connection error: {type(exc).__name__}") from exc
+            raise RuntimeError(
+                f"{self._provider_name.capitalize()} streaming connection error: {type(exc).__name__}"
+            ) from exc
 
     async def health(self) -> bool:
         if not self.api_key:
@@ -236,4 +247,59 @@ class OpenAICompatibleProvider(BaseLLMProvider):
                 return resp.status_code == 200
         except Exception as exc:
             logger.warning("%s health probe failed: %s", self._provider_name, str(exc))
+            return False
+
+
+class OpenAICompatibleTransport:
+    """Standardized OpenAI-compatible HTTP transport for HardenedGateway."""
+
+    def __init__(self, base_url: str, api_key: str | None = None, connect_timeout: float = 5.0) -> None:
+        self.base_url = base_url.rstrip("/")
+        self.api_key = api_key
+        self.connect_timeout = connect_timeout
+
+    def _payload(self, request: Any) -> dict[str, Any]:
+        messages = [{"role": m.role, "content": m.content} for m in request.messages]
+        p = {"model": request.model, "messages": messages, "temperature": request.temperature}
+        if request.max_tokens is not None:
+            p["max_tokens"] = request.max_tokens
+        if getattr(request, "response_schema", None):
+            p["response_format"] = {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "inference_response",
+                    "schema": dict(request.response_schema),
+                    "strict": True,
+                },
+            }
+        extra = getattr(request, "extra", {})
+        for k, v in extra.items():
+            if k not in {"model", "messages", "temperature", "max_tokens", "stream", "response_format"}:
+                p[k] = v
+        return p
+
+    async def complete(self, request: Any, endpoint: Any, api_key: str | None = None) -> Any:
+        from app.providers.normalization import normalize
+
+        headers = {"Content-Type": "application/json"}
+        key = api_key or self.api_key
+        if key:
+            headers["Authorization"] = f"Bearer {key}"
+        started = time.perf_counter()
+        timeout = httpx.Timeout(request.timeout_seconds, connect=self.connect_timeout)
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            resp = await client.post(
+                f"{self.base_url}/v1/chat/completions", headers=headers, json=self._payload(request)
+            )
+            if resp.status_code >= 400:
+                raise RuntimeError(f"provider_http_{resp.status_code}:{resp.text[:500]}")
+            data = resp.json()
+        return normalize(data, request, endpoint, time.perf_counter() - started, data)
+
+    async def health(self) -> bool:
+        try:
+            async with httpx.AsyncClient(timeout=self.connect_timeout) as client:
+                r = await client.get(f"{self.base_url}/health")
+                return r.status_code < 500
+        except Exception:
             return False

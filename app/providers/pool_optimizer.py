@@ -62,7 +62,7 @@ class ProviderPoolOptimizer:
         return {
             "provider_stats": self._performance,
             "active_demotions": {p: round(t - time.time(), 1) for p, t in self._demotions.items() if t > time.time()},
-            "task_routing_matrix": self.specializations
+            "task_routing_matrix": self.specializations,
         }
 
 

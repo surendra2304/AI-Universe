@@ -126,9 +126,13 @@ class Orchestrator(BaseOrchestrator):
         dag.build_layers()
         return dag
 
-    async def process_task(self, request: OrchestrationRequest) -> OrchestrationResult:
+    async def process_task(
+        self,
+        request: OrchestrationRequest,
+        task_id: str | None = None
+    ) -> OrchestrationResult:
         """Execute full end-to-end task with Dynamic DAG Orchestration."""
-        task_id = generate_task_id()
+        task_id = task_id or generate_task_id()
         start_time = time.perf_counter()
 
         self.strategy_store.memory = self.memory
@@ -210,19 +214,26 @@ class Orchestrator(BaseOrchestrator):
                 task_id, mode_used, complexity.value, len(participating_agents), len(dag.layers)
             )
 
-            cancel_event = asyncio.Event()
-            self._active_cancellations[task_id] = cancel_event
+            cancel_event = self._active_cancellations.setdefault(task_id, asyncio.Event())
 
-            # 5. Run Collaboration via CollaborationEngine with DAG Complexity
+            # 5. Run Collaboration via CollaborationEngine with DAG Complexity & Cooperative Cancellation
             self.debate_engine.memory = self.memory
             collab_result = await self.debate_engine.run_collaboration(
                 task_id=task_id,
                 question=request.question,
                 participating_agents=participating_agents,
                 require_evidence=request.require_evidence,
-                complexity=complexity
+                complexity=complexity,
+                cancellation_event=cancel_event
             )
             latency = time.perf_counter() - start_time
+
+            if cancel_event.is_set():
+                task_record.status = "cancelled"
+                task_record.completed_at = datetime.now(timezone.utc)
+                await self.memory.save_task(task_record)
+                self._active_cancellations.pop(task_id, None)
+                raise asyncio.CancelledError(f"Task {task_id} was cancelled during execution.")
 
             actual_mode = getattr(collab_result, "mode_used", mode_used)
             task_record.status = "completed"
@@ -258,11 +269,12 @@ class Orchestrator(BaseOrchestrator):
                 total_latency_seconds=round(latency, 4)
             )
 
-        except Exception as exc:
+        except (asyncio.CancelledError, Exception) as exc:
             latency = time.perf_counter() - start_time
-            logger.error("Task %s failed during execution: %s", task_id, str(exc))
+            is_cancel = isinstance(exc, asyncio.CancelledError) or (task_id in self._active_cancellations and self._active_cancellations[task_id].is_set())
+            logger.error("Task %s %s during execution: %s", task_id, "cancelled" if is_cancel else "failed", str(exc))
 
-            task_record.status = "failed"
+            task_record.status = "cancelled" if is_cancel else "failed"
             task_record.completed_at = datetime.now(timezone.utc)
             task_record.metadata["error"] = str(exc)
             await self.memory.save_task(task_record)
@@ -272,17 +284,19 @@ class Orchestrator(BaseOrchestrator):
 
     async def cancel_task(self, task_id: str) -> bool:
         """Cancel an in-flight task and notify active execution tokens."""
+        signaled = False
         if task_id in self._active_cancellations:
             self._active_cancellations[task_id].set()
             logger.info("Signaled in-flight cancellation event for task %s", task_id)
+            signaled = True
 
         task = await self.memory.get_task(task_id)
-        if task and task.status == "running":
+        if task and task.status in ("running", "pending"):
             task.status = "cancelled"
             task.completed_at = datetime.now(timezone.utc)
             await self.memory.save_task(task)
             return True
-        return False
+        return signaled
 
     async def get_task_status(self, task_id: str) -> dict[str, Any] | None:
         """Retrieve task details and progress."""

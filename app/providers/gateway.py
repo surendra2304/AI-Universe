@@ -9,6 +9,7 @@ Features:
 """
 
 import asyncio
+import threading
 import time
 from typing import Any
 
@@ -31,128 +32,106 @@ from app.utils.logger import logger
 class KeyPool:
     """Manages round-robin key rotation and 60-second quarantines for a provider."""
 
-    def __init__(self, provider_name: str, keys: list[str] | None = None) -> None:
+    def __init__(self, provider_name: str, keys: list[str] | None = None, quarantine_seconds: float = 60.0) -> None:
         self.provider_name = provider_name.lower().strip()
-        self._keys: list[str] = keys or []
+        self._keys: list[str] = [k.strip() for k in (keys or []) if k.strip()]
         self._index: int = 0
         self._quarantined_until: dict[str, float] = {}  # key -> timestamp until quarantined
-        self._locks: dict[int, asyncio.Lock] = {}
-
-    def _get_lock(self) -> asyncio.Lock:
-        try:
-            loop_id = id(asyncio.get_running_loop())
-        except RuntimeError:
-            loop_id = 0
-        if loop_id not in self._locks:
-            self._locks[loop_id] = asyncio.Lock()
-        return self._locks[loop_id]
+        self._quarantine_seconds = quarantine_seconds
+        self._lock = threading.RLock()
 
     def set_keys(self, keys: list[str]) -> None:
-        """Update active keys for this pool."""
-        self._keys = [k.strip() for k in keys if k.strip()]
-        self._index = 0
+        with self._lock:
+            self._keys = [k.strip() for k in keys if k.strip()]
+            self._index = 0
 
     @property
     def total_keys_count(self) -> int:
-        return len(self._keys)
+        with self._lock:
+            return len(self._keys)
 
     def get_active_keys_count(self) -> int:
-        now = time.time()
-        return sum(1 for k in self._keys if self._quarantined_until.get(k, 0) <= now)
+        with self._lock:
+            now = time.monotonic()
+            return sum(1 for k in self._keys if self._quarantined_until.get(k, 0) <= now)
 
     def get_quarantined_keys_count(self) -> int:
-        now = time.time()
-        return sum(1 for k in self._keys if self._quarantined_until.get(k, 0) > now)
+        with self._lock:
+            now = time.monotonic()
+            return sum(1 for k in self._keys if self._quarantined_until.get(k, 0) > now)
 
-    async def get_next_key(self) -> str | None:
+    def choose(self) -> str | None:
         """
         Returns the next available un-quarantined key in round-robin sequence.
-        If all keys are quarantined, returns the key with the earliest expiration.
+        Fails closed: if all keys are quarantined, returns None (never hammers quarantined keys).
         """
-        async with self._get_lock():
+        with self._lock:
             if not self._keys:
                 return None
-
-            now = time.time()
-            # Clean up expired quarantines
-            for k in list(self._quarantined_until.keys()):
-                if self._quarantined_until[k] <= now:
-                    del self._quarantined_until[k]
-
-            # Try to find an unquarantined key starting from current index
+            now = time.monotonic()
             for _ in range(len(self._keys)):
                 key = self._keys[self._index % len(self._keys)]
                 self._index = (self._index + 1) % len(self._keys)
-                if key not in self._quarantined_until:
+                if self._quarantined_until.get(key, 0) <= now:
                     return key
+            return None
 
-            # If all are quarantined, find the one that expires soonest
-            earliest_key = min(self._keys, key=lambda k: self._quarantined_until.get(k, 0))
-            return earliest_key
+    async def get_next_key(self) -> str | None:
+        return self.choose()
 
-    async def quarantine_key(self, key: str, duration_seconds: float = 60.0) -> None:
-        """Temporarily quarantines a rate-limited or failing API key."""
-        async with self._get_lock():
-            self._quarantined_until[key] = time.time() + duration_seconds
+    def quarantine(self, key: str, duration_seconds: float | None = None) -> None:
+        with self._lock:
+            dur = duration_seconds if duration_seconds is not None else self._quarantine_seconds
+            self._quarantined_until[key] = time.monotonic() + dur
             masked_key = f"{key[:4]}...{key[-4:]}" if len(key) > 8 else "***"
             logger.warning(
-                "KEY POOL: Quarantining key '%s' on provider '%s' for %.0fs",
-                masked_key, self.provider_name, duration_seconds
+                "KEY POOL: Quarantining key '%s' on provider '%s' for %.0fs", masked_key, self.provider_name, dur
             )
+
+    async def quarantine_key(self, key: str, duration_seconds: float = 60.0) -> None:
+        self.quarantine(key, duration_seconds)
+
+    def next_available_delay(self) -> float:
+        with self._lock:
+            if not self._keys:
+                return float("inf")
+            now = time.monotonic()
+            delays = [self._quarantined_until.get(k, 0) - now for k in self._keys]
+            return max(0.0, min(delays))
 
 
 class ProviderRateLimiter:
-    """Per-provider token bucket and concurrency limiter guaranteeing provider isolation."""
+    """Per-provider concurrency-safe token bucket and concurrency limiter."""
 
     def __init__(self, provider_name: str, requests_per_second: float = 5.0, max_concurrency: int = 4) -> None:
         self.provider_name = provider_name
-        self.rate = requests_per_second
+        self.rate = max(requests_per_second, 0.001)
+        self.capacity = float(max(max_concurrency * 2, 2))
+        self.tokens = self.capacity
+        self.updated = time.monotonic()
         self.max_concurrency = max_concurrency
-        self.max_tokens = float(max_concurrency * 2)
-        self.tokens = self.max_tokens
-        self.last_update = time.time()
-        self._semaphores: dict[int, asyncio.Semaphore] = {}
-        self._locks: dict[int, asyncio.Lock] = {}
+        self._lock = asyncio.Lock()
+        self._sem = asyncio.Semaphore(max_concurrency)
 
-    def _get_semaphore(self) -> asyncio.Semaphore:
-        try:
-            loop_id = id(asyncio.get_running_loop())
-        except RuntimeError:
-            loop_id = 0
-        if loop_id not in self._semaphores:
-            self._semaphores[loop_id] = asyncio.Semaphore(self.max_concurrency)
-        return self._semaphores[loop_id]
-
-    def _get_lock(self) -> asyncio.Lock:
-        try:
-            loop_id = id(asyncio.get_running_loop())
-        except RuntimeError:
-            loop_id = 0
-        if loop_id not in self._locks:
-            self._locks[loop_id] = asyncio.Lock()
-        return self._locks[loop_id]
-
-    async def acquire(self) -> None:
-        """Acquire a rate limit token and semaphore slot asynchronously."""
-        sem = self._get_semaphore()
-        await sem.acquire()
-        async with self._get_lock():
-            now = time.time()
-            elapsed = now - self.last_update
-            self.last_update = now
-            self.tokens = min(self.max_tokens, self.tokens + (elapsed * self.rate))
-
-            if self.tokens < 1.0:
-                wait_time = (1.0 - self.tokens) / self.rate
-                await asyncio.sleep(wait_time)
-                self.tokens = 0.0
-            else:
-                self.tokens -= 1.0
+    async def acquire(self, cost: float = 1.0) -> None:
+        """Acquire rate limit token without sleeping while holding the state lock."""
+        await self._sem.acquire()
+        while True:
+            delay = 0.0
+            async with self._lock:
+                now = time.monotonic()
+                self.tokens = min(self.capacity, self.tokens + (now - self.updated) * self.rate)
+                self.updated = now
+                if self.tokens >= cost:
+                    self.tokens -= cost
+                    return
+                delay = (cost - self.tokens) / self.rate
+            # Never hold lock while sleeping!
+            await asyncio.sleep(delay)
 
     def release(self) -> None:
         """Release the concurrency semaphore slot."""
-        sem = self._get_semaphore()
-        sem.release()
+        self._sem.release()
 
 
 class ModelGateway:
@@ -193,31 +172,35 @@ class ModelGateway:
             self.health_tracker.update_key_counts(
                 provider_name,
                 active_count=pool.get_active_keys_count(),
-                quarantined_count=pool.get_quarantined_keys_count()
+                quarantined_count=pool.get_quarantined_keys_count(),
             )
         return self.health_tracker.get_provider_health(provider_name)
 
     async def execute(
-        self,
-        provider_name: str,
-        request: ProviderRequest,
-        capability: str = "general",
-        stage_name: str = "general"
+        self, provider_name: str, request: ProviderRequest, capability: str = "general", stage_name: str = "general"
     ) -> ProviderResponse:
         """
         Executes an LLM request through the gateway:
-        1. Selects key from round-robin pool.
-        2. Applies isolated per-provider rate limiter.
-        3. Retries across alternate keys if 429 or 503 is encountered.
-        4. If all keys exhausted, falls back to dynamic capability-matched OpenRouter model.
-        5. Updates health metrics.
+        1. Selects key from round-robin pool with fail-closed quarantine semantics.
+        2. Applies isolated per-provider rate limiter without holding locks during sleep.
+        3. Enforces an overall request deadline across primary retries and fallbacks.
+        4. Retries across alternate keys only for transient errors (429/503/timeout).
+        5. If all keys exhausted/quarantined, routes through capability-matched fallback.
+        6. Updates health metrics and records provenance.
         """
+        timeout_budget = float(request.extra_params.get("timeout", settings.REQUEST_TIMEOUT or 60.0))
+        deadline = time.monotonic() + timeout_budget
+
         prov_name = provider_name.lower().strip()
         if prov_name == "litellm":
             from app.providers.gateway_litellm import execute_via_litellm
+
             start_time = time.perf_counter()
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError(f"Request deadline ({timeout_budget:.1f}s) exceeded before LiteLLM call.")
             try:
-                resp = await execute_via_litellm(request)
+                resp = await asyncio.wait_for(execute_via_litellm(request), timeout=remaining)
                 latency = time.perf_counter() - start_time
                 self.health_tracker.record_success("litellm", latency)
                 return resp
@@ -229,7 +212,6 @@ class ModelGateway:
 
         pool = self.key_pools.get(prov_name)
         if not pool or pool.total_keys_count == 0:
-            # Refresh in case settings were updated dynamically
             keys = settings.get_provider_keys(prov_name)
             if keys:
                 if not pool:
@@ -243,24 +225,48 @@ class ModelGateway:
             limiter = ProviderRateLimiter(prov_name)
             self.rate_limiters[prov_name] = limiter
 
-        # Attempt execution across keys in the pool
-        attempts = max(1, pool.total_keys_count if pool else 1)
-        last_error = None
+        # Fail closed immediately if all keys are quarantined
+        last_error: GatewayError | Exception | None = None
+        if pool and pool.total_keys_count > 0 and pool.get_active_keys_count() == 0:
+            logger.warning(
+                "KEY POOL: All %d keys for '%s' are quarantined. Failing closed.", pool.total_keys_count, prov_name
+            )
+            last_error = TemporaryUnavailableError(
+                f"All credentials for provider '{prov_name}' are currently quarantined.", provider=prov_name
+            )
+            attempts = 0
+        else:
+            attempts = max(1, pool.total_keys_count if pool else 1)
+            last_error = None
+
         current_key = None
 
         for _ in range(attempts):
-            current_key = await pool.get_next_key() if pool else None
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError(f"Request deadline ({timeout_budget:.1f}s) exceeded before provider call.")
+
+            current_key = pool.choose() if pool else None
+            if pool and pool.total_keys_count > 0 and current_key is None:
+                # No active key available
+                break
+
             start_time = time.perf_counter()
 
             try:
-                # Instantiate or retrieve provider instance with the selected key
                 import app.providers
-                provider_instance = app.providers.get_provider(prov_name, api_key=current_key) if current_key else app.providers.get_provider(prov_name)
+
+                provider_instance = (
+                    app.providers.get_provider(prov_name, api_key=current_key)
+                    if current_key
+                    else app.providers.get_provider(prov_name)
+                )
 
                 # Acquire isolated rate limiter slot
                 await limiter.acquire()
                 try:
-                    resp = await provider_instance.generate(request)
+                    call_timeout = min(remaining, timeout_budget)
+                    resp = await asyncio.wait_for(provider_instance.generate(request), timeout=call_timeout)
                 finally:
                     limiter.release()
 
@@ -268,6 +274,8 @@ class ModelGateway:
                 self.health_tracker.record_success(prov_name, latency)
                 return resp
 
+            except (asyncio.TimeoutError, TimeoutError) as exc:
+                raise TimeoutError(f"Request deadline exceeded for provider '{prov_name}'") from exc
             except Exception as exc:
                 latency = time.perf_counter() - start_time
                 typed_err = normalize_provider_exception(exc, provider=prov_name, model=request.model)
@@ -276,24 +284,28 @@ class ModelGateway:
                 is_429 = isinstance(typed_err, RateLimitError)
                 is_503 = isinstance(typed_err, TemporaryUnavailableError)
 
-                self.health_tracker.record_failure(prov_name, err_str, is_429=is_429, is_503=is_503, latency_seconds=latency)
+                self.health_tracker.record_failure(
+                    prov_name, err_str, is_429=is_429, is_503=is_503, latency_seconds=latency
+                )
 
                 if pool and current_key and typed_err.is_retryable():
-                    await pool.quarantine_key(current_key, duration_seconds=60.0)
+                    pool.quarantine(current_key, duration_seconds=60.0)
                     logger.warning(
                         "GATEWAY: Provider '%s' [%s] retrying with next key in pool. Detail: %s",
-                        prov_name, type(typed_err).__name__, err_str.split("\n")[0]
+                        prov_name,
+                        type(typed_err).__name__,
+                        err_str.split("\n")[0],
                     )
-                    await asyncio.sleep(0.5)
+                    remaining = deadline - time.monotonic()
+                    if remaining > 0.5:
+                        await asyncio.sleep(min(0.5, remaining))
                     continue
                 else:
-                    # Non-retriable or single-key failure
                     break
 
         # Primary provider failed on all keys -> Fallback logic
         logger.warning(
-            "GATEWAY: Primary provider '%s' failed. Initiating capability fallback for '%s'.",
-            prov_name, capability
+            "GATEWAY: Primary provider '%s' failed. Initiating capability fallback for '%s'.", prov_name, capability
         )
 
         fallback_resp = await self._execute_dynamic_fallback(
@@ -301,7 +313,8 @@ class ModelGateway:
             request=request,
             capability=capability,
             stage_name=stage_name,
-            last_error=last_error
+            last_error=last_error,
+            deadline=deadline,
         )
         return fallback_resp
 
@@ -311,13 +324,21 @@ class ModelGateway:
         request: ProviderRequest,
         capability: str,
         stage_name: str,
-        last_error: Exception | None
+        last_error: Exception | None,
+        deadline: float | None = None,
     ) -> ProviderResponse:
-        """Executes fallback via OpenRouter with dynamic capability matching and provenance tracking."""
+        """Executes fallback with dynamic capability matching, rate-limiting, and deadline bounds."""
         # 1. If failed provider is NOT openrouter, use OpenRouter with dynamic capability model discovery
+        remaining = (deadline - time.monotonic()) if deadline else 60.0
+        if remaining <= 0:
+            if last_error:
+                raise last_error
+            raise TimeoutError("Request deadline exceeded before fallback execution.")
+
         if failed_provider != "openrouter":
             try:
                 import app.providers
+
                 openrouter_prov = app.providers.get_provider("openrouter")
                 if hasattr(openrouter_prov, "get_best_free_model"):
                     dynamic_model = await openrouter_prov.get_best_free_model(capability)
@@ -328,7 +349,8 @@ class ModelGateway:
 
                 logger.info(
                     "GATEWAY FALLBACK: Routed to OpenRouter (Dynamic Model: %s) for capability '%s'",
-                    dynamic_model, capability
+                    dynamic_model,
+                    capability,
                 )
 
                 fallback_req = ProviderRequest(
@@ -338,13 +360,20 @@ class ModelGateway:
                     temperature=request.temperature,
                     max_tokens=request.max_tokens or 1024,
                     response_schema=request.response_schema,
-                    extra_params=request.extra_params
+                    extra_params=request.extra_params,
                 )
 
-                openrouter_limiter = self.rate_limiters.get("openrouter") or ProviderRateLimiter("openrouter")
+                openrouter_limiter = self.rate_limiters.get("openrouter")
+                if not openrouter_limiter:
+                    openrouter_limiter = ProviderRateLimiter("openrouter")
+                    self.rate_limiters["openrouter"] = openrouter_limiter
+
                 await openrouter_limiter.acquire()
                 try:
-                    resp = await openrouter_prov.generate(fallback_req)
+                    rem = (deadline - time.monotonic()) if deadline else 60.0
+                    if rem <= 0:
+                        raise TimeoutError("Deadline exceeded waiting for OpenRouter rate limit.")
+                    resp = await asyncio.wait_for(openrouter_prov.generate(fallback_req), timeout=rem)
                 finally:
                     openrouter_limiter.release()
 
@@ -357,7 +386,7 @@ class ModelGateway:
                     "actual_provider": "openrouter",
                     "actual_model": dynamic_model,
                     "capability": capability,
-                    "fallback_reason": str(last_error) if last_error else "primary_exhausted"
+                    "fallback_reason": str(last_error) if last_error else "primary_exhausted",
                 }
 
                 self.health_tracker.record_success("openrouter", resp.latency_seconds)
@@ -367,40 +396,67 @@ class ModelGateway:
                 logger.error("OpenRouter dynamic fallback failed: %s", str(fb_exc))
 
         # 2. Check standard policy matrix fallback as second safeguard
-        fallback_route = ProviderSwitchingPolicy.get_fallback_provider(
-            failed_provider, SwitchReason.TIMEOUT, stage=stage_name
-        )
-        if fallback_route and fallback_route.fallback_provider != failed_provider:
-            try:
-                import app.providers
-                sec_prov = app.providers.get_provider(fallback_route.fallback_provider)
-                sec_req = ProviderRequest(
-                    messages=request.messages,
-                    system_instruction=request.system_instruction,
-                    model=fallback_route.fallback_model,
-                    temperature=request.temperature,
-                    max_tokens=request.max_tokens or 1024
-                )
-                resp = await sec_prov.generate(sec_req)
-                if not resp.raw_response:
-                    resp.raw_response = {}
-                resp.raw_response["fallback_provenance"] = {
-                    "requested_provider": failed_provider,
-                    "requested_model": request.model,
-                    "actual_provider": fallback_route.fallback_provider,
-                    "actual_model": fallback_route.fallback_model,
-                    "capability": capability,
-                    "fallback_reason": str(last_error) if last_error else "primary_exhausted"
-                }
-                return resp
-            except Exception as sec_exc:
-                logger.error("Secondary fallback provider '%s' failed: %s", fallback_route.fallback_provider, str(sec_exc))
+        remaining = (deadline - time.monotonic()) if deadline else 60.0
+        if remaining > 0:
+            fallback_route = ProviderSwitchingPolicy.get_fallback_provider(
+                failed_provider, SwitchReason.TIMEOUT, stage=stage_name
+            )
+            if fallback_route and fallback_route.fallback_provider != failed_provider:
+                try:
+                    import app.providers
+
+                    sec_name = fallback_route.fallback_provider
+                    sec_prov = app.providers.get_provider(sec_name)
+                    sec_limiter = self.rate_limiters.get(sec_name)
+                    if not sec_limiter:
+                        sec_limiter = ProviderRateLimiter(sec_name)
+                        self.rate_limiters[sec_name] = sec_limiter
+
+                    sec_req = ProviderRequest(
+                        messages=request.messages,
+                        system_instruction=request.system_instruction,
+                        model=fallback_route.fallback_model,
+                        temperature=request.temperature,
+                        max_tokens=request.max_tokens or 1024,
+                    )
+                    await sec_limiter.acquire()
+                    try:
+                        rem = (deadline - time.monotonic()) if deadline else 60.0
+                        if rem <= 0:
+                            raise TimeoutError(f"Deadline exceeded for secondary fallback {sec_name}.")
+                        resp = await asyncio.wait_for(sec_prov.generate(sec_req), timeout=rem)
+                    finally:
+                        sec_limiter.release()
+
+                    if not resp.raw_response:
+                        resp.raw_response = {}
+                    resp.raw_response["fallback_provenance"] = {
+                        "requested_provider": failed_provider,
+                        "requested_model": request.model,
+                        "actual_provider": fallback_route.fallback_provider,
+                        "actual_model": fallback_route.fallback_model,
+                        "capability": capability,
+                        "fallback_reason": str(last_error) if last_error else "primary_exhausted",
+                    }
+                    self.health_tracker.record_success(sec_name, resp.latency_seconds)
+                    return resp
+                except Exception as sec_exc:
+                    logger.error(
+                        "Secondary fallback provider '%s' failed: %s", fallback_route.fallback_provider, str(sec_exc)
+                    )
 
         # 3. Optional LiteLLM unified transport fallback if enabled
-        if settings.INFERENCE_LITELLM_FALLBACK_ENABLED and settings.INFERENCE_LITELLM_ENABLED and failed_provider != "litellm":
+        remaining = (deadline - time.monotonic()) if deadline else 60.0
+        if (
+            remaining > 0
+            and settings.INFERENCE_LITELLM_FALLBACK_ENABLED
+            and settings.INFERENCE_LITELLM_ENABLED
+            and failed_provider != "litellm"
+        ):
             try:
                 from app.providers.gateway_litellm import execute_via_litellm
-                litellm_resp = await execute_via_litellm(request)
+
+                litellm_resp = await asyncio.wait_for(execute_via_litellm(request), timeout=remaining)
                 if not litellm_resp.raw_response:
                     litellm_resp.raw_response = {}
                 litellm_resp.raw_response["fallback_provenance"] = {
@@ -409,7 +465,7 @@ class ModelGateway:
                     "actual_provider": "litellm",
                     "actual_model": litellm_resp.model,
                     "capability": capability,
-                    "fallback_reason": str(last_error) if last_error else "primary_exhausted"
+                    "fallback_reason": str(last_error) if last_error else "primary_exhausted",
                 }
                 self.health_tracker.record_success("litellm", litellm_resp.latency_seconds)
                 return litellm_resp

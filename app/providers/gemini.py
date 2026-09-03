@@ -30,15 +30,10 @@ class GeminiProvider(BaseLLMProvider):
         "gemini-3.5-flash",
         "gemini-3.7-flash",
         "gemini-3.5-flash-lite",
-        "gemini-3.1-flash-lite"
+        "gemini-3.1-flash-lite",
     ]
 
-    def __init__(
-        self,
-        api_key: str | None = None,
-        default_model: str | None = None,
-        timeout: float = 60.0
-    ) -> None:
+    def __init__(self, api_key: str | None = None, default_model: str | None = None, timeout: float = 60.0) -> None:
         self.api_keys = settings.get_provider_keys("gemini")
         if api_key:
             self.api_keys = [k.strip() for k in api_key.split(",") if k.strip()]
@@ -67,7 +62,7 @@ class GeminiProvider(BaseLLMProvider):
             supports_system_instructions=True,
             supports_tool_calling=True,
             max_context_window=1000000,
-            rate_limits={"rpm": 15, "rpd": 1500, "tpm": 1000000}
+            rate_limits={"rpm": 15, "rpd": 1500, "tpm": 1000000},
         )
 
     def estimate_usage(self, request: ProviderRequest) -> UsageEstimate:
@@ -87,7 +82,7 @@ class GeminiProvider(BaseLLMProvider):
             estimated_prompt_tokens=prompt_tokens,
             estimated_completion_tokens=max_completion,
             estimated_total_tokens=prompt_tokens + max_completion,
-            estimated_cost_usd=round(cost, 6)
+            estimated_cost_usd=round(cost, 6),
         )
 
     def _convert_messages(self, messages: list[ProviderMessage]) -> list[dict[str, Any]]:
@@ -95,10 +90,7 @@ class GeminiProvider(BaseLLMProvider):
         contents: list[dict[str, Any]] = []
         for msg in messages:
             role = "model" if msg.role in ("assistant", "model") else "user"
-            contents.append({
-                "role": role,
-                "parts": [{"text": msg.content}]
-            })
+            contents.append({"role": role, "parts": [{"text": msg.content}]})
         return contents
 
     def _build_payload(self, request: ProviderRequest) -> dict[str, Any]:
@@ -109,7 +101,7 @@ class GeminiProvider(BaseLLMProvider):
             "contents": contents,
             "generationConfig": {
                 "temperature": request.temperature,
-            }
+            },
         }
 
         if request.max_tokens:
@@ -119,9 +111,7 @@ class GeminiProvider(BaseLLMProvider):
             payload["generationConfig"]["responseMimeType"] = "application/json"
 
         if request.system_instruction:
-            payload["systemInstruction"] = {
-                "parts": [{"text": request.system_instruction}]
-            }
+            payload["systemInstruction"] = {"parts": [{"text": request.system_instruction}]}
 
         return payload
 
@@ -132,10 +122,7 @@ class GeminiProvider(BaseLLMProvider):
 
         model = request.model or self.default_model
         url = f"{self.BASE_URL}/models/{model}:generateContent"
-        headers = {
-            "Content-Type": "application/json",
-            "x-goog-api-key": self.api_key
-        }
+        headers = {"Content-Type": "application/json", "x-goog-api-key": self.api_key}
         payload = self._build_payload(request)
 
         start_time = time.perf_counter()
@@ -147,7 +134,11 @@ class GeminiProvider(BaseLLMProvider):
                 latency = time.perf_counter() - start_time
 
                 if response.status_code in (429, 503):
-                    logger.warning("Gemini transient error (%d) encountered on model %s; cooling down for 2.0s", response.status_code, model)
+                    logger.warning(
+                        "Gemini transient error (%d) encountered on model %s; cooling down for 2.0s",
+                        response.status_code,
+                        model,
+                    )
                     await asyncio.sleep(2.0)
                     if response.status_code == 429:
                         raise RuntimeError("Gemini API rate limit exceeded (HTTP 429).")
@@ -169,7 +160,7 @@ class GeminiProvider(BaseLLMProvider):
                         provider=self.provider_name,
                         latency_seconds=latency,
                         finish_reason="empty",
-                        raw_response=data
+                        raw_response=data,
                     )
 
                 content_parts = candidates[0].get("content", {}).get("parts", [])
@@ -191,7 +182,7 @@ class GeminiProvider(BaseLLMProvider):
                     total_tokens=total_tokens,
                     latency_seconds=round(latency, 4),
                     finish_reason=finish_reason,
-                    raw_response=data
+                    raw_response=data,
                 )
 
         except httpx.TimeoutException as exc:
@@ -208,10 +199,7 @@ class GeminiProvider(BaseLLMProvider):
 
         model = request.model or self.default_model
         url = f"{self.BASE_URL}/models/{model}:streamGenerateContent?alt=sse"
-        headers = {
-            "Content-Type": "application/json",
-            "x-goog-api-key": self.api_key
-        }
+        headers = {"Content-Type": "application/json", "x-goog-api-key": self.api_key}
         payload = self._build_payload(request)
 
         try:
@@ -219,7 +207,9 @@ class GeminiProvider(BaseLLMProvider):
                 async with client.stream("POST", url, headers=headers, json=payload) as stream_resp:
                     if stream_resp.status_code != 200:
                         error_body = await stream_resp.aread()
-                        raise RuntimeError(f"Gemini streaming failed (HTTP {stream_resp.status_code}): {error_body.decode('utf-8')}")
+                        raise RuntimeError(
+                            f"Gemini streaming failed (HTTP {stream_resp.status_code}): {error_body.decode('utf-8')}"
+                        )
 
                     async for line in stream_resp.aiter_lines():
                         if line.startswith("data: "):

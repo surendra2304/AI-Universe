@@ -13,13 +13,13 @@ from app.utils.logger import logger
 
 class UnifiedExecutionRequest(BaseModel):
     """Universal execution request across all models and agents."""
+
     provider: Literal["auto", "gemini", "groq", "mistral", "openrouter", "nvidia", "cohere", "huggingface"] = Field(
-        default="auto",
-        description="Target provider name or 'auto' for intelligent capability matching"
+        default="auto", description="Target provider name or 'auto' for intelligent capability matching"
     )
     agent_role: str | None = Field(
         default="system_architect",
-        description="Specialist agent role or ID (e.g. trading_analyst, system_architect, code_generator, etc.)"
+        description="Specialist agent role or ID (e.g. trading_analyst, system_architect, code_generator, etc.)",
     )
     prompt: str = Field(..., description="Prompt or task instruction to execute")
     context: dict[str, Any] = Field(default_factory=dict, description="Additional structured context or parameters")
@@ -29,6 +29,7 @@ class UnifiedExecutionRequest(BaseModel):
 
 class UnifiedExecutionResponse(BaseModel):
     """Standardized response from unified provider manager."""
+
     provider_used: str
     model_used: str
     agent_role: str
@@ -85,9 +86,7 @@ class UnifiedProviderManager:
             target_model = "gemini-3.6-flash"
 
         # Build provider request
-        messages = [
-            ProviderMessage(role="user", content=req.prompt)
-        ]
+        messages = [ProviderMessage(role="user", content=req.prompt)]
         if req.context:
             context_str = f"\n\nContext Metadata: {req.context}"
             messages[0].content += context_str
@@ -97,7 +96,7 @@ class UnifiedProviderManager:
             system_instruction=system_prompt,
             model=target_model,
             temperature=req.temperature,
-            max_tokens=req.max_tokens
+            max_tokens=req.max_tokens,
         )
 
         try:
@@ -115,9 +114,9 @@ class UnifiedProviderManager:
                 token_usage={
                     "prompt_tokens": resp.prompt_tokens or 0,
                     "completion_tokens": resp.completion_tokens or 0,
-                    "total_tokens": resp.total_tokens or 0
+                    "total_tokens": resp.total_tokens or 0,
                 },
-                status="success"
+                status="success",
             )
         except Exception as exc:
             logger.warning("Provider %s failed, generating fallback response: %s", target_provider, exc)
@@ -132,7 +131,7 @@ class UnifiedProviderManager:
                 latency_ms=elapsed_ms,
                 timestamp=time.time(),
                 token_usage={"total_tokens": 120},
-                status="fallback_success"
+                status="fallback_success",
             )
 
 

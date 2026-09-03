@@ -60,9 +60,11 @@ class Settings(BaseSettings):
     def get_friday_api_key(self) -> str | None:
         return self.INFERENCE_API_KEY or self.inference_api_KEY or self.FRIDAY_UNIVERSE_API_KEY or self.X_FRIDAY_API_KEY or self.FRIDAY_API_KEY
 
-    # Operational Budgets & Limits (Unlimited Token Flow Mode)
-    MAX_BUDGET: float = Field(default=999999.0, description="Unlimited budget - supplies all available tokens until provider quota exhausted")
+    # Operational Budgets & Limits
+    MAX_BUDGET: float = Field(default=999999.0, description="Legacy spend limit threshold")
+    DEFAULT_BUDGET_USD: float = Field(default=10.0, description="Explicit hard budget ceiling per tenant/period in USD")
     REQUEST_TIMEOUT: float = Field(default=60.0, description="Default timeout in seconds for provider calls")
+    ALLOW_DEV_RATE_LIMIT_BYPASS: bool = Field(default=False, description="Explicit flag required to bypass rate limits on localhost/testclient")
 
     # LiteLLM Integration (Optional Transport & Fallback Layer)
     INFERENCE_LITELLM_ENABLED: bool = Field(default=False, description="Enable LiteLLM unified model transport layer")

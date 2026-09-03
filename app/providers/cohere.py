@@ -16,22 +16,14 @@ from app.providers.base import (
 from app.utils.logger import logger
 
 COHERE_DEFAULT_MODEL = "command-r7b-12-2024"
-COHERE_SUPPORTED_MODELS: list[str] = [
-    "command-r7b-12-2024",
-    "command-r-08-2024",
-    "command-light",
-    "command"
-]
+COHERE_SUPPORTED_MODELS: list[str] = ["command-r7b-12-2024", "command-r-08-2024", "command-light", "command"]
 
 
 class CohereProvider(BaseLLMProvider):
     """Cohere inference adapter utilizing Cohere's /v1/chat endpoint."""
 
     def __init__(
-        self,
-        api_key: str | None = None,
-        default_model: str = COHERE_DEFAULT_MODEL,
-        timeout: float = 60.0
+        self, api_key: str | None = None, default_model: str = COHERE_DEFAULT_MODEL, timeout: float = 60.0
     ) -> None:
         self.api_key = api_key or settings.COHERE_API_KEY
         self.default_model = default_model
@@ -49,7 +41,7 @@ class CohereProvider(BaseLLMProvider):
             supports_structured_output=True,
             supports_system_instructions=True,
             supports_tool_calling=False,
-            max_context_window=128000
+            max_context_window=128000,
         )
 
     def estimate_usage(self, request: ProviderRequest) -> UsageEstimate:
@@ -63,7 +55,7 @@ class CohereProvider(BaseLLMProvider):
             estimated_prompt_tokens=prompt_tokens,
             estimated_completion_tokens=max_completion,
             estimated_total_tokens=prompt_tokens + max_completion,
-            estimated_cost_usd=round(cost, 6)
+            estimated_cost_usd=round(cost, 6),
         )
 
     async def generate(self, request: ProviderRequest) -> ProviderResponse:
@@ -71,10 +63,7 @@ class CohereProvider(BaseLLMProvider):
             raise ValueError("COHERE_API_KEY is not configured.")
 
         url = "https://api.cohere.com/v2/chat"
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.api_key}"
-        }
+        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {self.api_key}"}
 
         # Build v2 messages list
         v2_messages = []
@@ -128,7 +117,7 @@ class CohereProvider(BaseLLMProvider):
                     total_tokens=total_tokens,
                     latency_seconds=round(latency, 4),
                     finish_reason="stop",
-                    raw_response=data
+                    raw_response=data,
                 )
         except Exception as exc:
             logger.error("Cohere request failure: %s", str(exc))

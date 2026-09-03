@@ -30,6 +30,7 @@ from app.routers.live_intelligence import live_router
 from app.routers.multi_market import multi_market_router
 from app.routers.multimodal import multimodal_router
 from app.routers.nexus import nexus_router
+from app.routers.operational import operational_router
 from app.routers.predictions import predictions_router
 from app.routers.providers import providers_router
 from app.routers.sentinel import sentinel_router
@@ -88,10 +89,14 @@ app.add_middleware(
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    correlation_id = str(uuid.uuid4())
+    correlation_id = (
+        request.headers.get("X-Correlation-ID")
+        or request.headers.get("X-Request-ID")
+        or str(uuid.uuid4())
+    )
     logger.error(
         "Unhandled global exception [correlation_id=%s] on %s %s: %s",
-        correlation_id, request.method, request.url, str(exc), exc_info=True
+        correlation_id, request.method, request.url.path, str(exc), exc_info=True
     )
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -99,12 +104,14 @@ async def global_exception_handler(request: Request, exc: Exception):
             "error_code": "INTERNAL_SERVER_ERROR",
             "message": "An internal server error occurred.",
             "correlation_id": correlation_id
-        }
+        },
+        headers={"X-Correlation-ID": correlation_id}
     )
 
 
 # Mount API routes
 app.include_router(health_router)
+app.include_router(operational_router)
 app.include_router(api_router)
 app.include_router(friday_router)
 app.include_router(trading_router)

@@ -1,4 +1,4 @@
-﻿"""Normalized Provider Exception Hierarchy for Inference Gateway."""
+"""Normalized Provider Exception Hierarchy for Inference Gateway."""
 
 from typing import Any, Optional
 
@@ -6,7 +6,9 @@ from typing import Any, Optional
 class GatewayError(Exception):
     """Base class for all provider gateway errors."""
 
-    def __init__(self, message: str, provider: str = "unknown", model: Optional[str] = None, raw_error: Optional[Any] = None) -> None:
+    def __init__(
+        self, message: str, provider: str = "unknown", model: Optional[str] = None, raw_error: Optional[Any] = None
+    ) -> None:
         super().__init__(message)
         self.message = message
         self.provider = provider
@@ -20,7 +22,14 @@ class GatewayError(Exception):
 class RateLimitError(GatewayError):
     """Provider returned 429 Too Many Requests or rate-limit quota exhaustion."""
 
-    def __init__(self, message: str, provider: str = "unknown", model: Optional[str] = None, retry_after: float = 60.0, raw_error: Optional[Any] = None) -> None:
+    def __init__(
+        self,
+        message: str,
+        provider: str = "unknown",
+        model: Optional[str] = None,
+        retry_after: float = 60.0,
+        raw_error: Optional[Any] = None,
+    ) -> None:
         super().__init__(message, provider=provider, model=model, raw_error=raw_error)
         self.retry_after = retry_after
 
@@ -70,11 +79,7 @@ class CapabilityMismatchError(GatewayError):
         return False
 
 
-def normalize_provider_exception(
-    exc: Exception,
-    provider: str,
-    model: Optional[str] = None
-) -> GatewayError:
+def normalize_provider_exception(exc: Exception, provider: str, model: Optional[str] = None) -> GatewayError:
     """Classifies any raw Python or HTTP exception into a typed GatewayError."""
     if isinstance(exc, GatewayError):
         return exc
@@ -84,10 +89,24 @@ def normalize_provider_exception(
     if "429" in err_str or "rate limit" in err_str or "quota" in err_str or "too many requests" in err_str:
         return RateLimitError(str(exc), provider=provider, model=model, raw_error=exc)
 
-    if "401" in err_str or "unauthorized" in err_str or "authentication" in err_str or "invalid api key" in err_str or "forbidden" in err_str or "403" in err_str:
+    if (
+        "401" in err_str
+        or "unauthorized" in err_str
+        or "authentication" in err_str
+        or "invalid api key" in err_str
+        or "forbidden" in err_str
+        or "403" in err_str
+    ):
         return AuthenticationError(str(exc), provider=provider, model=model, raw_error=exc)
 
-    if "503" in err_str or "502" in err_str or "504" in err_str or "unavailable" in err_str or "overloaded" in err_str or "bad gateway" in err_str:
+    if (
+        "503" in err_str
+        or "502" in err_str
+        or "504" in err_str
+        or "unavailable" in err_str
+        or "overloaded" in err_str
+        or "bad gateway" in err_str
+    ):
         return TemporaryUnavailableError(str(exc), provider=provider, model=model, raw_error=exc)
 
     if "timeout" in err_str or "timed out" in err_str or "deadline" in err_str:
