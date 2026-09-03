@@ -213,6 +213,20 @@ class ModelGateway:
         5. Updates health metrics.
         """
         prov_name = provider_name.lower().strip()
+        if prov_name == "litellm":
+            from app.providers.gateway_litellm import execute_via_litellm
+            start_time = time.perf_counter()
+            try:
+                resp = await execute_via_litellm(request)
+                latency = time.perf_counter() - start_time
+                self.health_tracker.record_success("litellm", latency)
+                return resp
+            except Exception as exc:
+                latency = time.perf_counter() - start_time
+                typed_err = normalize_provider_exception(exc, provider="litellm", model=request.model)
+                self.health_tracker.record_failure("litellm", str(exc), latency_seconds=latency)
+                raise typed_err from exc
+
         pool = self.key_pools.get(prov_name)
         if not pool or pool.total_keys_count == 0:
             # Refresh in case settings were updated dynamically
@@ -381,6 +395,26 @@ class ModelGateway:
                 return resp
             except Exception as sec_exc:
                 logger.error("Secondary fallback provider '%s' failed: %s", fallback_route.fallback_provider, str(sec_exc))
+
+        # 3. Optional LiteLLM unified transport fallback if enabled
+        if settings.INFERENCE_LITELLM_FALLBACK_ENABLED and settings.INFERENCE_LITELLM_ENABLED and failed_provider != "litellm":
+            try:
+                from app.providers.gateway_litellm import execute_via_litellm
+                litellm_resp = await execute_via_litellm(request)
+                if not litellm_resp.raw_response:
+                    litellm_resp.raw_response = {}
+                litellm_resp.raw_response["fallback_provenance"] = {
+                    "requested_provider": failed_provider,
+                    "requested_model": request.model,
+                    "actual_provider": "litellm",
+                    "actual_model": litellm_resp.model,
+                    "capability": capability,
+                    "fallback_reason": str(last_error) if last_error else "primary_exhausted"
+                }
+                self.health_tracker.record_success("litellm", litellm_resp.latency_seconds)
+                return litellm_resp
+            except Exception as litellm_exc:
+                logger.error("LiteLLM fallback failed: %s", str(litellm_exc))
 
         # If all fallbacks failed, raise the original error
         if last_error:

@@ -64,6 +64,15 @@ class Settings(BaseSettings):
     MAX_BUDGET: float = Field(default=999999.0, description="Unlimited budget - supplies all available tokens until provider quota exhausted")
     REQUEST_TIMEOUT: float = Field(default=60.0, description="Default timeout in seconds for provider calls")
 
+    # LiteLLM Integration (Optional Transport & Fallback Layer)
+    INFERENCE_LITELLM_ENABLED: bool = Field(default=False, description="Enable LiteLLM unified model transport layer")
+    INFERENCE_LITELLM_FALLBACK_ENABLED: bool = Field(default=True, description="Allow falling back to LiteLLM when native routes fail")
+    LITELLM_DEFAULT_TIMEOUT: float = Field(default=60.0, description="Default LiteLLM request timeout")
+    LITELLM_DROP_PARAMS: bool = Field(default=True, description="Drop non-standard parameters in LiteLLM calls")
+    LITELLM_SUCCESS_CALLBACKS: str = Field(default="", description="LiteLLM success callback handlers")
+    LITELLM_FAILURE_CALLBACKS: str = Field(default="", description="LiteLLM failure callback handlers")
+    LITELLM_MODEL_ALIASES_JSON: str = Field(default="{}", description="JSON mapping for LiteLLM model aliases")
+
     def get_provider_keys(self, provider_name: str) -> list[str]:
         """
         Returns a deduplicated list of non-empty API keys for the specified provider.

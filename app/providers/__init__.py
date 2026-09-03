@@ -5,6 +5,7 @@ from app.providers.cohere import CohereProvider
 from app.providers.gemini import GeminiProvider
 from app.providers.groq import GroqProvider
 from app.providers.huggingface import HuggingFaceProvider
+from app.providers.litellm_adapter import LiteLLMProvider
 from app.providers.mistral import MistralProvider
 from app.providers.nvidia import NvidiaProvider
 from app.providers.openrouter import OpenRouterProvider
@@ -17,6 +18,7 @@ _PROVIDER_MAP: dict[str, type[BaseLLMProvider]] = {
     "cohere": CohereProvider,
     "huggingface": HuggingFaceProvider,
     "nvidia": NvidiaProvider,
+    "litellm": LiteLLMProvider,
 }
 
 _PROVIDER_CACHE: dict[str, BaseLLMProvider] = {}
@@ -46,6 +48,7 @@ __all__ = [
     "GeminiProvider",
     "GroqProvider",
     "HuggingFaceProvider",
+    "LiteLLMProvider",
     "MistralProvider",
     "NvidiaProvider",
     "OpenRouterProvider",
