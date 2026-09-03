@@ -6,6 +6,7 @@ from app.agents.registry import agent_registry
 from app.config_production import production_config
 from app.monitoring import monitor
 from app.optimization import concurrency_controller, telemetry_cache
+from app.version import VERSION
 
 health_router = APIRouter(tags=["Health & Monitoring"])
 
@@ -17,8 +18,22 @@ async def basic_health():
     return {
         "status": "healthy",
         "service": "inference-api",
-        "version": "2.0.0",
+        "version": VERSION,
         "active_specialist_agents": 10,
+    }
+
+
+@health_router.get("/health/ready", status_code=status.HTTP_200_OK)
+async def readiness_check():
+    """Readiness probe checking memory and agent registry readiness."""
+    agents = agent_registry.list_agents()
+    ready = len(agents) >= 10
+    return {
+        "status": "ready" if ready else "degraded",
+        "service": "inference-api",
+        "version": VERSION,
+        "ready": ready,
+        "active_specialist_agents": len(agents)
     }
 
 
@@ -28,7 +43,7 @@ async def detailed_health():
     return {
         "status": "healthy",
         "service": "inference-api",
-        "version": "2.0.0",
+        "version": VERSION,
         "app_env": production_config.APP_ENV,
         "active_specialist_agents": 10,
         "performance": monitor.get_api_metrics(),
@@ -59,7 +74,7 @@ async def system_status():
     agents = agent_registry.list_agents()
     return {
         "system": "Inference",
-        "version": "1.0.0",
+        "version": VERSION,
         "status": "operational",
         "advisory_only": True,
         "capabilities": [

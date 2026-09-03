@@ -1,5 +1,4 @@
-"""Main FastAPI application entrypoint for Inference."""
-
+import uuid
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, status
@@ -11,6 +10,7 @@ from app.agents.software_specialists import register_software_specialists
 from app.api.friday_routes import friday_router
 from app.api.routes import router as api_router
 from app.config_production import production_config
+from app.core.config import settings
 from app.core.orchestrator import orchestrator
 from app.health import health_router
 from app.middleware.rate_limiter import EnhancedRateLimiterMiddleware
@@ -36,6 +36,7 @@ from app.routers.sentinel import sentinel_router
 from app.routers.trading import router as trading_router
 from app.security.api_security import ProductionSecurityMiddleware
 from app.utils.logger import logger, setup_logger
+from app.version import VERSION
 
 
 @asynccontextmanager
@@ -57,10 +58,11 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down %s", production_config.APP_NAME)
 
 
+# Multi-consumer dynamic rate limiter with burst allowance and retry-after headers
 app = FastAPI(
     title=production_config.APP_NAME,
     description="Local-first, provider-agnostic multi-agent intelligence platform with structured adversarial debate.",
-    version="2.0.0",
+    version=VERSION,
     lifespan=lifespan
 )
 
@@ -73,22 +75,31 @@ app.add_middleware(ProductionSecurityMiddleware)
 # GZip response compression middleware for production efficiency
 app.add_middleware(GZipMiddleware, minimum_size=500)
 
-# CORS middleware for local frontend and developer UI tools
+# CORS middleware with explicit allowlist from configuration
+cors_origins = settings.CORS_ALLOWED_ORIGINS if settings.CORS_ALLOWED_ORIGINS else ["http://localhost:3000", "http://127.0.0.1:3000"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"],
     allow_headers=["*"],
 )
 
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    logger.error("Unhandled global exception on %s %s: %s", request.method, request.url, str(exc))
+    correlation_id = str(uuid.uuid4())
+    logger.error(
+        "Unhandled global exception [correlation_id=%s] on %s %s: %s",
+        correlation_id, request.method, request.url, str(exc), exc_info=True
+    )
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"detail": "Internal server error occurred.", "error_type": type(exc).__name__}
+        content={
+            "error_code": "INTERNAL_SERVER_ERROR",
+            "message": "An internal server error occurred.",
+            "correlation_id": correlation_id
+        }
     )
 
 
@@ -125,7 +136,7 @@ async def root():
     return {
         "name": production_config.APP_NAME,
         "status": "online",
-        "version": "1.0.0",
+        "version": VERSION,
         "env": production_config.APP_ENV,
         "description": "Provider-agnostic multi-agent intelligence platform"
     }

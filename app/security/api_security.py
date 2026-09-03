@@ -1,6 +1,5 @@
-"""Comprehensive Production API Security Middleware, Authentication, and Threat Hardening."""
-
 import time
+import uuid
 
 from fastapi import Request, Response, status
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -91,7 +90,22 @@ class ProductionSecurityMiddleware(BaseHTTPMiddleware):
                 content={"detail": "Request payload exceeds 2MB limit."}
             )
 
-        response: Response = await call_next(request)
+        try:
+            response: Response = await call_next(request)
+        except Exception as exc:
+            correlation_id = str(uuid.uuid4())
+            logger.error(
+                "Unhandled exception [correlation_id=%s] on %s %s: %s",
+                correlation_id, request.method, request.url, str(exc), exc_info=True
+            )
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content={
+                    "error_code": "INTERNAL_SERVER_ERROR",
+                    "message": "An internal server error occurred.",
+                    "correlation_id": correlation_id
+                }
+            )
 
         # 3. Add Production Security Headers
         response.headers["X-Content-Type-Options"] = "nosniff"

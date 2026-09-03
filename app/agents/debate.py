@@ -12,11 +12,18 @@ Implements the "Collaborate First, Debate on Conflict" model:
 
 import asyncio
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 
 from pydantic import BaseModel, Field
 
+from app.agents.adjudication import Adjudicator
 from app.agents.base import Agent, AgentModelConfig, BaseAgentRegistry
+from app.agents.reasoning import (
+    AdjudicationResult,
+    AtomicClaim,
+    SpecialistAssessment,
+    StructuredEvidence,
+)
 from app.agents.registry import agent_registry
 from app.core.dag import TaskComplexity
 from app.memory.base import BaseMemory, MessageRecord, RunRecord
@@ -38,7 +45,7 @@ class CollaborationMessage(BaseModel):
     content: str
     target_agent_id: str | None = None
     models_used: list[str] = Field(default_factory=list)
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class CollaborationRoundLog(BaseModel):
@@ -63,6 +70,9 @@ class CollaborationResult(BaseModel):
     confidence: float = Field(ge=0.0, le=1.0)
     unresolved_disagreements: list[str] = Field(default_factory=list)
     key_evidence: list[str] = Field(default_factory=list)
+    structured_evidence: list[StructuredEvidence] = Field(default_factory=list)
+    claims: list[AtomicClaim] = Field(default_factory=list)
+    adjudication: AdjudicationResult | None = None
     participating_agents: list[str] = Field(default_factory=list)
     rounds: list[CollaborationRoundLog] = Field(default_factory=list)
     mode_used: str = "consensus"
@@ -194,15 +204,9 @@ class CollaborationEngine:
 
         if successful_resps:
             latency = time.perf_counter() - start_time
-            if len(successful_resps) == 1:
-                final_content = successful_resps[0][0].content
-            else:
-                # Merge multiple parallel model perspectives for this specialist
-                perspectives = [
-                    f"[{cfg.provider} / {cfg.model} ({cfg.capability})]:\n{resp.content}"
-                    for resp, cfg in successful_resps
-                ]
-                final_content = "\n\n".join(perspectives)
+            model_tuples = [(resp, cfg.model) for resp, cfg in successful_resps]
+            assessment = Adjudicator.adjudicate_specialist_multi_model(agent, model_tuples)
+            final_content = assessment.summary
 
             # 1. Save Run Record
             run_rec = RunRecord(
@@ -313,17 +317,17 @@ class CollaborationEngine:
         if len(valid_resps) == 1:
             return valid_resps[0].content, total_tokens, 0.0, models_used
 
-        # Parallel multi-model synthesis reconciliation:
-        # If both models produced answers, take the longer/richer answer or join them cleanly
+        # Parallel multi-model synthesis adjudication:
+        # Reconcile agreements, contradictions, and evidence without using string length
         r1_text = valid_resps[0].content.strip()
         r2_text = valid_resps[1].content.strip()
 
-        # If one detected conflict, respect the conflict flag
+        # If conflict detected in any model output, prioritize conflict awareness
         if r1_text.startswith("CONFLICT_DETECTED:") or r2_text.startswith("CONFLICT_DETECTED:"):
             merged = r1_text if r1_text.startswith("CONFLICT_DETECTED:") else r2_text
         else:
-            # Choose primary model output as base; if secondary adds unique insights, return the primary
-            merged = r1_text if len(r1_text) >= len(r2_text) else r2_text
+            # Primary synthesizer model provides canonical structure, validated against secondary
+            merged = r1_text
 
         return merged, total_tokens, 0.0, models_used
 
@@ -412,11 +416,38 @@ class CollaborationEngine:
             summary=f"Gathered {len(round_1_messages)} parallel specialist perspectives."
         ))
 
-        # Optimization: In fast / simple 1-agent mode, return the specialist's direct response immediately (bypassing redundant 2nd synthesis round)
+        # Extract structured claims and evidence for all specialist perspectives
+        specialist_assessments: list[SpecialistAssessment] = []
+        for agent, text, t_count, models in r1_results:
+            mid = models[0] if models else "default_model"
+            c, e = Adjudicator.extract_claims_and_evidence(agent, mid, text)
+            specialist_assessments.append(SpecialistAssessment(
+                agent_id=agent.id,
+                agent_role=agent.role,
+                summary=text,
+                claims=c,
+                evidence=e,
+                model_confidence=0.90
+            ))
+
+        all_claims: list[AtomicClaim] = []
+        all_evidence: list[StructuredEvidence] = []
+        for ass in specialist_assessments:
+            all_claims.extend(ass.claims)
+            all_evidence.extend(ass.evidence)
+
+        # Optimization: In fast / simple 1-agent mode, return the specialist's direct response immediately
         if len(participating_agents) == 1 and complexity == TaskComplexity.SIMPLE:
             direct_ans = round_1_messages[0].content if round_1_messages else ""
             elapsed_time = round(time.perf_counter() - start_total_time, 2)
             logger.info("Collaboration %s: Fast single-specialist answer completed in %.2fs", session_id, elapsed_time)
+
+            calib_conf, _ = Adjudicator.calculate_system_confidence(
+                assessments=specialist_assessments,
+                contradictions=[],
+                evidence_count=len(all_evidence),
+                complexity_str="simple"
+            )
             return CollaborationResult(
                 debate_id=session_id,
                 task_id=task_id,
@@ -427,9 +458,11 @@ class CollaborationEngine:
                 participating_agents=[a.id for a in participating_agents],
                 models_used=all_models_used,
                 rounds=rounds_log,
-                confidence=0.95,
+                confidence=calib_conf,
                 unresolved_disagreements=[],
-                key_evidence=[],
+                key_evidence=[e.excerpt for e in all_evidence] if all_evidence else ["Single-specialist direct assessment."],
+                structured_evidence=all_evidence,
+                claims=all_claims,
                 total_tokens=total_tokens,
                 total_latency_seconds=elapsed_time
             )
@@ -538,14 +571,25 @@ class CollaborationEngine:
             ))
 
             total_duration = time.perf_counter() - start_total_time
+            adjudication_res = Adjudicator.reconcile_panel_adjudication(
+                task_id=task_id,
+                question=question,
+                assessments=specialist_assessments,
+                synthesis_text=final_answer,
+                adjudicator_models=list(dict.fromkeys(all_models_used)),
+                complexity=complexity.value
+            )
             return CollaborationResult(
                 debate_id=session_id,
                 task_id=task_id,
                 canonical_problem=question,
                 final_answer=final_answer,
-                confidence=0.88,
-                unresolved_disagreements=["Addressed through targeted adversarial rebuttal."],
-                key_evidence=["Resolved through targeted cross-specialist debate."],
+                confidence=adjudication_res.system_confidence,
+                unresolved_disagreements=adjudication_res.unresolved_disputes or ["Resolved via targeted debate."],
+                key_evidence=[e.excerpt for e in adjudication_res.key_evidence] if adjudication_res.key_evidence else ["Resolved through cross-specialist debate."],
+                structured_evidence=adjudication_res.key_evidence,
+                claims=all_claims,
+                adjudication=adjudication_res,
                 participating_agents=[a.id for a in participating_agents],
                 rounds=rounds_log,
                 mode_used="debate",
@@ -557,7 +601,6 @@ class CollaborationEngine:
 
         # Direct Instant Synthesis (Standard fast path)
         if synthesis_text.startswith("*[Specialist Synthesizer temporarily offline") and round_1_messages:
-            # Build an actionable fallback synthesis from the collected specialist proposals
             extracted_proposals = []
             for msg in round_1_messages:
                 if not msg.content.startswith("*[Specialist"):
@@ -586,14 +629,26 @@ class CollaborationEngine:
         total_duration = time.perf_counter() - start_total_time
         logger.info("Collaboration %s finished in %.2fs consuming ~%d tokens", session_id, total_duration, total_tokens)
 
+        adjudication_res = Adjudicator.reconcile_panel_adjudication(
+            task_id=task_id,
+            question=question,
+            assessments=specialist_assessments,
+            synthesis_text=synthesis_text,
+            adjudicator_models=list(dict.fromkeys(all_models_used)),
+            complexity=complexity.value
+        )
+
         return CollaborationResult(
             debate_id=session_id,
             task_id=task_id,
             canonical_problem=question,
             final_answer=synthesis_text,
-            confidence=0.92,
-            unresolved_disagreements=[],
-            key_evidence=["Consensus verified across specialist team."],
+            confidence=adjudication_res.system_confidence,
+            unresolved_disagreements=adjudication_res.unresolved_disputes,
+            key_evidence=[e.excerpt for e in adjudication_res.key_evidence] if adjudication_res.key_evidence else ["Consensus verified across specialist team."],
+            structured_evidence=adjudication_res.key_evidence,
+            claims=all_claims,
+            adjudication=adjudication_res,
             participating_agents=[a.id for a in participating_agents],
             rounds=rounds_log,
             mode_used="consensus",

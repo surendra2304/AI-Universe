@@ -1,14 +1,14 @@
-"""Orchestrator core module for Dynamic DAG task coordination and execution."""
-
+import asyncio
 import time
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from pydantic import BaseModel, Field
 
 from app.agents.base import Agent
 from app.agents.debate import CollaborationEngine
+from app.agents.reasoning import AdjudicationResult, AtomicClaim, StructuredEvidence
 from app.agents.registry import agent_registry
 from app.agents.roles import register_all_specialists
 from app.agents.router import router as task_router
@@ -45,6 +45,9 @@ class OrchestrationResult(BaseModel):
     confidence: float = Field(ge=0.0, le=1.0)
     unresolved_disagreements: list[str] = Field(default_factory=list)
     key_evidence: list[str] = Field(default_factory=list)
+    structured_evidence: list[StructuredEvidence] = Field(default_factory=list)
+    claims: list[AtomicClaim] = Field(default_factory=list)
+    adjudication: AdjudicationResult | None = None
     complexity: str = "simple"
     total_tokens: int = 0
     total_latency_seconds: float = 0.0
@@ -79,6 +82,7 @@ class Orchestrator(BaseOrchestrator):
         self.debate_engine = CollaborationEngine(memory=self.memory, registry=self.registry)
         self.strategy_store = StrategyStore(memory=self.memory)
         self.performance_tracker = PerformanceTracker(memory=self.memory)
+        self._active_cancellations: dict[str, asyncio.Event] = {}
 
         # Ensure all 10 specialist roles are registered
         register_all_specialists()
@@ -206,6 +210,9 @@ class Orchestrator(BaseOrchestrator):
                 task_id, mode_used, complexity.value, len(participating_agents), len(dag.layers)
             )
 
+            cancel_event = asyncio.Event()
+            self._active_cancellations[task_id] = cancel_event
+
             # 5. Run Collaboration via CollaborationEngine with DAG Complexity
             self.debate_engine.memory = self.memory
             collab_result = await self.debate_engine.run_collaboration(
@@ -222,12 +229,14 @@ class Orchestrator(BaseOrchestrator):
             task_record.result = collab_result.final_answer
             task_record.confidence = collab_result.confidence
             task_record.mode = actual_mode
-            task_record.completed_at = datetime.utcnow()
+            task_record.completed_at = datetime.now(timezone.utc)
             task_record.metadata["debate_id"] = collab_result.debate_id
             task_record.metadata["unresolved_disagreements"] = collab_result.unresolved_disagreements
             task_record.metadata["complexity"] = complexity.value
             task_record.metadata["models_used"] = collab_result.models_used
             await self.memory.save_task(task_record)
+
+            self._active_cancellations.pop(task_id, None)
 
             return OrchestrationResult(
                 task_id=task_id,
@@ -241,6 +250,9 @@ class Orchestrator(BaseOrchestrator):
                 confidence=collab_result.confidence,
                 unresolved_disagreements=collab_result.unresolved_disagreements,
                 key_evidence=collab_result.key_evidence,
+                structured_evidence=collab_result.structured_evidence,
+                claims=collab_result.claims,
+                adjudication=collab_result.adjudication,
                 complexity=complexity.value,
                 total_tokens=collab_result.total_tokens,
                 total_latency_seconds=round(latency, 4)
@@ -251,18 +263,23 @@ class Orchestrator(BaseOrchestrator):
             logger.error("Task %s failed during execution: %s", task_id, str(exc))
 
             task_record.status = "failed"
-            task_record.completed_at = datetime.utcnow()
+            task_record.completed_at = datetime.now(timezone.utc)
             task_record.metadata["error"] = str(exc)
             await self.memory.save_task(task_record)
+            self._active_cancellations.pop(task_id, None)
 
             raise exc
 
     async def cancel_task(self, task_id: str) -> bool:
-        """Cancel an in-flight task."""
+        """Cancel an in-flight task and notify active execution tokens."""
+        if task_id in self._active_cancellations:
+            self._active_cancellations[task_id].set()
+            logger.info("Signaled in-flight cancellation event for task %s", task_id)
+
         task = await self.memory.get_task(task_id)
         if task and task.status == "running":
             task.status = "cancelled"
-            task.completed_at = datetime.utcnow()
+            task.completed_at = datetime.now(timezone.utc)
             await self.memory.save_task(task)
             return True
         return False

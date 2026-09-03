@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 
 from app.core.orchestrator import OrchestrationRequest, orchestrator
 from app.core.security import verify_friday_api_key
+from app.version import VERSION
 
 friday_router = APIRouter(
     prefix="/v1/friday",
@@ -122,7 +123,7 @@ async def friday_debate(request: FridayRequest) -> FridayResponse:
                 "caller_id": request.caller_id,
                 "debate_id": result.run_id,
                 "platform": "Inference",
-                "version": "1.0.0",
+                "version": VERSION,
                 "mode_used": result.mode_used,
                 "rounds_completed": 6 if result.mode_used == "debate" else 2
             }

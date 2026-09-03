@@ -32,8 +32,8 @@ console = Console(legacy_windows=False)
 def _silence_internal_logs() -> None:
     """Mute noisy backend logs so CLI output is clean and uncluttered."""
     for log_name in ["inference", "httpx", "aiosqlite", "uvicorn"]:
-        l = logging.getLogger(log_name)
-        l.setLevel(logging.WARNING)
+        lg = logging.getLogger(log_name)
+        lg.setLevel(logging.WARNING)
 
 
 async def _run_in_process_ask(

@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     HOST: str = "127.0.0.1"
     PORT: int = 8000
     LOG_LEVEL: str = "INFO"
+    CORS_ALLOWED_ORIGINS: list[str] = Field(default_factory=lambda: ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:8000", "http://127.0.0.1:8000"])
+
+    # Security & Auth Configuration
+    INSECURE_DEV_AUTH: bool = Field(default=False, description="Explicitly enable unauthenticated development mode (NEVER for production)")
 
     # Database
     DATABASE_URL: str = "sqlite:///data/universe.db"
@@ -46,15 +50,15 @@ class Settings(BaseSettings):
     NVIDIA_API_KEY: str | None = Field(default=None)
     NVIDIA_API_KEYS: str | None = Field(default=None)
 
-    # Integration Keys
-    INFERENCE_API_KEY: str | None = Field(default="inference_api")
+    # Integration Keys (Strict: No hardcoded fallback credentials)
+    INFERENCE_API_KEY: str | None = Field(default=None)
     inference_api_KEY: str | None = Field(default=None)
     FRIDAY_UNIVERSE_API_KEY: str | None = Field(default=None)
     X_FRIDAY_API_KEY: str | None = Field(default=None)
     FRIDAY_API_KEY: str | None = Field(default=None)
 
     def get_friday_api_key(self) -> str | None:
-        return self.INFERENCE_API_KEY or self.inference_api_KEY or self.FRIDAY_UNIVERSE_API_KEY or self.X_FRIDAY_API_KEY or self.FRIDAY_API_KEY or "inference_api"
+        return self.INFERENCE_API_KEY or self.inference_api_KEY or self.FRIDAY_UNIVERSE_API_KEY or self.X_FRIDAY_API_KEY or self.FRIDAY_API_KEY
 
     # Operational Budgets & Limits (Unlimited Token Flow Mode)
     MAX_BUDGET: float = Field(default=999999.0, description="Unlimited budget - supplies all available tokens until provider quota exhausted")

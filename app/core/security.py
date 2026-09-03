@@ -19,13 +19,16 @@ async def verify_friday_api_key(
     """
     configured_key = settings.get_friday_api_key()
     if not configured_key:
+        if settings.INSECURE_DEV_AUTH:
+            logger.warning("INSECURE_DEV_AUTH is enabled; bypassing integration authentication.")
+            return "dev_insecure_key"
         logger.error("INFERENCE_API_KEY is not configured on the server.")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Server security configuration error: Inference integration key not configured."
         )
 
-    provided_key = x_inference_api_key or x_inference_api_key or x_friday_api_key
+    provided_key = x_inference_api_key or x_friday_api_key
     if not provided_key and authorization:
         if authorization.startswith("Bearer "):
             provided_key = authorization[7:].strip()
@@ -46,11 +49,10 @@ async def verify_friday_api_key(
             settings.FRIDAY_UNIVERSE_API_KEY,
             settings.X_FRIDAY_API_KEY,
             settings.FRIDAY_API_KEY,
-            "inference_api"
         ] if k
     ]
 
-    # Constant-time comparison to prevent timing attacks against any valid ecosystem key
+    # Constant-time comparison to prevent timing attacks against configured ecosystem keys
     if not any(hmac.compare_digest(provided_key.encode("utf-8"), vk.encode("utf-8")) for vk in valid_keys):
         logger.warning("Forbidden access attempt: Invalid API Key provided.")
         raise HTTPException(

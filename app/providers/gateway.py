@@ -18,6 +18,12 @@ from app.providers.base import (
     ProviderRequest,
     ProviderResponse,
 )
+from app.providers.errors import (
+    GatewayError,
+    RateLimitError,
+    TemporaryUnavailableError,
+    normalize_provider_exception,
+)
 from app.providers.health import provider_health_tracker
 from app.utils.logger import logger
 
@@ -250,18 +256,19 @@ class ModelGateway:
 
             except Exception as exc:
                 latency = time.perf_counter() - start_time
-                last_error = exc
+                typed_err = normalize_provider_exception(exc, provider=prov_name, model=request.model)
+                last_error = typed_err
                 err_str = str(exc)
-                is_429 = "429" in err_str or "rate limit" in err_str.lower()
-                is_503 = "503" in err_str or "unavailable" in err_str.lower() or "overloaded" in err_str.lower()
+                is_429 = isinstance(typed_err, RateLimitError)
+                is_503 = isinstance(typed_err, TemporaryUnavailableError)
 
                 self.health_tracker.record_failure(prov_name, err_str, is_429=is_429, is_503=is_503, latency_seconds=latency)
 
-                if pool and current_key and (is_429 or is_503):
+                if pool and current_key and typed_err.is_retryable():
                     await pool.quarantine_key(current_key, duration_seconds=60.0)
                     logger.warning(
-                        "GATEWAY: Provider '%s' hit rate limit/error. Rotating to next key in pool. Error: %s",
-                        prov_name, err_str.split("\n")[0]
+                        "GATEWAY: Provider '%s' [%s] retrying with next key in pool. Detail: %s",
+                        prov_name, type(typed_err).__name__, err_str.split("\n")[0]
                     )
                     await asyncio.sleep(0.5)
                     continue
@@ -271,7 +278,7 @@ class ModelGateway:
 
         # Primary provider failed on all keys -> Fallback logic
         logger.warning(
-            "GATEWAY: Primary provider '%s' failed on all keys. Initiating dynamic fallback for capability '%s'.",
+            "GATEWAY: Primary provider '%s' failed. Initiating capability fallback for '%s'.",
             prov_name, capability
         )
 
@@ -292,7 +299,7 @@ class ModelGateway:
         stage_name: str,
         last_error: Exception | None
     ) -> ProviderResponse:
-        """Executes fallback via OpenRouter with dynamic capability matching or policy matrix."""
+        """Executes fallback via OpenRouter with dynamic capability matching and provenance tracking."""
         # 1. If failed provider is NOT openrouter, use OpenRouter with dynamic capability model discovery
         if failed_provider != "openrouter":
             try:
@@ -327,6 +334,18 @@ class ModelGateway:
                 finally:
                     openrouter_limiter.release()
 
+                # Attach fallback provenance
+                if not resp.raw_response:
+                    resp.raw_response = {}
+                resp.raw_response["fallback_provenance"] = {
+                    "requested_provider": failed_provider,
+                    "requested_model": request.model,
+                    "actual_provider": "openrouter",
+                    "actual_model": dynamic_model,
+                    "capability": capability,
+                    "fallback_reason": str(last_error) if last_error else "primary_exhausted"
+                }
+
                 self.health_tracker.record_success("openrouter", resp.latency_seconds)
                 return resp
 
@@ -348,14 +367,25 @@ class ModelGateway:
                     temperature=request.temperature,
                     max_tokens=request.max_tokens or 1024
                 )
-                return await sec_prov.generate(sec_req)
+                resp = await sec_prov.generate(sec_req)
+                if not resp.raw_response:
+                    resp.raw_response = {}
+                resp.raw_response["fallback_provenance"] = {
+                    "requested_provider": failed_provider,
+                    "requested_model": request.model,
+                    "actual_provider": fallback_route.fallback_provider,
+                    "actual_model": fallback_route.fallback_model,
+                    "capability": capability,
+                    "fallback_reason": str(last_error) if last_error else "primary_exhausted"
+                }
+                return resp
             except Exception as sec_exc:
                 logger.error("Secondary fallback provider '%s' failed: %s", fallback_route.fallback_provider, str(sec_exc))
 
         # If all fallbacks failed, raise the original error
         if last_error:
             raise last_error
-        raise RuntimeError(f"Provider {failed_provider} and all fallback routes failed.")
+        raise GatewayError(f"Provider {failed_provider} and all fallback routes failed.", provider=failed_provider)
 
 
 # Global default gateway instance
